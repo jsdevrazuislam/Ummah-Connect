@@ -1,0 +1,18 @@
+const DB_NAME = "chaiaurcode";
+const DATA_LIMIT = "5MB";
+const API_VERSION = '/api/v1'
+
+const SocketEventEnum = Object.freeze({
+  SOCKET_CONNECTED: "connected",
+  SOCKET_DISCONNECTED: "disconnect",
+  SOCKET_ERROR: "socketError",
+  KYC_STATUS_UPDATED: "kycStatusUpdated",
+  NEW_NOTIFICATION: "NEW_NOTIFICATION",
+  KYC_SUBMITTED: "KYC_SUBMITTED",
+  USER_BLOCKED: "USER_BLOCKED",
+  USER_DELETE: "USER_DELETE",
+  REQUEST_NOTIFICATION: "REQUEST_NOTIFICATION",
+  DONATION_RECEIVED: "DONATION_RECEIVED",
+});
+
+export { DATA_LIMIT, DB_NAME, SocketEventEnum, API_VERSION };
