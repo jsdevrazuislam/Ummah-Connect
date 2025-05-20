@@ -18,8 +18,14 @@ PostReaction.init(
             type: DataTypes.INTEGER,
             allowNull: false
         },
-        react_type: DataTypes.STRING,
-        icon: DataTypes.STRING
+        react_type: {
+            type: DataTypes.ENUM('love', 'care', 'sad', 'like', 'haha', 'wow', 'angry'),
+            allowNull: false
+        },
+        icon: {
+            type: DataTypes.STRING,
+            allowNull: false
+        }
     },
     {
         sequelize,

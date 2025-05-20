@@ -1,0 +1,80 @@
+tags:
+  - name: Post
+    description: Post routes
+
+paths:
+  /post/:
+    post:
+      summary: Create post
+      tags:
+        - Post
+      security:
+        - BearerAuth: [] 
+      requestBody:
+        required: true
+        content:
+          multipart/form-data: 
+            schema:
+              $ref: '#/components/schemas/PostInput'
+      responses:
+        '200':
+          description: Post Created Successfully
+
+  /post/react/:postId:
+    post:
+      summary: React post
+      tags:
+        - Post
+      security:
+        - BearerAuth: [] 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactPostInput'
+      responses:
+        '200':
+          description: Post react Successfully
+
+components:
+  securitySchemes: 
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PostInput:
+      type: object
+      required:
+        - media
+        - content
+        - privacy
+        - location
+      properties:
+        media:
+          type: string
+          format: binary  
+        content:
+          type: string
+          example: create first post
+        privacy:
+          type: string
+          example: public
+        location:
+          type: string
+          example: pabna sadar
+
+    ReactPostInput:
+      type: object
+      required:
+        - react_type
+        - icon
+      properties:
+        react_type:
+          type: string
+          format: love  
+        icon:
+          type: string
+          example: ❤️

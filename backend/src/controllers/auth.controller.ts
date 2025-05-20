@@ -41,7 +41,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
   const newUser = await User.create(payload);
 
-  const access_token = generate_access_token({ id: newUser.id, email });
+  const access_token = generate_access_token({ id: newUser.id, email, role: newUser.role });
 
   const verify_url = `${process.env.SERVER_URL}/api/v1/auth/verify-email?token=${access_token}`;
   await sendEmail(
@@ -98,10 +98,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const access_token = generate_access_token({
     id: user.id,
     email: user.email,
+    role: user.role
   });
   const refresh_token = generate_refresh_token({
     id: user.id,
     email: user.email,
+    role: user.role
   });
 
   const updated_user = await User.update(

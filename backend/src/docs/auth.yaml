@@ -64,42 +64,43 @@ paths:
           description: Successfully fetched user
 
 components:
-  schemas:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  LoginInput:
-      type: object
-      required:
-        - emailOrUsername
-        - password
-      properties:
-        emailOrUsername:
-          type: string
-          example: test@gmail.com
-        password:
-          type: string
-          example: password123
+  securitySchemes: 
+      BearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
 
-  RegisterInput:
-      type: object
-      required:
-        - email
-        - username
-        - full_name
-        - password
-      properties:
-        email:
-          type: string
-          example: test@gmail.com
-        full_name:
-          type: string
-          example: John Doe
-        username:
-          type: string
-          example: johndoe
-        password:
-          type: string
-          example: password123
+  schemas:
+    LoginInput:
+        type: object
+        required:
+          - emailOrUsername
+          - password
+        properties:
+          emailOrUsername:
+            type: string
+            example: test@gmail.com
+          password:
+            type: string
+            example: password123
+
+    RegisterInput:
+        type: object
+        required:
+          - email
+          - username
+          - full_name
+          - password
+        properties:
+          email:
+            type: string
+            example: test@gmail.com
+          full_name:
+            type: string
+            example: John Doe
+          username:
+            type: string
+            example: johndoe
+          password:
+            type: string
+            example: password123

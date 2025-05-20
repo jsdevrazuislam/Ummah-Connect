@@ -16,7 +16,7 @@ import { API_VERSION, DATA_LIMIT } from "@/constants";
 import cookieParser from "cookie-parser";
 import swagger from "@/config/swagger";
 import healthRoute from '@/routes/health.routes'
-import authRoutes from '@/routes/users.routes'
+import authRoutes from '@/routes/users-routes'
 import postRoutes from '@/routes/posts.routes'
 import commentRoutes from '@/routes/comments.routes'
 
@@ -88,7 +88,6 @@ app.get("/", (_, res: Response) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.log("err", err)
   if (err instanceof ApiError) {
     res.status(err.statusCode).json(err.toJSON());
   } else {

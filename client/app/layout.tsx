@@ -3,14 +3,15 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "sonner"
+import { AIAssistant } from "@/components/ai-assistant"
+import ReactQueryProvider from "@/components/query-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Ummah Connect",
   description: "A social media platform for the Muslim Ummah",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -22,8 +23,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-          <Toaster />
+          <ReactQueryProvider>
+            {children}
+            <AIAssistant />
+            <Toaster />
+          </ReactQueryProvider>
         </ThemeProvider>
       </body>
     </html>

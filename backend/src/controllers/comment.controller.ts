@@ -18,12 +18,17 @@ export const create_comment = asyncHandler(
 
     const comment = await Comment.create({ content, userId, postId });
 
+    const commentJSON = comment.toJSON();
+    delete commentJSON.userId;
+    delete commentJSON.postId;
+
+
     return res.json(
       new ApiResponse(
         200,
         {
-          ...comment.toJSON(),
-          user: {
+          ...commentJSON,
+          author: {
             id: req.user.id,
             full_name: req.user.full_name,
             email: req.user.email,

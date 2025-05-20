@@ -14,6 +14,7 @@ class User extends Model {
   public email!: string;
   public refresh_token!: string;
   public password!: string;
+  public gender!: string;
   public is_verified!: boolean;
 }
 
@@ -57,6 +58,10 @@ User.init(
         role: {
             type: DataTypes.ENUM('user', 'admin', 'super-admin'),
             defaultValue: 'user'
+        },
+        gender:{
+            type: DataTypes.ENUM('male','female'),
+            defaultValue: 'male'
         },
         title: {
             type: DataTypes.STRING,

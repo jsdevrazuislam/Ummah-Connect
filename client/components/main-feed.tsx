@@ -4,6 +4,15 @@ import { useState } from "react"
 import { Post } from "@/components/post"
 import { CreatePostForm } from "@/components/create-post-form"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AIContentGenerator } from "@/components/ai-content-generator"
+import { useToast } from "@/components/ui/use-toast"
+
+// Mock current user
+const currentUser = {
+  name: "Abdullah Muhammad",
+  username: "abdullah_m",
+  avatar: "/placeholder.svg?height=40&width=40",
+}
 
 // Mock data for demonstration
 const mockPosts = [
@@ -21,57 +30,59 @@ const mockPosts = [
     comments: 5,
     shares: 2,
     image: "/placeholder.svg?height=400&width=600",
-  },
-  {
-    id: "2",
-    user: {
-      name: "Fatima Ali",
-      username: "fatima_a",
-      avatar: "/placeholder.svg?height=40&width=40",
+    location: {
+      name: "Masjid an-Nabawi",
+      city: "Medina, Saudi Arabia",
     },
-    content:
-      "Just finished reading Surah Al-Kahf as part of my Friday routine. Such powerful lessons in this surah! What's your favorite verse?",
-    timestamp: "5 hours ago",
-    likes: 42,
-    comments: 13,
-    shares: 7,
-  },
-  {
-    id: "3",
-    user: {
-      name: "Omar Farooq",
-      username: "omar_f",
-      avatar: "/placeholder.svg?height=40&width=40",
+    reactions: {
+      like: 12,
+      love: 8,
+      care: 4,
     },
-    content:
-      "Sharing this beautiful hadith: The Prophet ﷺ said, 'The best of you are those who are best to their families, and I am the best to my family.' (Tirmidhi)",
-    timestamp: "1 day ago",
-    likes: 87,
-    comments: 21,
-    shares: 34,
-    image: "/placeholder.svg?height=400&width=600",
-  },
+  }
 ]
 
 export function MainFeed() {
   const [posts, setPosts] = useState(mockPosts)
+  const [showContentGenerator, setShowContentGenerator] = useState(false)
+  const { toast } = useToast()
 
-  const handleNewPost = (content: string) => {
+  const handleNewPost = (content: string, image?: string, location?: { name: string; city: string }) => {
     const newPost = {
       id: Date.now().toString(),
-      user: {
-        name: "You",
-        username: "current_user",
-        avatar: "/placeholder.svg?height=40&width=40",
-      },
+      user: currentUser,
       content,
       timestamp: "Just now",
       likes: 0,
       comments: 0,
       shares: 0,
+      image,
+      location,
+      reactions: {},
     }
 
     setPosts([newPost, ...posts])
+  }
+
+  const handleDeletePost = (postId: string) => {
+    setPosts(posts.filter((post) => post.id !== postId))
+    toast({
+      title: "Post deleted",
+      description: "Your post has been successfully deleted",
+    })
+  }
+
+  const handleEditPost = (
+    postId: string,
+    content: string,
+    image?: string,
+    location?: { name: string; city: string },
+  ) => {
+    setPosts(posts.map((post) => (post.id === postId ? { ...post, content, image, location } : post)))
+    toast({
+      title: "Post updated",
+      description: "Your post has been successfully updated",
+    })
   }
 
   return (
@@ -91,12 +102,24 @@ export function MainFeed() {
       </div>
 
       <div className="p-4 border-b border-border">
-        <CreatePostForm onSubmit={handleNewPost} />
+        <CreatePostForm onSubmit={handleNewPost} onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
+
+        {showContentGenerator && (
+          <div className="mt-4">
+            <AIContentGenerator />
+          </div>
+        )}
       </div>
 
       <div>
         {posts.map((post) => (
-          <Post key={post.id} post={post} />
+          <Post
+            key={post.id}
+            post={post}
+            currentUser={currentUser}
+            onDelete={handleDeletePost}
+            onEdit={handleEditPost}
+          />
         ))}
       </div>
     </div>

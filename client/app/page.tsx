@@ -2,6 +2,8 @@ import { MainFeed } from "@/components/main-feed"
 import { SideNav } from "@/components/side-nav"
 import { RightSidebar } from "@/components/right-sidebar"
 import { StorySection } from "@/components/story-section"
+import { AIPrayerReminder } from "@/components/ai-prayer-reminder"
+import { AIContentRecommendations } from "@/components/ai-content-recommendations"
 
 export default function Home() {
   return (
@@ -9,9 +11,15 @@ export default function Home() {
       <SideNav />
       <main className="flex-1 border-x border-border">
         <StorySection />
+        <div className="p-4 md:hidden">
+          <AIPrayerReminder />
+        </div>
         <MainFeed />
       </main>
-      <RightSidebar />
+      <RightSidebar>
+        <AIPrayerReminder />
+        <AIContentRecommendations />
+      </RightSidebar>
     </div>
   )
 }

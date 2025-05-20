@@ -11,3 +11,8 @@ export const postSchema = z.object({
 export const commentSchema = z.object({
     content: z.string().min(1, "Required")
 })
+
+export const reactSchema = z.object({
+    react_type: z.string().min(1, "Required"),
+    icon: z.string().min(1, "Required")
+})
