@@ -15,8 +15,10 @@ import ApiError from "@/utils/ApiError";
 import { API_VERSION, DATA_LIMIT } from "@/constants";
 import cookieParser from "cookie-parser";
 import swagger from "@/config/swagger";
-import healthRoute from '@/routes/health-routes'
-import authRoutes from '@/routes/users-routes'
+import healthRoute from '@/routes/health.routes'
+import authRoutes from '@/routes/users.routes'
+import postRoutes from '@/routes/posts.routes'
+import commentRoutes from '@/routes/comments.routes'
 
 
 const app: Application = express();
@@ -72,6 +74,8 @@ app.use(
 
 app.use(`${API_VERSION}/health-check`, healthRoute);
 app.use(`${API_VERSION}/auth`, authRoutes);
+app.use(`${API_VERSION}/post`, postRoutes);
+app.use(`${API_VERSION}/comment`, commentRoutes);
 
 
 swagger(app)

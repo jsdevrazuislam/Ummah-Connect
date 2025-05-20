@@ -104,10 +104,42 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     email: user.email,
   });
 
-  await User.update({ refresh_token }, { where: { id: user.id } });
+  const updated_user = await User.update(
+    { refresh_token },
+    {
+      where: { email: user.email },
+      returning: true,
+    }
+  );
+
+  const safeUser = updated_user[1][0].get({ plain: true });
+  delete safeUser.password;
 
   return res
     .cookie("access_token", access_token, options)
     .cookie("refresh_token", refresh_token, options)
-    .json(new ApiResponse(200, {}, "Login Successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: safeUser,
+          access_token,
+          refresh_token,
+        },
+        "Login Successfully"
+      )
+    );
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  return res
+    .clearCookie("access_token")
+    .clearCookie("refresh_token")
+    .json(new ApiResponse(200, null, "Logout Success"));
+});
+
+export const get_me = asyncHandler(async (req: Request, res: Response) => {
+  return res.json(
+    new ApiResponse(200, { user: req.user }, "Fetching User Success")
+  );
 });

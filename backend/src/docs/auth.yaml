@@ -1,6 +1,7 @@
 tags:
   - name: Auth
     description: Authentication routes
+    
 
 paths:
   /auth/login:
@@ -42,9 +43,34 @@ paths:
         '200':
           description: Email verify successful redirect client-url
 
+  /auth/logout:
+    get:
+      summary: Logout user
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Logout Success
+
+  /auth/me:
+    get:
+      summary: Get current user
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully fetched user
+
 components:
   schemas:
-    LoginInput:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  LoginInput:
       type: object
       required:
         - emailOrUsername
@@ -57,7 +83,7 @@ components:
           type: string
           example: password123
 
-    RegisterInput:
+  RegisterInput:
       type: object
       required:
         - email

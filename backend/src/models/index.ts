@@ -1,5 +1,8 @@
 import Follow from '@/models/follow.models'
 import User from '@/models/users.models'
+import Post from '@/models/post.models'
+import PostReaction from '@/models/react.models'
+import Comment from '@/models/comment.models'
 
 User.belongsToMany(User, {
   through: Follow,
@@ -15,5 +18,61 @@ User.belongsToMany(User, {
   otherKey: 'followingId',
 });
 
-export { User, Follow };
-export default { User, Follow };
+User.hasMany(Post, {
+  foreignKey: 'authorId',
+  as: 'posts'
+});
+
+Post.belongsTo(User, {
+  foreignKey: 'authorId',
+  as: 'author'
+});
+
+Post.hasMany(PostReaction, {
+  foreignKey: 'postId',
+  as: 'reactions'
+});
+
+User.hasMany(PostReaction, {
+  foreignKey: 'userId',
+  as: 'userReactions'
+});
+
+PostReaction.belongsTo(User, {
+  foreignKey: 'userId',
+  as: "user" 
+});
+
+Post.hasMany(Comment, {
+  foreignKey: 'postId',
+  as: 'comments'
+});
+
+Comment.belongsTo(Post, {
+  foreignKey: 'postId'
+});
+
+User.hasMany(Comment, {
+  foreignKey: 'userId',
+  as: 'comments'
+});
+
+Comment.belongsTo(User, {
+  foreignKey: 'userId',
+  as: "user"
+});
+
+Comment.hasMany(Comment, {
+  foreignKey: 'parentId',
+  as: 'replies'
+});
+
+Comment.belongsTo(Comment, {
+  foreignKey: 'parentId',
+  as: 'parent'
+});
+
+
+
+export { User, Follow, Post, PostReaction, Comment };
+export default { User, Follow,Post, PostReaction, Comment };
