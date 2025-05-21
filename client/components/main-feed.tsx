@@ -1,94 +1,49 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Post } from "@/components/post"
 import { CreatePostForm } from "@/components/create-post-form"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AIContentGenerator } from "@/components/ai-content-generator"
-import { useToast } from "@/components/ui/use-toast"
-
-// Mock current user
-const currentUser = {
-  name: "Abdullah Muhammad",
-  username: "abdullah_m",
-  avatar: "/placeholder.svg?height=40&width=40",
-}
-
-// Mock data for demonstration
-const mockPosts = [
-  {
-    id: "1",
-    user: {
-      name: "Ahmed Khan",
-      username: "ahmed_k",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    content:
-      "Alhamdulillah for another beautiful day! Just finished Fajr prayer and feeling blessed. How is everyone's morning going?",
-    timestamp: "2 hours ago",
-    likes: 24,
-    comments: 5,
-    shares: 2,
-    image: "/placeholder.svg?height=400&width=600",
-    location: {
-      name: "Masjid an-Nabawi",
-      city: "Medina, Saudi Arabia",
-    },
-    reactions: {
-      like: 12,
-      love: 8,
-      care: 4,
-    },
-  }
-]
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+import { useQuery } from "@tanstack/react-query"
+import { get_all_posts } from "@/lib/apis/posts"
+import { RefreshCw } from "lucide-react"
+import { PostSkeleton } from "@/components/post-skeleton"
 
 export function MainFeed() {
-  const [posts, setPosts] = useState(mockPosts)
+  const [page, setPage] = useState(0)
+  const { isLoading, data, refetch } = useQuery<PostsResponse>({
+    queryKey: ['get_all_posts'],
+    queryFn: () => get_all_posts({ page: page + 1 })
+  })
+  const [posts, setPosts] = useState<PostsEntity[]>([])
   const [showContentGenerator, setShowContentGenerator] = useState(false)
-  const { toast } = useToast()
 
-  const handleNewPost = (content: string, image?: string, location?: { name: string; city: string }) => {
-    const newPost = {
-      id: Date.now().toString(),
-      user: currentUser,
-      content,
-      timestamp: "Just now",
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      image,
-      location,
-      reactions: {},
-    }
-
-    setPosts([newPost, ...posts])
-  }
-
-  const handleDeletePost = (postId: string) => {
+  const handleDeletePost = (postId: number) => {
     setPosts(posts.filter((post) => post.id !== postId))
-    toast({
-      title: "Post deleted",
+    toast.success("Post deleted", {
       description: "Your post has been successfully deleted",
     })
   }
 
-  const handleEditPost = (
-    postId: string,
-    content: string,
-    image?: string,
-    location?: { name: string; city: string },
-  ) => {
-    setPosts(posts.map((post) => (post.id === postId ? { ...post, content, image, location } : post)))
-    toast({
-      title: "Post updated",
-      description: "Your post has been successfully updated",
-    })
-  }
+  useEffect(() => {
+    if (data?.data) {
+      setPosts(data.data.posts ?? [])
+    }
+  }, [data])
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
-        <h1 className="text-xl font-bold">Home</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold">Home</h1>
+          <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading} className="h-9 w-9">
+            <RefreshCw className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
+            <span className="sr-only">Refresh</span>
+          </Button>
+        </div>
         <Tabs defaultValue="for-you" className="mt-4">
           <TabsList className="w-full">
             <TabsTrigger value="for-you" className="flex-1">
@@ -102,7 +57,7 @@ export function MainFeed() {
       </div>
 
       <div className="p-4 border-b border-border">
-        <CreatePostForm onSubmit={handleNewPost} onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
+        <CreatePostForm onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
 
         {showContentGenerator && (
           <div className="mt-4">
@@ -112,15 +67,21 @@ export function MainFeed() {
       </div>
 
       <div>
-        {posts.map((post) => (
-          <Post
-            key={post.id}
-            post={post}
-            currentUser={currentUser}
-            onDelete={handleDeletePost}
-            onEdit={handleEditPost}
-          />
-        ))}
+        {
+          isLoading ? <>
+            {
+              Array(10).fill(10).map((item, index) => (
+                <PostSkeleton key={index} />
+              ))
+            }
+          </> : posts?.map((post) => (
+            <Post
+              key={post.id}
+              post={post}
+              onDelete={handleDeletePost}
+            />
+          ))
+        }
       </div>
     </div>
   )

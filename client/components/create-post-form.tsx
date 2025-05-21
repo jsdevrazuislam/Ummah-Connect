@@ -7,35 +7,77 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, X } from "lucide-react"
+import { Loader2, Sparkles, X } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { LocationPicker } from "@/components/location-picker"
 import { ImageUpload } from "@/components/image-upload"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { create_post } from "@/lib/apis/posts"
+import { toast } from "sonner"
 
 interface CreatePostFormProps {
-  onSubmit: (content: string, image?: string, location?: { name: string; city: string }) => void
   onAIHelp?: () => void
 }
 
-export function CreatePostForm({ onSubmit, onAIHelp }: CreatePostFormProps) {
+export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const [content, setContent] = useState("")
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | undefined>()
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const queryClient = useQueryClient()
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: create_post,
+    onSuccess: (newPost) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+        if (!oldData || !oldData.data || !Array.isArray(oldData.data.posts)) {
+          return {
+            data: {
+              posts: [newPost.data],
+              totalPages: 1,
+              currentPage: 1
+            },
+          };
+        }
+        return {
+          ...oldData,
+          data: {
+            posts: [newPost.data, ...oldData.data.posts]
+          }
+        }
+      })
+      setContent("")
+      setSelectedImage(undefined)
+      setSelectedLocation(null)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const isButtonDisabled = isPending || (!content.trim() && !selectedImage);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (content.trim()) {
-      onSubmit(content, selectedImage || undefined, selectedLocation || undefined)
-      setContent("")
-      setSelectedImage(null)
-      setSelectedLocation(null)
+    if (!content.trim() && !selectedImage) {
+      return;
     }
+    const formData = new FormData()
+    if (selectedImage) {
+      formData.append("media", selectedImage)
+    }
+    formData.append("content", content)
+    if (selectedLocation) {
+      formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`)
+    }
+    formData.append("privacy", "public")
+    mutate(formData)
+
   }
 
   const handleEmojiSelect = (emoji: string) => {
     setContent((prev) => prev + emoji)
-    // Focus the textarea and place cursor at the end
     if (textareaRef.current) {
       textareaRef.current.focus()
       const length = textareaRef.current.value.length
@@ -51,16 +93,22 @@ export function CreatePostForm({ onSubmit, onAIHelp }: CreatePostFormProps) {
     setSelectedLocation(null)
   }
 
-  const handleImageSelect = (imageUrl: string) => {
+  const handleImageSelect = (imageUrl: File) => {
     setSelectedImage(imageUrl)
   }
 
   const handleImageRemove = () => {
-    setSelectedImage(null)
+    setSelectedImage(undefined)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 relative">
+      {
+        isPending && <div className="absolute -top-4 left-0 w-full h-full bg-black/50  flex justify-center items-center flex-col z-40">
+          <Loader2 className="animate-spin h-8 w-8" />
+          Posting...
+        </div>
+      }
       <div className="flex gap-3">
         <Avatar>
           <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Your avatar" />
@@ -92,7 +140,7 @@ export function CreatePostForm({ onSubmit, onAIHelp }: CreatePostFormProps) {
         <div className="ml-12">
           <div className="relative rounded-lg overflow-hidden border border-border">
             <img
-              src={selectedImage || "/placeholder.svg"}
+              src={URL.createObjectURL(selectedImage) || "/placeholder.svg"}
               alt="Selected"
               className="w-full h-auto max-h-[200px] object-cover"
             />
@@ -113,8 +161,6 @@ export function CreatePostForm({ onSubmit, onAIHelp }: CreatePostFormProps) {
         <div className="flex gap-2">
           <ImageUpload
             onImageSelect={handleImageSelect}
-            onImageRemove={handleImageRemove}
-            selectedImage={selectedImage}
           />
           <EmojiPicker onEmojiSelect={handleEmojiSelect} />
           <LocationPicker onLocationSelect={handleLocationSelect} />
@@ -123,7 +169,7 @@ export function CreatePostForm({ onSubmit, onAIHelp }: CreatePostFormProps) {
             <span className="sr-only">AI Help</span>
           </Button>
         </div>
-        <Button type="submit" disabled={!content.trim()} className="rounded-full">
+        <Button type="submit" disabled={isButtonDisabled} className="rounded-full">
           Post
         </Button>
       </div>

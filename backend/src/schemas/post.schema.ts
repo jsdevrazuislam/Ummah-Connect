@@ -9,7 +9,12 @@ export const postSchema = z.object({
 
 
 export const commentSchema = z.object({
-    content: z.string().min(1, "Required")
+    content: z.string().min(1, "Required"),
+})
+
+export const commentReplySchema = z.object({
+    content: z.string().min(1, "Required"),
+    postId: z.number().min(1, "Required"),
 })
 
 export const reactSchema = z.object({

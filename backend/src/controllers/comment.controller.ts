@@ -28,15 +28,52 @@ export const create_comment = asyncHandler(
         200,
         {
           ...commentJSON,
-          author: {
+          user: {
             id: req.user.id,
-            full_name: req.user.full_name,
+            name: req.user.full_name,
             email: req.user.email,
             avatar: req.user.avatar,
           },
+          replies: [],
+          repliesCount: 0,
+          reactions : {counts: {}, currentUserReaction: null}
         },
         "Comment Created"
       )
     );
   }
 );
+
+export const create_reply_comment = asyncHandler(async (req: Request, res: Response) => {
+
+  const { content, postId } = req.body;
+  const userId = req.user.id;
+  const parentId = req.params.id;
+
+  const post = await Post.findOne({ where: { id: postId } });
+  if (!post) throw new ApiError(404, "Post not found");
+
+  const comment = await Comment.create({ content, userId, postId, parentId });
+
+  const commentJSON = comment.toJSON();
+  delete commentJSON.userId;
+  delete commentJSON.postId;
+  delete commentJSON.parentId;
+
+
+  return res.json(
+    new ApiResponse(
+      200,
+      {
+        ...commentJSON,
+        author: {
+          id: req.user.id,
+          full_name: req.user.full_name,
+          email: req.user.email,
+          avatar: req.user.avatar,
+        },
+      },
+      "Comment Created"
+    )
+  );
+})

@@ -1,6 +1,8 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import ApiError from "@/utils/ApiError";
+import { extractPublicId } from 'cloudinary-build-url'
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,51 +12,35 @@ cloudinary.config({
 
 const uploadFileOnCloudinary = async (localFilePath: string, folderName:string) => {
   try {
-    // localFile is not found return message
     if (!localFilePath)
       return {
         message: "File not found",
       };
-    // Upload file on cloudinary
     const res = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
       folder: folderName
     });
 
-    // file has been uploaded successfully
     console.log(`File is uploaded on cloudinary ${res.url}`);
     fs.unlinkSync(localFilePath);
     return res.url;
   } catch (error) {
     console.log(`File Upload Error`, error);
-    fs.unlinkSync(localFilePath); // remove the locally saved temp file as the upload operation got failed
+    fs.unlinkSync(localFilePath); 
   }
-};
-
-const getPublicIdFromUrl = (url: string) => {
-  // Extract the part after '/upload/'
-  const parts = url.split("/upload/");
-  if (parts.length < 2) {
-    throw new Error("Invalid Cloudinary URL");
-  }
-  const publicId = parts[1].split("/")[1].split(".")[0];
-  return publicId;
 };
 
 export const removeOldImageOnCloudinary = async (url: string) => {
   try {
-    // localFile is not found return message
     if (!url)
       return {
         message: "PublicId not found",
       };
-    // Remove file on cloudinary
-    await cloudinary.uploader.destroy(getPublicIdFromUrl(url), {
-      resource_type: "image",
-    });
-    // file has been removed successfully
+      await cloudinary.uploader.destroy(extractPublicId(url), {
+        resource_type: "image",
+      });
     console.log(
-      `Image with publicId ${getPublicIdFromUrl(url)} deleted successfully`
+      `Image with publicId ${extractPublicId(url)} deleted successfully`
     );
   } catch (error) {
     console.error("Error deleting old image:", error);
@@ -66,18 +52,15 @@ export const removeOldImageOnCloudinary = async (url: string) => {
 };
 export const removeOldVideoOnCloudinary = async (url: string) => {
   try {
-    // localFile is not found return message
     if (!url)
       return {
         message: "PublicId not found",
       };
-    // Remove file on cloudinary
-    await cloudinary.uploader.destroy(getPublicIdFromUrl(url), {
+    await cloudinary.uploader.destroy(extractPublicId(url), {
       resource_type: "video",
     });
-    // file has been removed successfully
     console.log(
-      `Video with publicId ${getPublicIdFromUrl(url)} deleted successfully`
+      `Video with publicId ${extractPublicId(url)} deleted successfully`
     );
   } catch (error) {
     console.error("Error deleting old video:", error);

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
 
 interface CommentReactionPickerProps {
   onReactionSelect: (reaction: ReactionType) => void

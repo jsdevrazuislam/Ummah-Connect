@@ -6,4 +6,5 @@ interface AuthState {
   setUser: (user: User) => void;
   logout: () => void;
   user: User | null;
+  initialLoading: () => void
 }

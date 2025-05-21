@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import Cookies from "js-cookie";
 import { REFRESH_TOKEN, ACCESS_TOKEN } from "@/constants";
+import api from "@/lib/apis/api";
+import ApiStrings from "@/lib/apis/api-strings";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     accessToken: Cookies.get(ACCESS_TOKEN) || null,
@@ -28,6 +30,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         Cookies.remove(REFRESH_TOKEN);
         Cookies.remove(ACCESS_TOKEN);
+    },
+    initialLoading: async () =>{
+        if(get().accessToken){
+            const { data } = await api.get(ApiStrings.ME)
+            set({
+                user: data?.data?.user
+            })
+        }
     }
 
 }));

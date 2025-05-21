@@ -88,6 +88,8 @@ app.get("/", (_, res: Response) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.log("App error", err);
+  
   if (err instanceof ApiError) {
     res.status(err.statusCode).json(err.toJSON());
   } else {

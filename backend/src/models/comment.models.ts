@@ -6,6 +6,26 @@ class Comment extends Model {
   public userId!: number;
   public postId!: number;
   public parentId!: number;
+  public createdAt!: string
+  public content!: string
+  public user!: {
+    id: number;
+    full_name: string;
+    username: string;
+    avatar: string | null;
+  };
+  public replies!: [
+    {
+      id: number,
+      content: string,
+      user: {
+        id: number;
+        full_name: string;
+        username: string;
+        avatar: string | null;
+      }
+    }
+  ]
 }
 
 Comment.init(

@@ -1,8 +1,10 @@
 import Follow from '@/models/follow.models'
 import User from '@/models/users.models'
 import Post from '@/models/post.models'
-import PostReaction from '@/models/react.models'
+import PostReaction from '@/models/post-react.models'
 import Comment from '@/models/comment.models'
+import CommentReaction from '@/models/comment-react.models'
+import BookmarkPost from '@/models/bookmark.models'
 
 User.belongsToMany(User, {
   through: Follow,
@@ -40,7 +42,7 @@ User.hasMany(PostReaction, {
 
 PostReaction.belongsTo(User, {
   foreignKey: 'userId',
-  as: "user" 
+  as: "user"
 });
 
 Post.hasMany(Comment, {
@@ -72,7 +74,18 @@ Comment.belongsTo(Comment, {
   as: 'parent'
 });
 
+Comment.hasMany(CommentReaction, { foreignKey: 'commentId', as: 'reactions' });
+CommentReaction.belongsTo(Comment, { foreignKey: 'commentId' });
+
+User.hasMany(CommentReaction, { foreignKey: 'userId' });
+CommentReaction.belongsTo(User, { foreignKey: 'userId' });
+
+Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
+BookmarkPost.belongsTo(Post, {foreignKey:'postId' })
+
+User.hasMany(BookmarkPost, { foreignKey: 'userId' });
+BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 
 
 export { User, Follow, Post, PostReaction, Comment };
-export default { User, Follow,Post, PostReaction, Comment };
+export default { User, Follow, Post, PostReaction, Comment };

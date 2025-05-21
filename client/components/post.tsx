@@ -29,7 +29,7 @@ import { AITranslation } from "@/components/ai-translation"
 import { AIContentModerationBanner } from "@/components/ai-content-moderation-banner"
 import { Badge } from "@/components/ui/badge"
 import { ReactionPicker, type ReactionType } from "@/components/reaction-picker"
-import { CommentItem, type Comment as CommentType } from "@/components/comment-item"
+import { CommentItem, } from "@/components/comment-item"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -39,249 +39,154 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
+import { useAuthStore } from "@/store/store"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { delete_post } from "@/lib/apis/posts"
+import { toast } from "sonner"
+import { create_comment } from "@/lib/apis/comment"
 
-interface User {
-  name: string
-  username: string
-  avatar: string
-}
 
 interface PostProps {
-  post: {
-    id: string
-    user: User
-    content: string
-    timestamp: string
-    likes: number
-    comments: number
-    shares: number
-    image?: string
-    location?: {
-      name: string
-      city: string
-    }
-    commentsList?: CommentType[]
-    needsModeration?: boolean
-    reactions?: {
-      [key in ReactionType]?: number
-    }
-    isBookmarked?: boolean
-  }
-  currentUser?: User
-  onDelete?: (postId: string) => void
-  onEdit?: (postId: string, content: string, image?: string, location?: { name: string; city: string }) => void
+  post: PostsEntity
+  onDelete?: (postId: number) => void
 }
 
-export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
+export function Post({ post, onDelete }: PostProps) {
+  const { user } = useAuthStore()
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)
-  const [showModeration, setShowModeration] = useState(post.needsModeration || false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(null)
-  const [isBookmarked, setIsBookmarked] = useState(post.isBookmarked || false)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.reactions?.currentUserReaction ?? null)
+  const [isBookmarked, setIsBookmarked] = useState(post?.isBookmarked || false)
   const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState(post.content)
+  const [editText, setEditText] = useState(post?.content)
   const [showShareDialog, setShowShareDialog] = useState(false)
-  const [comments, setComments] = useState<CommentType[]>(
-    post.commentsList || [
-      {
-        id: "c1",
-        user: {
-          name: "Ibrahim Khan",
-          username: "ibrahim_k",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        content: "JazakAllah Khair for sharing this beautiful reminder!",
-        timestamp: "15m ago",
-        reactions: { like: 3 },
-      },
-      {
-        id: "c2",
-        user: {
-          name: "Aisha Rahman",
-          username: "aisha_r",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        content: "SubhanAllah, this is so inspiring.",
-        timestamp: "45m ago",
-        reactions: { love: 5 },
-        replies: [
-          {
-            id: "r1",
-            user: {
-              name: "Omar Farooq",
-              username: "omar_f",
-              avatar: "/placeholder.svg?height=40&width=40",
-            },
-            content: "I completely agree, sister Aisha!",
-            timestamp: "30m ago",
-            reactions: { like: 2 },
-          },
-        ],
-      },
-    ],
-  )
+  const isCurrentUserPost = user && post?.user?.username === user?.username
+  const queryClient = useQueryClient()
 
-  const isCurrentUserPost = currentUser && post.user.username === currentUser.username
+  const { mutate } = useMutation({
+    mutationFn: delete_post,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const { mutate: mnFun, isPending } = useMutation({
+    mutationFn: create_comment,
+    onSuccess: (newComment, variable) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+
+        const updatedPosts = oldData?.data?.posts?.map((post) => {
+
+          if (post.id === variable.postId) {
+            return {
+              ...post,
+              comments: {
+                total: post.comments.total + 1,
+                preview: [newComment.data, ...(post.comments.preview ?? [])]
+              }
+            }
+          }
+          return post
+        })
+
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            posts: updatedPosts
+          }
+        }
+      })
+      setCommentText("")
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
 
   const handleAddComment = () => {
     if (commentText.trim()) {
-      const newComment: CommentType = {
-        id: `c-${Date.now()}`,
-        user: {
-          name: currentUser?.name || "You",
-          username: currentUser?.username || "current_user",
-          avatar: currentUser?.avatar || "/placeholder.svg?height=40&width=40",
-        },
+      const payload = {
         content: commentText,
-        timestamp: "Just now",
-        reactions: {},
+        postId: post.id
       }
-      setComments([...comments, newComment])
-      setCommentText("")
+      mnFun(payload)
     }
   }
 
-  const handleReviewContent = (postId: string) => {
-    // In a real app, this would open a detailed review UI
+  const handleReviewContent = (postId: number) => {
     console.log(`Reviewing post ${postId}`)
   }
 
-  const handleDismissModeration = (postId: string) => {
-    setShowModeration(false)
+  const handleDeleteComment = (commentId: number) => {
+  
   }
 
-  const handleDeleteComment = (commentId: string) => {
-    setComments(
-      comments.filter((comment) => {
-        // Check if this is the comment to delete
-        if (comment.id === commentId) return false
-
-        // If this comment has replies, check if the reply should be deleted
-        if (comment.replies) {
-          comment.replies = comment.replies.filter((reply) => reply.id !== commentId)
-        }
-
-        return true
-      }),
-    )
+  const handleEditComment = (commentId: number, content: string) => {
+   
   }
 
-  const handleEditComment = (commentId: string, content: string) => {
-    setComments(
-      comments.map((comment) => {
-        // Check if this is the comment to edit
-        if (comment.id === commentId) {
-          return { ...comment, content }
-        }
-
-        // Check if the comment to edit is in the replies
-        if (comment.replies) {
-          comment.replies = comment.replies.map((reply) => (reply.id === commentId ? { ...reply, content } : reply))
-        }
-
-        return comment
-      }),
-    )
-  }
-
-  const handleCommentReaction = (commentId: string, reaction: ReactionType) => {
+  const handleCommentReaction = (commentId: number, reaction: ReactionType) => {
     // In a real app, this would update the backend
     console.log(`Reaction ${reaction} on comment ${commentId}`)
   }
 
-  const handleReplyToComment = (commentId: string, content: string) => {
-    setComments(
-      comments.map((comment) => {
-        if (comment.id === commentId) {
-          const newReply = {
-            id: `r-${Date.now()}`,
-            user: {
-              name: currentUser?.name || "You",
-              username: currentUser?.username || "current_user",
-              avatar: currentUser?.avatar || "/placeholder.svg?height=40&width=40",
-            },
-            content,
-            timestamp: "Just now",
-            reactions: {},
-          }
+  const handleReplyToComment = (commentId: number, content: string) => {
 
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), newReply],
-          }
-        }
-        return comment
-      }),
-    )
   }
 
   const handleDeletePost = () => {
     if (onDelete) {
       onDelete(post.id)
+      mutate(post.id)
     }
   }
 
   const handleEditPost = () => {
-    if (onEdit && editText.trim()) {
-      onEdit(post.id, editText, post.image, post.location)
+    if (editText.trim()) {
       setIsEditing(false)
     }
   }
 
   const handleSharePost = () => {
-    // In a real app, this would copy the link to clipboard or open share options
     const postUrl = `https://ummahconnect.com/post/${post.id}`
     navigator.clipboard
       .writeText(postUrl)
       .then(() => {
-        toast({
-          title: "Link copied to clipboard",
+        toast.success("Link copied to clipboard", {
           description: "You can now share this post with others",
         })
         setShowShareDialog(false)
       })
       .catch(() => {
-        toast({
-          title: "Failed to copy link",
+        toast.error("Failed to copy link", {
           description: "Please try again",
-          variant: "destructive",
         })
       })
   }
 
-  // Get total reactions count
   const getTotalReactions = () => {
     if (post.reactions) {
-      return Object.values(post.reactions).reduce((sum, count) => sum + (count || 0), 0)
+      return Object.values(post.reactions.counts).reduce((sum, count) => sum + (count || 0), 0)
     }
     return post.likes || 0
   }
 
   return (
     <div className="border-b border-border p-4">
-      {showModeration && (
-        <AIContentModerationBanner
-          postId={post.id}
-          content={post.content}
-          onReview={handleReviewContent}
-          onDismiss={handleDismissModeration}
-        />
-      )}
-
       <div className="flex gap-3">
         <Avatar>
-          <AvatarImage src={post.user.avatar || "/placeholder.svg"} alt={post.user.name} />
-          <AvatarFallback>{post.user.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={post?.user?.avatar || "/placeholder.svg"} alt={post?.user?.name} />
+          <AvatarFallback>{post?.user?.name?.charAt(0)}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div>
-              <span className="font-semibold">{post.user.name}</span>{" "}
+              <span className="font-semibold capitalize">{post?.user?.name}</span>{" "}
               <span className="text-muted-foreground">
-                @{post.user.username} · {post.timestamp}
+                @{post?.user?.username} · {post?.timestamp}
               </span>
             </div>
             <DropdownMenu>
@@ -344,15 +249,15 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
               </div>
             </div>
           ) : (
-            <div className="mt-2 text-sm">{post.content}</div>
+            <div className="mt-2 text-sm">{post?.content}</div>
           )}
 
-          {post.location && !isEditing && (
+          {post?.location && !isEditing && (
             <div className="mt-2">
-              <Badge variant="outline" className="flex items-center gap-1 text-xs">
+              <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">
                 <MapPin className="h-3 w-3" />
                 <span>
-                  {post.location.name}, {post.location.city}
+                  {post?.location}
                 </span>
               </Badge>
             </div>
@@ -360,10 +265,10 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
 
           {showTranslation && !isEditing && <AITranslation originalText={post.content} />}
 
-          {post.image && !isEditing && (
+          {post?.image && !isEditing && (
             <div className="mt-3 rounded-lg overflow-hidden border border-border">
               <img
-                src={post.image || "/placeholder.svg"}
+                src={post?.image || "/placeholder.svg"}
                 alt="Post image"
                 className="w-full h-auto max-h-[400px] object-cover"
               />
@@ -372,7 +277,7 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
 
           <div className="mt-4 flex justify-between">
             <div className="flex items-center gap-2">
-              <ReactionPicker onReactionSelect={setCurrentReaction} currentReaction={currentReaction} />
+              <ReactionPicker id={post.id} onReactionSelect={setCurrentReaction} currentReaction={currentReaction} />
               <span className="text-sm text-muted-foreground">{getTotalReactions()}</span>
             </div>
             <Button
@@ -382,7 +287,7 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
               onClick={() => setShowComments(!showComments)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{comments.length}</span>
+              <span>{post?.comments?.total}</span>
             </Button>
             <Button
               variant="ghost"
@@ -391,7 +296,7 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
               onClick={() => setShowShareDialog(true)}
             >
               <Share className="h-4 w-4" />
-              <span>{post.shares}</span>
+              <span>{post?.shares}</span>
             </Button>
             <Button
               variant="ghost"
@@ -408,10 +313,10 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
               <div className="flex gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src={currentUser?.avatar || "/placeholder.svg?height=32&width=32"}
-                    alt={currentUser?.name || "Your avatar"}
+                    src={user?.avatar || "/placeholder.svg?height=32&width=32"}
+                    alt={user?.full_name || "Your avatar"}
                   />
-                  <AvatarFallback>{currentUser?.name?.charAt(0) || "Y"}</AvatarFallback>
+                  <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 flex gap-2">
                   <Input
@@ -419,15 +324,16 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     className="flex-1"
+                    disabled={isPending}
                   />
-                  <Button size="sm" onClick={handleAddComment} disabled={!commentText.trim()}>
+                  <Button size="sm" onClick={handleAddComment} disabled={!commentText.trim() || isPending}>
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-4 pt-2">
-                {comments.map((comment) => (
+                {post?.comments?.preview?.map((comment) => (
                   <CommentItem
                     key={comment.id}
                     comment={comment}
@@ -435,7 +341,7 @@ export function Post({ post, currentUser, onDelete, onEdit }: PostProps) {
                     onDelete={handleDeleteComment}
                     onEdit={handleEditComment}
                     onReaction={handleCommentReaction}
-                    currentUser={currentUser}
+                    currentUser={comment.user}
                   />
                 ))}
               </div>

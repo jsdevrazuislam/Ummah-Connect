@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button"
 import { ShieldAlert, X } from "lucide-react"
 
 interface AIContentModerationBannerProps {
-  postId: string
+  postId: number
   content: string
-  onReview: (postId: string) => void
-  onDismiss: (postId: string) => void
+  onReview: (postId: number) => void
+  onDismiss: (postId: number) => void
 }
 
 export function AIContentModerationBanner({ postId, content, onReview, onDismiss }: AIContentModerationBannerProps) {

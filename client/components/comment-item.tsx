@@ -6,47 +6,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sparkles, MoreHorizontal, Send, Pencil, Trash, Check, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { CommentReactionPicker, type ReactionType } from "@/components/comment-reaction-picker"
+import { CommentReactionPicker } from "@/components/comment-reaction-picker"
 import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
+import { formatTimeAgo } from "@/lib/utils"
 
-export interface User {
-  name: string
-  username: string
-  avatar: string
-}
-
-export interface CommentReply {
-  id: string
-  user: User
-  content: string
-  timestamp: string
-  reactions?: {
-    [key in ReactionType]?: number
-  }
-  currentUserReaction?: ReactionType
-}
-
-export interface Comment {
-  id: string
-  user: User
-  content: string
-  timestamp: string
-  reactions?: {
-    [key in ReactionType]?: number
-  }
-  currentUserReaction?: ReactionType
-  replies?: CommentReply[]
-}
 
 interface CommentItemProps {
-  comment: Comment
+  comment: CommentPreview
   isReply?: boolean
-  onReply?: (commentId: string, content: string) => void
-  onDelete?: (commentId: string) => void
-  onEdit?: (commentId: string, content: string) => void
-  onReaction?: (commentId: string, reaction: ReactionType) => void
-  currentUser?: User
+  onReply?: (commentId: number, content: string) => void
+  onDelete?: (commentId: number) => void
+  onEdit?: (commentId: number, content: string) => void
+  onReaction?: (commentId: number, reaction: ReactionType) => void
+  currentUser?: PostAuthor
 }
 
 export function CommentItem({
@@ -64,7 +37,7 @@ export function CommentItem({
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(comment.content)
   const [showReplies, setShowReplies] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment.currentUserReaction || null)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction || null)
 
   const isCurrentUserComment = currentUser && comment.user.username === currentUser.username
 
@@ -105,15 +78,15 @@ export function CommentItem({
   return (
     <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={comment.user.avatar || "/placeholder.svg"} alt={comment.user.name} />
-        <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
+        <AvatarImage src={comment.user?.avatar || "/placeholder.svg"} alt={comment.user?.name} />
+        <AvatarFallback>{comment.user?.name?.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <div className="bg-muted rounded-lg p-3">
+        <div className="bg-muted rounded-lg px-3 py-2">
           <div className="flex justify-between items-center">
-            <span className="font-medium text-sm">{comment.user.name}</span>
+            <span className="font-medium text-sm">{comment.user?.name}</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+              <span className="text-xs text-muted-foreground">{formatTimeAgo(new Date(comment.createdAt))}</span>
               {isCurrentUserComment && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -218,7 +191,7 @@ export function CommentItem({
           <div className="mt-2">
             <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setShowReplies(!showReplies)}>
               {showReplies ? "Hide" : "Show"} {comment.replies.length}{" "}
-              {comment.replies.length === 1 ? "reply" : "replies"}
+              {comment?.replies?.length === 1 ? "reply" : "replies"}
             </Button>
 
             {showReplies && (

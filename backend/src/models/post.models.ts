@@ -10,6 +10,7 @@ class Post extends Model{
     public authorId!: string
     public share!: number
     public author!: {
+        id: string
         full_name: string,
         username:string
         avatar: string

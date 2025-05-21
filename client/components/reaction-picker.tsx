@@ -4,17 +4,54 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ThumbsUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { react_post } from "@/lib/apis/posts"
+import { toast } from "sonner"
 
 export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
 
 interface ReactionPickerProps {
   onReactionSelect: (reaction: ReactionType) => void
   currentReaction: ReactionType
+  id: number
 }
 
-export function ReactionPicker({ onReactionSelect, currentReaction }: ReactionPickerProps) {
+export function ReactionPicker({ onReactionSelect, currentReaction, id }: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const queryClient = useQueryClient()
   const pickerRef = useRef<HTMLDivElement>(null)
+  const { mutate } = useMutation({
+    mutationFn: react_post,
+    onSuccess: (updateData, variable) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+
+        const updatedPost = oldData?.data?.posts?.map((post) => {
+
+          if (post.id === variable.id) {
+            return {
+              ...post,
+              reactions: {
+                ...updateData?.data?.reactions
+              }
+            }
+          }
+
+          return post
+        })
+
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            posts: updatedPost
+          }
+        }
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
 
   const reactions = [
     { type: "like", emoji: "👍", label: "Like" },
@@ -27,7 +64,6 @@ export function ReactionPicker({ onReactionSelect, currentReaction }: ReactionPi
   ] as const
 
   useEffect(() => {
-    // Close reaction picker when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
@@ -41,12 +77,17 @@ export function ReactionPicker({ onReactionSelect, currentReaction }: ReactionPi
   }, [])
 
   const handleReactionClick = (reaction: ReactionType) => {
-    // If clicking the same reaction, toggle it off
     if (reaction === currentReaction) {
       onReactionSelect(null)
     } else {
       onReactionSelect(reaction)
     }
+    const payload = {
+      react_type: reaction ?? '',
+      icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
+      id
+    }
+    mutate(payload)
     setIsOpen(false)
   }
 
