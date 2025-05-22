@@ -3,9 +3,6 @@ import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Post, PostReaction, User, Comment } from "@/models";
-import { Op } from "sequelize";
-import { sendEmail } from "@/utils/send-email";
-import { JwtResponse } from "@/types/auth";
 import { postSchema } from "@/schemas/post.schema";
 import uploadFileOnCloudinary, {
   removeOldImageOnCloudinary,
@@ -211,7 +208,7 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
               {
                 model: User,
                 as: "user",
-                attributes: ["id", "full_name", "avatar"],
+                attributes: ["id", "full_name", "avatar", "username"],
               },
             ],
             order: [["createdAt", "ASC"]],
@@ -222,6 +219,7 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
       const formattedComments: CommentResponse[] = comments.map((comment) => ({
         id: comment.id,
         content: comment.content,
+        isEdited: comment.isEdited,
         user: {
           id: comment.user.id,
           name: comment.user.full_name,
@@ -232,12 +230,15 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
           comment.replies?.map((reply) => ({
             id: reply.id,
             content: reply.content,
+            parentId: comment.id,
             user: {
               id: reply.user.id,
               name: reply.user.full_name,
               username: reply.user.username,
               avatar: reply.user.avatar,
             },
+            isEdited: reply.isEdited,
+            createdAt: reply.createdAt,
             replies: [],
             repliesCount: 0,
             reactions: { counts: {}, currentUserReaction: null },
@@ -256,6 +257,7 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
           avatar: post.author.avatar,
         },
         content: post.content,
+        privacy: post.privacy,
         timestamp: formatTimeAgo(post.createdAt),
         isBookmarked,
         likes: Object.values(reactionCounts).reduce(
@@ -335,12 +337,12 @@ export const bookmarked_post = asyncHandler(
 
 export const edit_post = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params.postId;
-  const authorId = req.user;
+  const authorId = req.user.id;
   const { content, location, privacy } = req.body;
   const mediaPath = req.file?.path;
   const post = await Post.findOne({ where: { id: postId, authorId } });
   if (!post) throw new ApiError(400, "You are not able to edit this post");
-  if (post.media) {
+  if (mediaPath && post.media) {
     await removeOldImageOnCloudinary(post.media);
   }
 
@@ -353,13 +355,34 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     media_url = media;
   }
 
-  await Post.update(
+  const [_, updatePost] = await Post.update(
     { content, location, privacy, media: media_url },
-    { where: { id: postId, authorId } }
+    { where: { id: postId, authorId }, returning: true }
   );
 
-  return res.json(new ApiResponse(200, null, "Update Successfully"));
+  return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
+
+export const delete_post_image = asyncHandler(async(req:Request, res:Response) =>{
+
+  const postId = req.params.postId;
+  const authorId = req.user.id;
+
+   const post = await Post.findOne({ where: { id: postId, authorId } });
+  if (!post) throw new ApiError(400, "You are not able to delete this post assets");
+  if (!post.media) throw new ApiError(404, "Not found any asset related this post");
+
+  if (post.media) {
+    await removeOldImageOnCloudinary(post.media);
+  }
+
+   await Post.update(
+    { media: null },
+    { where: { id: postId, authorId }}
+  );
+
+  return res.json(new ApiResponse(200, null, 'Delete successfully'))
+})
 
 export const delete_post = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params.postId;

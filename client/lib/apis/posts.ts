@@ -38,6 +38,11 @@ export const delete_post = async (id: number) => {
     return response.data;
 }
 
+export const delete_post_media = async (id: number) => {
+    const response = await api.delete(ApiStrings.DELETE_MEDIA(id));
+    return response.data;
+}
+
 export const react_post = async (payload: ReactPayload) => {
     const response = await api.post(ApiStrings.REACTPOST(payload.id), { react_type: payload.react_type, icon: payload.icon });
     return response.data;
@@ -45,6 +50,11 @@ export const react_post = async (payload: ReactPayload) => {
 
 export const share_post = async (payload: ReactPayload) => {
     const response = await api.get(ApiStrings.SHAREPOST(payload.id));
+    return response.data;
+}
+
+export const bookmark_post = async (id:number) => {
+    const response = await api.post(ApiStrings.BOOKMARK_POST(id));
     return response.data;
 }
 

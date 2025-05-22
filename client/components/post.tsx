@@ -13,9 +13,6 @@ import {
   MapPin,
   Pencil,
   Trash,
-  Check,
-  X,
-  Link2,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -30,20 +27,13 @@ import { AIContentModerationBanner } from "@/components/ai-content-moderation-ba
 import { Badge } from "@/components/ui/badge"
 import { ReactionPicker, type ReactionType } from "@/components/reaction-picker"
 import { CommentItem, } from "@/components/comment-item"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { useAuthStore } from "@/store/store"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { delete_post } from "@/lib/apis/posts"
+import { bookmark_post, delete_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
 import { create_comment } from "@/lib/apis/comment"
+import { SharePostDialog } from "@/components/share-post-dialog"
+import EditPostModel from "@/components/edit-post-model"
 
 
 interface PostProps {
@@ -59,13 +49,22 @@ export function Post({ post, onDelete }: PostProps) {
   const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.reactions?.currentUserReaction ?? null)
   const [isBookmarked, setIsBookmarked] = useState(post?.isBookmarked || false)
   const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState(post?.content)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const isCurrentUserPost = user && post?.user?.username === user?.username
   const queryClient = useQueryClient()
 
   const { mutate } = useMutation({
     mutationFn: delete_post,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const { mutate: bookmarkFunc, } = useMutation({
+    mutationFn: bookmark_post,
+    onSuccess: () => {
+      setIsBookmarked(!isBookmarked)
+    },
     onError: (error) => {
       toast.error(error.message)
     }
@@ -119,51 +118,19 @@ export function Post({ post, onDelete }: PostProps) {
     console.log(`Reviewing post ${postId}`)
   }
 
-  const handleDeleteComment = (commentId: number) => {
-  
-  }
-
-  const handleEditComment = (commentId: number, content: string) => {
-   
-  }
 
   const handleCommentReaction = (commentId: number, reaction: ReactionType) => {
     // In a real app, this would update the backend
     console.log(`Reaction ${reaction} on comment ${commentId}`)
   }
 
-  const handleReplyToComment = (commentId: number, content: string) => {
 
-  }
 
   const handleDeletePost = () => {
     if (onDelete) {
       onDelete(post.id)
       mutate(post.id)
     }
-  }
-
-  const handleEditPost = () => {
-    if (editText.trim()) {
-      setIsEditing(false)
-    }
-  }
-
-  const handleSharePost = () => {
-    const postUrl = `https://ummahconnect.com/post/${post.id}`
-    navigator.clipboard
-      .writeText(postUrl)
-      .then(() => {
-        toast.success("Link copied to clipboard", {
-          description: "You can now share this post with others",
-        })
-        setShowShareDialog(false)
-      })
-      .catch(() => {
-        toast.error("Failed to copy link", {
-          description: "Please try again",
-        })
-      })
   }
 
   const getTotalReactions = () => {
@@ -197,7 +164,7 @@ export function Post({ post, onDelete }: PostProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsBookmarked(!isBookmarked)}>
+                <DropdownMenuItem disabled={isPending} onClick={() => bookmarkFunc(post.id)}>
                   <Bookmark className="h-4 w-4 mr-2" />
                   {isBookmarked ? "Remove bookmark" : "Bookmark"}
                 </DropdownMenuItem>
@@ -234,24 +201,7 @@ export function Post({ post, onDelete }: PostProps) {
             </DropdownMenu>
           </div>
 
-          {isEditing ? (
-            <div className="mt-2">
-              <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="min-h-[100px]" />
-              <div className="flex justify-end gap-2 mt-2">
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button onClick={handleEditPost}>
-                  <Check className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-2 text-sm">{post?.content}</div>
-          )}
-
+          <div className="mt-2 text-sm">{post.content}</div>
           {post?.location && !isEditing && (
             <div className="mt-2">
               <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">
@@ -302,7 +252,8 @@ export function Post({ post, onDelete }: PostProps) {
               variant="ghost"
               size="sm"
               className={isBookmarked ? "text-primary" : "text-muted-foreground"}
-              onClick={() => setIsBookmarked(!isBookmarked)}
+              onClick={() => bookmarkFunc(post.id)}
+              disabled={isPending}
             >
               <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-primary" : ""}`} />
             </Button>
@@ -337,11 +288,8 @@ export function Post({ post, onDelete }: PostProps) {
                   <CommentItem
                     key={comment.id}
                     comment={comment}
-                    onReply={handleReplyToComment}
-                    onDelete={handleDeleteComment}
-                    onEdit={handleEditComment}
                     onReaction={handleCommentReaction}
-                    currentUser={comment.user}
+                    postId={post.id}
                   />
                 ))}
               </div>
@@ -349,41 +297,20 @@ export function Post({ post, onDelete }: PostProps) {
           )}
         </div>
       </div>
-
-      {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Share Post</DialogTitle>
-            <DialogDescription>Share this post with your friends and followers</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex items-center gap-2">
-              <Input value={`https://ummahconnect.com/post/${post.id}`} readOnly className="flex-1" />
-              <Button onClick={handleSharePost}>
-                <Link2 className="h-4 w-4 mr-2" />
-                Copy
-              </Button>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" className="flex-1">
-                Share to Feed
-              </Button>
-              <Button variant="outline" className="flex-1">
-                Message
-              </Button>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowShareDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        
+      <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
+      <SharePostDialog
+        postId={post.id}
+        postContent={post.content}
+        postUsername={post.user.username}
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        onShare={(postId, shareType, additionalText) => {
+          if (shareType === "feed") {
+            post.shares += 1
+          }
+        }}
+      />
     </div>
   )
 }

@@ -14,6 +14,9 @@ import { ImageUpload } from "@/components/image-upload"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { create_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Globe, Lock, Users, User } from "lucide-react"
+import LoadingUi from "./ui-loading"
 
 interface CreatePostFormProps {
   onAIHelp?: () => void
@@ -25,6 +28,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only_me">("public")
 
   const { mutate, isPending } = useMutation({
     mutationFn: create_post,
@@ -55,8 +59,6 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
     }
   })
 
-  const isButtonDisabled = isPending || (!content.trim() && !selectedImage);
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,7 +73,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
     if (selectedLocation) {
       formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`)
     }
-    formData.append("privacy", "public")
+    formData.append("privacy", visibility)
     mutate(formData)
 
   }
@@ -104,10 +106,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 relative">
       {
-        isPending && <div className="absolute -top-4 left-0 w-full h-full bg-black/50  flex justify-center items-center flex-col z-40">
-          <Loader2 className="animate-spin h-8 w-8" />
-          Posting...
-        </div>
+        isPending && <LoadingUi title="Posting" className='-top-4' />
       }
       <div className="flex gap-3">
         <Avatar>
@@ -169,9 +168,60 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
             <span className="sr-only">AI Help</span>
           </Button>
         </div>
-        <Button type="submit" disabled={isButtonDisabled} className="rounded-full">
-          Post
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                {visibility === "public" && <Globe className="h-4 w-4" />}
+                {visibility === "friends" && <Users className="h-4 w-4" />}
+                {visibility === "private" && <Lock className="h-4 w-4" />}
+                {visibility === "only_me" && <User className="h-4 w-4" />}
+                <span className="hidden sm:inline">
+                  {visibility === "public"
+                    ? "Public"
+                    : visibility === "friends"
+                      ? "Friends"
+                      : visibility === "private"
+                        ? "Private"
+                        : "Only me"}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setVisibility("public")} className="gap-2">
+                <Globe className="h-4 w-4" />
+                <div>
+                  <p className="font-medium">Public</p>
+                  <p className="text-xs text-muted-foreground">Anyone can see this post</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setVisibility("friends")} className="gap-2">
+                <Users className="h-4 w-4" />
+                <div>
+                  <p className="font-medium">Friends</p>
+                  <p className="text-xs text-muted-foreground">Only your friends can see this post</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setVisibility("private")} className="gap-2">
+                <Lock className="h-4 w-4" />
+                <div>
+                  <p className="font-medium">Private</p>
+                  <p className="text-xs text-muted-foreground">Only you and mentioned users can see this post</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setVisibility("only_me")} className="gap-2">
+                <User className="h-4 w-4" />
+                <div>
+                  <p className="font-medium">Only me</p>
+                  <p className="text-xs text-muted-foreground">Only you can see this post</p>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button type="submit" disabled={!content.trim()} className="rounded-full">
+            Post
+          </Button>
+        </div>
       </div>
     </form>
   )

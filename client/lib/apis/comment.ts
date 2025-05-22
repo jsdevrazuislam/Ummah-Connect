@@ -6,3 +6,13 @@ export const create_comment = async (payload: CommentPayload) => {
     const response = await api.post(ApiStrings.CREATE_COMMENT(payload.postId), { content: payload.content });
     return response.data;
 }
+
+export const reply_comment = async (payload: ReplyCommentPayload) => {
+    const response = await api.post(ApiStrings.REPLY_COMMENT(payload.id), { content: payload.content, postId:payload.postId });
+    return response.data;
+}
+
+export const edit_comment = async (payload: EditCommentPayload) => {
+    const response = await api.post(ApiStrings.EDIT_COMMENT(payload.commentId), { content: payload.content, postId:payload.postId, isReply:payload.isReply });
+    return response.data;
+}

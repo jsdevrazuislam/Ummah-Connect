@@ -7,6 +7,7 @@ class Comment extends Model {
   public postId!: number;
   public parentId!: number;
   public createdAt!: string
+  public isEdited!: boolean
   public content!: string
   public user!: {
     id: number;
@@ -18,6 +19,8 @@ class Comment extends Model {
     {
       id: number,
       content: string,
+      isEdited: boolean,
+      createdAt: string
       user: {
         id: number;
         full_name: string;
@@ -37,6 +40,7 @@ Comment.init(
     },
     userId: DataTypes.INTEGER,
     postId: DataTypes.INTEGER,
+    isEdited: DataTypes.BOOLEAN,
     parentId: {
       type: DataTypes.INTEGER,
       allowNull: true,

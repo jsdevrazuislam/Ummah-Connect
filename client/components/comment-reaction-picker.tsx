@@ -81,7 +81,7 @@ export function CommentReactionPicker({
   }
 
   return (
-    <div className="relative" ref={pickerRef}>
+    <div className="relative -mt-[2px]" ref={pickerRef}>
       <Button
         variant="ghost"
         size={size === "sm" ? "sm" : "default"}

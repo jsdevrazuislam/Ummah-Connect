@@ -7,10 +7,14 @@ const ApiStrings = {
   ALL_POSTS: '/post/',
   EDITPOST: (id:number) => `/post/edit/${id}`,
   DELETEPOST: (id:number) => `/post/delete/${id}`,
+  DELETE_MEDIA: (id:number) => `/post/delete/media/${id}`,
   REACTPOST: (id:number) => `/post/react/${id}`,
   SHAREPOST: (id:number) => `/post/share/${id}`,
+  BOOKMARK_POST: (id:number) => `/post/bookmark/${id}`,
   // comments
-  CREATE_COMMENT:(id:number) =>  `/comment/${id}`
+  CREATE_COMMENT:(id:number) =>  `/comment/${id}`,
+  EDIT_COMMENT:(id:number) =>  `/comment/edit/${id}`,
+  REPLY_COMMENT:(id:number) =>  `/comment/reply/${id}`,
 };
 
 export default ApiStrings;

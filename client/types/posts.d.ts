@@ -14,6 +14,7 @@ interface PostsEntity {
   user: PostAuthor;
   content: string;
   timestamp: string;
+  privacy: string;
   isBookmarked: boolean;
   likes: number;
   comments: Comments;
@@ -40,6 +41,7 @@ interface CommentPreview {
   repliesCount: number;
   reactions: Reactions;
   createdAt: string;
+  isEdited:boolean
 }
 
 type ReactionType =
@@ -54,11 +56,13 @@ type ReactionType =
 
 interface RepliesEntity {
   id: number;
+  parentId: number;
   content: string;
   user: PostAuthor;
   repliesCount: number;
   reactions: Reactions;
   createdAt: string;
+  isEdited:boolean
 }
 
 interface Reactions {

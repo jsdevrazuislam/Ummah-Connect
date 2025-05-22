@@ -10,27 +10,26 @@ import { CommentReactionPicker } from "@/components/comment-reaction-picker"
 import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
 import { formatTimeAgo } from "@/lib/utils"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { edit_comment, reply_comment } from "@/lib/apis/comment"
+import { toast } from "sonner"
+import { useAuthStore } from "@/store/store"
 
 
 interface CommentItemProps {
   comment: CommentPreview
   isReply?: boolean
-  onReply?: (commentId: number, content: string) => void
-  onDelete?: (commentId: number) => void
-  onEdit?: (commentId: number, content: string) => void
+  postId: number
   onReaction?: (commentId: number, reaction: ReactionType) => void
-  currentUser?: PostAuthor
 }
 
 export function CommentItem({
   comment,
   isReply = false,
-  onReply,
-  onDelete,
-  onEdit,
   onReaction,
-  currentUser,
+  postId
 }: CommentItemProps) {
+  const { user } = useAuthStore()
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)
@@ -38,28 +37,151 @@ export function CommentItem({
   const [editText, setEditText] = useState(comment.content)
   const [showReplies, setShowReplies] = useState(false)
   const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction || null)
+  const isCurrentUserComment = user && comment.user.username === user.username
 
-  const isCurrentUserComment = currentUser && comment.user.username === currentUser.username
+  const queryClient = useQueryClient()
+  const { mutate, isPending } = useMutation({
+    mutationFn: reply_comment,
+    onSuccess: (newComment, variable) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
 
-  const handleReply = () => {
-    if (replyText.trim() && onReply) {
-      onReply(comment.id, replyText)
+        const updatedPost = oldData?.data?.posts?.map((post) => {
+
+          if (post.id === variable.postId) {
+
+            const updatedComments = post?.comments?.preview?.map((comment) => {
+
+              if (comment.id === variable.id) {
+                return {
+                  ...comment,
+                  replies: [newComment.data, ...(comment.replies ?? [])]
+                }
+              }
+              return comment
+            })
+
+            return {
+              ...post,
+              comments: {
+                total: post.comments.total + 1,
+                preview: updatedComments
+              }
+
+            }
+          }
+
+          return post
+        })
+
+        return {
+          ...oldData,
+          data: {
+            posts: updatedPost
+          }
+        }
+
+      })
       setReplyText("")
       setShowReplyForm(false)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const { mutate: editMnFun, isPending: editLoading } = useMutation({
+    mutationFn: edit_comment,
+    onSuccess: (updatedComment, variable) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+
+        const updatedPosts = oldData?.data?.posts?.map((post) => {
+
+
+
+          if (post.id === variable.postId) {
+
+            const updatedComments = post?.comments?.preview?.map((comment) => {
+              if (comment.id === variable.commentId) {
+                return {
+                  ...comment,
+                  ...updatedComment.data
+                }
+              }
+
+              if (updatedComment.data.isReply) {
+
+                console.log("updatedComment.data.isReply", updatedComment.data.isReply, comment?.replies, updatedComment.data.id)
+                  const updatedRepliesComments = comment?.replies?.map((reply) => {
+
+                    if (reply.parentId === updatedComment.data.parentId && reply.id === updatedComment.data.id) {
+                      return {
+                        ...reply,
+                        ...updatedComment.data
+                      }
+                    }
+
+                    return reply
+                  })
+
+                  return {
+                    ...comment,
+                    replies: updatedRepliesComments
+                  }
+                }
+              return comment
+            })
+
+            return {
+              ...post,
+              comments: {
+                ...post.comments,
+                preview: updatedComments
+              }
+            }
+          }
+
+          return post
+        })
+
+        return {
+          ...oldData,
+          data: {
+            posts: updatedPosts
+          }
+        }
+      })
+      setIsEditing(false)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const handleReply = () => {
+    if (replyText.trim()) {
+      const payload = {
+        content: replyText,
+        postId,
+        id: comment.id,
+      }
+      mutate(payload)
     }
   }
 
   const handleEdit = () => {
-    if (editText.trim() && onEdit) {
-      onEdit(comment.id, editText)
-      setIsEditing(false)
+    if (editText.trim()) {
+      const payload = {
+        content: editText.trim(),
+        commentId: comment.id,
+        postId,
+        isReply,
+      }
+      editMnFun(payload)
     }
   }
 
   const handleDelete = () => {
-    if (onDelete) {
-      onDelete(comment.id)
-    }
+
   }
 
   const handleReaction = (reaction: ReactionType) => {
@@ -115,13 +237,14 @@ export function CommentItem({
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 className="min-h-[60px] text-sm"
+                disabled={editLoading}
               />
               <div className="flex justify-end gap-2 mt-2">
                 <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
                   <X className="h-3.5 w-3.5 mr-1" />
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleEdit}>
+                <Button disabled={editLoading} size="sm" onClick={handleEdit}>
                   <Check className="h-3.5 w-3.5 mr-1" />
                   Save
                 </Button>
@@ -138,13 +261,13 @@ export function CommentItem({
           </div>
         )}
 
-        <div className="flex gap-4 mt-1 ml-2">
+        <div className="flex gap-4 mt-1 ml-2 items-center">
           <div className="flex items-center gap-1">
             <CommentReactionPicker onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />
             {getTotalReactions() > 0 && <span className="text-xs text-muted-foreground">{getTotalReactions()}</span>}
           </div>
 
-          {!isReply && onReply && (
+          {!isReply && (
             <button
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setShowReplyForm(!showReplyForm)}
@@ -160,17 +283,19 @@ export function CommentItem({
             <Sparkles className="h-3 w-3" />
             {showTranslation ? "Hide Translation" : "Translate"}
           </button>
+          {
+            comment.isEdited && <button className="text-xs text-muted-foreground hover:text-foreground">Edited</button>
+          }
         </div>
 
-        {/* Reply form */}
         {showReplyForm && (
           <div className="mt-3 flex gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage
-                src={currentUser?.avatar || "/placeholder.svg?height=24&width=24"}
-                alt={currentUser?.name || "You"}
+                src={user?.avatar || "/placeholder.svg?height=24&width=24"}
+                alt={user?.full_name || "You"}
               />
-              <AvatarFallback>{currentUser?.name?.charAt(0) || "Y"}</AvatarFallback>
+              <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>
             </Avatar>
             <div className="flex-1 flex gap-2">
               <Input
@@ -178,15 +303,15 @@ export function CommentItem({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 className="flex-1 h-8 text-xs"
+                disabled={isPending}
               />
-              <Button size="sm" className="h-8" onClick={handleReply} disabled={!replyText.trim()}>
+              <Button size="sm" className="h-8" onClick={handleReply} disabled={!replyText.trim() || isPending}>
                 <Send className="h-3 w-3" />
               </Button>
             </div>
           </div>
         )}
 
-        {/* Show/hide replies */}
         {!isReply && comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
             <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setShowReplies(!showReplies)}>
@@ -201,10 +326,8 @@ export function CommentItem({
                     key={reply.id}
                     comment={reply}
                     isReply={true}
-                    onDelete={onDelete}
-                    onEdit={onEdit}
                     onReaction={onReaction}
-                    currentUser={currentUser}
+                    postId={postId}
                   />
                 ))}
               </div>

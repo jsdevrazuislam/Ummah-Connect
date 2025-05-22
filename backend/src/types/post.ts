@@ -9,6 +9,7 @@ export interface CommentResponse {
   };
   replies: CommentResponse[];
   repliesCount: number;
+  isEdited: boolean;
   reactions: {
     counts: Record<string, number>;
     currentUserReaction: string | null;
