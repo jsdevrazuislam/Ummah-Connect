@@ -19,6 +19,7 @@ import healthRoute from '@/routes/health.routes'
 import authRoutes from '@/routes/users-routes'
 import postRoutes from '@/routes/posts.routes'
 import commentRoutes from '@/routes/comments.routes'
+import { initializeSocketIO } from "@/socket";
 
 
 const app: Application = express();
@@ -79,6 +80,7 @@ app.use(`${API_VERSION}/comment`, commentRoutes);
 
 
 swagger(app)
+initializeSocketIO({ io });
 
 app.get("/", (_, res: Response) => {
   res.status(404).json({
