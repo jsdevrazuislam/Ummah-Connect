@@ -15,6 +15,8 @@ const ApiStrings = {
   CREATE_COMMENT:(id:number) =>  `/comment/${id}`,
   EDIT_COMMENT:(id:number) =>  `/comment/edit/${id}`,
   REPLY_COMMENT:(id:number) =>  `/comment/reply/${id}`,
+  DELETE_COMMENT:(id:number) =>  `/comment/delete/${id}`,
+  COMMENT_REACT:(id:number) =>  `/comment/react/${id}`,
 };
 
 export default ApiStrings;

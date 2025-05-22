@@ -77,8 +77,8 @@ Comment.belongsTo(Comment, {
 Comment.hasMany(CommentReaction, { foreignKey: 'commentId', as: 'reactions' });
 CommentReaction.belongsTo(Comment, { foreignKey: 'commentId' });
 
-User.hasMany(CommentReaction, { foreignKey: 'userId' });
-CommentReaction.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(CommentReaction, { foreignKey: 'userId', as: 'user' });
+CommentReaction.belongsTo(User, { foreignKey: 'userId', as:'user' });
 
 Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
 BookmarkPost.belongsTo(Post, {foreignKey:'postId' })

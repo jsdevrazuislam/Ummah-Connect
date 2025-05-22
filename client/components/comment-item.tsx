@@ -11,7 +11,7 @@ import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
 import { formatTimeAgo } from "@/lib/utils"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { edit_comment, reply_comment } from "@/lib/apis/comment"
+import { delete_comment, edit_comment, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
 import { useAuthStore } from "@/store/store"
 
@@ -36,7 +36,7 @@ export function CommentItem({
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(comment.content)
   const [showReplies, setShowReplies] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction || null)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction ?? null)
   const isCurrentUserComment = user && comment.user.username === user.username
 
   const queryClient = useQueryClient()
@@ -96,8 +96,6 @@ export function CommentItem({
 
         const updatedPosts = oldData?.data?.posts?.map((post) => {
 
-
-
           if (post.id === variable.postId) {
 
             const updatedComments = post?.comments?.preview?.map((comment) => {
@@ -110,24 +108,23 @@ export function CommentItem({
 
               if (updatedComment.data.isReply) {
 
-                console.log("updatedComment.data.isReply", updatedComment.data.isReply, comment?.replies, updatedComment.data.id)
-                  const updatedRepliesComments = comment?.replies?.map((reply) => {
+                const updatedRepliesComments = comment?.replies?.map((reply) => {
 
-                    if (reply.parentId === updatedComment.data.parentId && reply.id === updatedComment.data.id) {
-                      return {
-                        ...reply,
-                        ...updatedComment.data
-                      }
+                  if (reply.parentId === updatedComment.data.parentId && reply.id === updatedComment.data.id) {
+                    return {
+                      ...reply,
+                      ...updatedComment.data
                     }
-
-                    return reply
-                  })
-
-                  return {
-                    ...comment,
-                    replies: updatedRepliesComments
                   }
+
+                  return reply
+                })
+
+                return {
+                  ...comment,
+                  replies: updatedRepliesComments
                 }
+              }
               return comment
             })
 
@@ -157,6 +154,13 @@ export function CommentItem({
     }
   })
 
+  const { mutate: deleteMuFunc } = useMutation({
+    mutationFn: delete_comment,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
   const handleReply = () => {
     if (replyText.trim()) {
       const payload = {
@@ -180,8 +184,64 @@ export function CommentItem({
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = (commentId: number, parentId: number) => {
+    queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
 
+      const updatedPosts = oldData?.data?.posts?.map((post) => {
+
+        let commentsRemovedCount = 0;
+
+
+        if (post.id === postId) {
+
+          const updatedComments = post?.comments?.preview?.map((commentData) => {
+
+            if (isReply && commentData.id === parentId) {
+              const initialRepliesCount = commentData.replies?.length || 0;
+              const updatedRepliesComments = commentData?.replies?.filter((repComment) => repComment.id !== commentId)
+              const finalRepliesCount = updatedRepliesComments?.length || 0;
+
+              if (initialRepliesCount > finalRepliesCount) {
+                commentsRemovedCount += 1;
+              }
+
+              return {
+                ...commentData,
+                replies: updatedRepliesComments
+              }
+            }
+
+            if (!isReply && commentData.id === commentId) {
+              commentsRemovedCount += 1;
+              commentsRemovedCount += commentData.replies?.length || 0;
+              return null;
+            }
+
+            return commentData
+          }).filter(Boolean)
+
+          const newTotalComments = post.comments.total - commentsRemovedCount;
+
+          return {
+            ...post,
+            comments: {
+              total: Math.max(0, newTotalComments),
+              preview: updatedComments
+            }
+          }
+        }
+
+        return post
+      })
+
+      return {
+        ...oldData,
+        data: {
+          posts: updatedPosts
+        }
+      }
+    })
+    deleteMuFunc(commentId)
   }
 
   const handleReaction = (reaction: ReactionType) => {
@@ -192,9 +252,8 @@ export function CommentItem({
   }
 
   const getTotalReactions = () => {
-    if (!comment.reactions) return 0
-
-    return Object.values(comment.reactions).reduce((sum, count) => sum + (count || 0), 0)
+    if (Object.keys(comment.reactions.counts).length == 0) return 0
+    return Object.values(comment.reactions.counts).reduce((sum, count) => sum + (count || 0), 0)
   }
 
   return (
@@ -221,7 +280,7 @@ export function CommentItem({
                       <Pencil className="h-3.5 w-3.5 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <DropdownMenuItem onClick={() => handleDelete(comment.id, comment.parentId)} className="text-destructive">
                       <Trash className="h-3.5 w-3.5 mr-2" />
                       Delete
                     </DropdownMenuItem>
@@ -263,7 +322,7 @@ export function CommentItem({
 
         <div className="flex gap-4 mt-1 ml-2 items-center">
           <div className="flex items-center gap-1">
-            <CommentReactionPicker onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />
+            <CommentReactionPicker isReply={isReply} postId={postId} parentId={comment.parentId} id={comment.id} onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />
             {getTotalReactions() > 0 && <span className="text-xs text-muted-foreground">{getTotalReactions()}</span>}
           </div>
 

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
 import { AIAssistant } from "@/components/ai-assistant"
 import ReactQueryProvider from "@/components/query-provider"
+import SocketEvents from "@/components/sockets-events"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ReactQueryProvider>
+            <SocketEvents />
             {children}
             <AIAssistant />
             <Toaster />

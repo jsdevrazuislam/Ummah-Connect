@@ -16,3 +16,13 @@ export const edit_comment = async (payload: EditCommentPayload) => {
     const response = await api.post(ApiStrings.EDIT_COMMENT(payload.commentId), { content: payload.content, postId:payload.postId, isReply:payload.isReply });
     return response.data;
 }
+
+export const delete_comment = async (id: number) => {
+    const response = await api.delete(ApiStrings.DELETE_COMMENT(id));
+    return response.data;
+}
+
+export const comment_react = async (payload:ReactPayload) => {
+    const response = await api.post(ApiStrings.COMMENT_REACT(payload.id), { react_type: payload.react_type, icon: payload.icon});
+    return response.data;
+}

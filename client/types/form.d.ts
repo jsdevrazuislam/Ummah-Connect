@@ -13,6 +13,8 @@ interface EditCommentPayload{
     isReply?:boolean
 }
 
+
+
 interface ReplyCommentPayload{
     content:string, 
     postId:number,

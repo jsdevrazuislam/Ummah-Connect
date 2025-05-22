@@ -23,9 +23,6 @@ export function MainFeed() {
 
   const handleDeletePost = (postId: number) => {
     setPosts(posts.filter((post) => post.id !== postId))
-    toast.success("Post deleted", {
-      description: "Your post has been successfully deleted",
-    })
   }
 
   useEffect(() => {

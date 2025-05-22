@@ -6,6 +6,8 @@ import { Post, User, Comment } from "@/models";
 import { Op } from "sequelize";
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
+import { ReactPostType } from "@/types/post";
+import CommentReaction from "@/models/comment-react.models";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -112,3 +114,78 @@ export const edit_comment = asyncHandler(async(req:Request, res:Response) =>{
 
   return res.json(new ApiResponse(200, response, 'Updated comment'))
 })
+
+export const delete_comment = asyncHandler(async(req:Request, res:Response) =>{
+
+  const commentId = req.params.id;
+  const userId = req.user.id
+  const comment = await Comment.findOne({ where: { id: commentId, userId}})
+  if(!comment) throw new ApiError(400, 'You are not eligible to delete this comment')
+
+  await Comment.destroy({
+    where:{
+      id: commentId
+    }
+  })
+
+  return res.json(
+    new ApiResponse(200, null, 'Comment delete success')
+  )
+})
+
+export const comment_react = asyncHandler(async (req: Request, res: Response) => {
+  const { react_type, icon } = req.body;
+  const commentId = req.params?.commentId;
+  const userId = req.user?.id;
+
+  function reactions(posts: ReactPostType[]) {
+    const reactionCounts = posts.reduce((acc, reaction) => {
+      acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const currentUserReaction = posts.find((r) => r.userId === req.user.id);
+
+    return {
+      reactions: {
+        counts: reactionCounts,
+        currentUserReaction: currentUserReaction?.react_type || null,
+      }
+    }
+  }
+
+  const oldReact = await CommentReaction.findOne({ where: { userId, commentId } });
+  if (oldReact) {
+    await CommentReaction.update(
+      { react_type, icon },
+      {
+        where: { userId, commentId },
+      }
+    );
+    const posts = await CommentReaction.findAll({ where: { commentId }})
+    const reactionCounts = reactions(posts)
+
+    return res.json(
+      new ApiResponse(
+        200,
+        reactionCounts,
+        "React Successfully"
+      )
+    );
+  } else {
+
+    await CommentReaction.create({
+      userId,
+      commentId,
+      react_type,
+      icon,
+    });
+
+    const posts = await CommentReaction.findAll({ where: { commentId }})
+    const reactionCounts = reactions(posts)
+
+    return res.json(
+      new ApiResponse(200, reactionCounts, "React Successfully")
+    );
+  }
+});

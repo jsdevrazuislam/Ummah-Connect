@@ -282,7 +282,6 @@ export function Post({ post, onDelete }: PostProps) {
                   </Button>
                 </div>
               </div>
-
               <div className="space-y-4 pt-2">
                 {post?.comments?.preview?.map((comment) => (
                   <CommentItem

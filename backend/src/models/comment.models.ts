@@ -44,6 +44,7 @@ Comment.init(
     parentId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      onDelete: 'CASCADE'
     },
     content: {
       type: DataTypes.TEXT,

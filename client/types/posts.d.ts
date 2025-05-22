@@ -42,6 +42,7 @@ interface CommentPreview {
   reactions: Reactions;
   createdAt: string;
   isEdited:boolean
+  parentId:number
 }
 
 type ReactionType =

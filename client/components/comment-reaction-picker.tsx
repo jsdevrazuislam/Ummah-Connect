@@ -3,21 +3,99 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { comment_react } from "@/lib/apis/comment"
 
 
 interface CommentReactionPickerProps {
   onReactionSelect: (reaction: ReactionType) => void
   currentReaction: ReactionType
-  size?: "sm" | "default"
+  size?: "sm" | "default",
+  id: number
+  parentId: number
+  postId: number
+  isReply?: boolean
 }
 
 export function CommentReactionPicker({
   onReactionSelect,
   currentReaction,
   size = "default",
+  id,
+  postId,
+  isReply,
+  parentId
 }: CommentReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+
+  const { mutate } = useMutation({
+    mutationFn: comment_react,
+    onSuccess: (updateData, variable) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+
+        const updatedPost = oldData?.data?.posts?.map((post) => {
+
+          if (post.id === postId) {
+
+            const updatedComments = post?.comments?.preview?.map((comment) => {
+              if (comment.id === variable.id) {
+                return {
+                  ...comment,
+                  reactions: {
+                    ...updateData.data.reactions
+                  }
+                }
+              }
+              if (isReply && comment.id === parentId) {
+
+                const updatedReplies = comment?.replies?.map((replyComment) => {
+                  if(replyComment.parentId === parentId){
+                    return {
+                      ...replyComment,
+                      reactions:{
+                        ...updateData.data.reactions
+                      }
+                    }
+                  }
+                  return replyComment
+                })
+
+                return {
+                  ...comment,
+                  replies: updatedReplies
+                }
+              }
+              return comment
+            })
+
+            return {
+              ...post,
+              comments: {
+                ...post.comments,
+                preview: updatedComments
+              }
+            }
+          }
+
+          return post
+        })
+
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            posts: updatedPost
+          }
+        }
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
 
   const reactions = [
     { type: "like", emoji: "👍", label: "Like" },
@@ -30,7 +108,6 @@ export function CommentReactionPicker({
   ] as const
 
   useEffect(() => {
-    // Close reaction picker when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
@@ -44,12 +121,17 @@ export function CommentReactionPicker({
   }, [])
 
   const handleReactionClick = (reaction: ReactionType) => {
-    // If clicking the same reaction, toggle it off
     if (reaction === currentReaction) {
       onReactionSelect(null)
     } else {
       onReactionSelect(reaction)
     }
+    const payload = {
+      react_type: reaction ?? '',
+      icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
+      id
+    }
+    mutate(payload)
     setIsOpen(false)
   }
 

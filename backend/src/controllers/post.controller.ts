@@ -93,7 +93,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
         where: { userId, postId },
       }
     );
-    const posts = await PostReaction.findAll({ where: { postId}})
+    const posts = await PostReaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
 
     return res.json(
@@ -112,7 +112,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
       icon,
     });
 
-    const posts = await PostReaction.findAll({ where: { postId}})
+    const posts = await PostReaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
 
     return res.json(
@@ -216,37 +216,88 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
         ],
       });
 
-      const formattedComments: CommentResponse[] = comments.map((comment) => ({
-        id: comment.id,
-        content: comment.content,
-        isEdited: comment.isEdited,
-        user: {
-          id: comment.user.id,
-          name: comment.user.full_name,
-          username: comment.user.username,
-          avatar: comment.user.avatar,
-        },
-        replies:
-          comment.replies?.map((reply) => ({
-            id: reply.id,
-            content: reply.content,
-            parentId: comment.id,
-            user: {
-              id: reply.user.id,
-              name: reply.user.full_name,
-              username: reply.user.username,
-              avatar: reply.user.avatar,
-            },
-            isEdited: reply.isEdited,
-            createdAt: reply.createdAt,
-            replies: [],
-            repliesCount: 0,
-            reactions: { counts: {}, currentUserReaction: null },
-          })) || [],
-        repliesCount: comment.replies?.length || 0,
-        reactions: { counts: {}, currentUserReaction: null },
-        createdAt: comment.createdAt,
-      }));
+      const commentIds = comments.map((comment) => comment.id);
+      const replyIds: number[] = [];
+      comments.forEach(comment => {
+          comment.replies?.forEach(reply => {
+              replyIds.push(reply.id);
+          });
+      });
+      const allCommentAndReplyIds = [...commentIds, ...replyIds];
+
+
+      const commentsReactions = await CommentReaction.findAll({
+        where: { commentId: allCommentAndReplyIds }, 
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: ["id"],
+          },
+        ],
+      });
+
+      const formattedComments: CommentResponse[] = comments.map((comment) => {
+        const currentCommentReactions = commentsReactions.filter(
+          (r) => r.commentId === comment.id
+        );
+        const currentUserCommentReaction = currentCommentReactions.find(
+          (r) => r.userId === currentUserId
+        );
+
+        const commentReactionCounts = currentCommentReactions.reduce((acc, reaction) => {
+          acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        return {
+          id: comment.id,
+          content: comment.content,
+          isEdited: comment.isEdited,
+          user: {
+            id: comment.user.id,
+            name: comment.user.full_name,
+            username: comment.user.username,
+            avatar: comment.user.avatar,
+          },
+          replies:
+            comment.replies?.map((reply) => {
+              const currentReplyReactions = commentsReactions.filter(
+                (r) => r.commentId === reply.id
+              );
+              const currentUserReplyReaction = currentReplyReactions.find(
+                (r) => r.userId === currentUserId
+              );
+              const replyReactionCounts = currentReplyReactions.reduce((acc, reaction) => {
+                acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>);
+
+              return {
+                id: reply.id,
+                content: reply.content,
+                parentId: comment.id,
+                user: {
+                  id: reply.user.id,
+                  name: reply.user.full_name,
+                  username: reply.user.username,
+                  avatar: reply.user.avatar,
+                },
+                isEdited: reply.isEdited,
+                createdAt: reply.createdAt,
+                replies: [],
+                repliesCount: 0, 
+                reactions: {
+                    counts: replyReactionCounts,
+                    currentUserReaction: currentUserReplyReaction?.react_type || null
+                },
+              };
+            }) || [],
+          repliesCount: comment.replies?.length || 0,
+          reactions: { counts: commentReactionCounts, currentUserReaction: currentUserCommentReaction?.react_type || null },
+          createdAt: comment.createdAt,
+        }
+      });
 
       return {
         id: post.id,
@@ -363,12 +414,12 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
 
-export const delete_post_image = asyncHandler(async(req:Request, res:Response) =>{
+export const delete_post_image = asyncHandler(async (req: Request, res: Response) => {
 
   const postId = req.params.postId;
   const authorId = req.user.id;
 
-   const post = await Post.findOne({ where: { id: postId, authorId } });
+  const post = await Post.findOne({ where: { id: postId, authorId } });
   if (!post) throw new ApiError(400, "You are not able to delete this post assets");
   if (!post.media) throw new ApiError(404, "Not found any asset related this post");
 
@@ -376,9 +427,9 @@ export const delete_post_image = asyncHandler(async(req:Request, res:Response) =
     await removeOldImageOnCloudinary(post.media);
   }
 
-   await Post.update(
+  await Post.update(
     { media: null },
-    { where: { id: postId, authorId }}
+    { where: { id: postId, authorId } }
   );
 
   return res.json(new ApiResponse(200, null, 'Delete successfully'))
