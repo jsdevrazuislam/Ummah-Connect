@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@cld-apis/types": "^0.1.6",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.1",
     "cloudinary-build-url": "^0.2.4",
