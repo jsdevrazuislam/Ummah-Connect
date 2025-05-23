@@ -25,7 +25,7 @@ interface PostsEntity {
 }
 interface PostAuthor {
   id: number;
-  name: string;
+  full_name: string;
   username: string;
   avatar?: string;
 }

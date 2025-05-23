@@ -1,22 +1,29 @@
 import { Model, DataTypes } from 'sequelize'
 import sequelize from '@/config/db'
 
-class PostReaction extends Model {
+class Reaction extends Model {
     public userId!: number
     public postId!: number
     public react_type!: string
     public icon!: string
 }
 
-PostReaction.init(
+Reaction.init(
     {
         userId: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
+            onDelete: 'CASCADE'
         },
         postId: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: true,
+            onDelete: 'CASCADE'
+        },
+        commentId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            onDelete: 'CASCADE'
         },
         react_type: {
             type: DataTypes.ENUM('love', 'care', 'sad', 'like', 'haha', 'wow', 'angry'),
@@ -29,10 +36,10 @@ PostReaction.init(
     },
     {
         sequelize,
-        modelName: "PostReaction",
-        tableName: 'post_reactions',
+        modelName: "Reaction",
+        tableName: 'reactions',
         timestamps: true
     }
 )
 
-export default PostReaction
+export default Reaction

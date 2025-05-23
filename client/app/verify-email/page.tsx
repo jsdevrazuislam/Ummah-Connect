@@ -7,11 +7,6 @@ export default function VerifyEmailPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Ummah Connect</h1>
-          <p className="text-muted-foreground mt-2">Email verification</p>
-        </div>
-
         <Card>
           <CardHeader>
             <div className="flex justify-center mb-4">
@@ -19,7 +14,7 @@ export default function VerifyEmailPage() {
             </div>
             <CardTitle className="text-center">Check Your Email</CardTitle>
             <CardDescription className="text-center">
-              We've sent a verification link to m.abdullah@example.com. Please check your inbox and click the link to
+              We've sent a verification link to your register email. Please check your inbox and click the link to
               verify your email address.
             </CardDescription>
           </CardHeader>

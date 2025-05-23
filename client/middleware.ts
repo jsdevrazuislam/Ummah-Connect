@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode";
 const publicRoutes = [
   "/login",
   "/register",
-  "/email-verify",
+  "/verify-email",
   "/forgot-password",
 ];
 

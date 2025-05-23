@@ -20,10 +20,6 @@ export function MainFeed() {
   const [posts, setPosts] = useState<PostsEntity[]>([])
   const [showContentGenerator, setShowContentGenerator] = useState(false)
 
-  const handleDeletePost = (postId: number) => {
-    setPosts(posts.filter((post) => post.id !== postId))
-  }
-
   useEffect(() => {
     if (data?.data) {
       setPosts(data.data.posts ?? [])
@@ -74,7 +70,6 @@ export function MainFeed() {
             <Post
               key={post.id}
               post={post}
-              onDelete={handleDeletePost}
             />
           ))
         }

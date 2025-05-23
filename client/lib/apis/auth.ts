@@ -12,5 +12,6 @@ export const fetchUserProfile = async (): Promise<UserResponse> => {
 };
 
 export const registerUser = async (payload:RegisterPayload) => {
-  await api.post(ApiStrings.REGISTER, payload);
+  const response = await api.post(ApiStrings.REGISTER, payload);
+  return response.data;
 }

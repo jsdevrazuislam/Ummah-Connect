@@ -3,11 +3,8 @@ import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Post, User, Comment } from "@/models";
-import { Op } from "sequelize";
-import { sendEmail } from "@/utils/send-email";
-import { JwtResponse } from "@/types/auth";
 import { ReactPostType } from "@/types/post";
-import CommentReaction from "@/models/comment-react.models";
+import CommentReaction from "@/models/react.models";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -32,7 +29,7 @@ export const create_comment = asyncHandler(
           ...commentJSON,
           user: {
             id: req.user.id,
-            name: req.user.full_name,
+            full_name: req.user.full_name,
             username: req.user.username,
             avatar: req.user.avatar,
           },
@@ -70,7 +67,7 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
         ...commentJSON,
         user: {
           id: req.user.id,
-          name: req.user.full_name,
+          full_name: req.user.full_name,
           username: req.user.username,
           avatar: req.user.avatar,
         },
@@ -105,7 +102,7 @@ export const edit_comment = asyncHandler(async(req:Request, res:Response) =>{
     parentId: updatedComment[0].parentId,
     user:{
       id: req.user.id,
-      name: req.user.full_name,
+      full_name: req.user.full_name,
       avatar: req.user.avatar,
       username: req.user.username
     },

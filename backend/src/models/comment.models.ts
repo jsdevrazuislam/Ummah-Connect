@@ -9,26 +9,6 @@ class Comment extends Model {
   public createdAt!: string
   public isEdited!: boolean
   public content!: string
-  public user!: {
-    id: number;
-    full_name: string;
-    username: string;
-    avatar: string | null;
-  };
-  public replies!: [
-    {
-      id: number,
-      content: string,
-      isEdited: boolean,
-      createdAt: string
-      user: {
-        id: number;
-        full_name: string;
-        username: string;
-        avatar: string | null;
-      }
-    }
-  ]
 }
 
 Comment.init(

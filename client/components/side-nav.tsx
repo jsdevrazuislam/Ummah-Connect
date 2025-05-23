@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Home,
   User,
@@ -15,14 +15,23 @@ import {
   Sun,
   Video,
   Users,
+  LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/store"
 
 export function SideNav() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { logout } = useAuthStore()
+  const router = useRouter()
+
+  const handleLogout = () =>{
+    logout()
+    router.push("/login")
+  }
 
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
@@ -65,7 +74,7 @@ export function SideNav() {
           ))}
         </nav>
       </div>
-      <div className="p-4">
+      <div className="p-4 flex items-center gap-4">
         <Button
           variant="outline"
           size="icon"
@@ -74,6 +83,10 @@ export function SideNav() {
           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
+        </Button>
+         <Button onClick={handleLogout} variant="outline">
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
         </Button>
       </div>
     </div>

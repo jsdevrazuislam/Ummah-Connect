@@ -259,13 +259,13 @@ export function CommentItem({
   return (
     <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={comment.user?.avatar || "/placeholder.svg"} alt={comment.user?.name} />
-        <AvatarFallback>{comment.user?.name?.charAt(0)}</AvatarFallback>
+        <AvatarImage src={comment?.user?.avatar || "/placeholder.svg"} alt={comment.user?.full_name} />
+        <AvatarFallback>{comment?.user?.full_name?.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1">
         <div className="bg-muted rounded-lg px-3 py-2">
           <div className="flex justify-between items-center">
-            <span className="font-medium text-sm">{comment.user?.name}</span>
+            <span className="font-medium capitalize text-sm">{comment?.user?.full_name}</span>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{formatTimeAgo(new Date(comment.createdAt))}</span>
               {isCurrentUserComment && (
