@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { react_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
+import updatePostInQueryData from "@/lib/update-post-data"
 
 export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
 
@@ -24,28 +25,9 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
     mutationFn: react_post,
     onSuccess: (updateData, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-
-        const updatedPost = oldData?.data?.posts?.map((post) => {
-
-          if (post.id === variable.id) {
-            return {
-              ...post,
-              reactions: {
-                ...updateData?.data?.reactions
-              }
-            }
-          }
-
-          return post
-        })
-
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            posts: updatedPost
-          }
-        }
+        return updatePostInQueryData(oldData, variable.id, () => ({
+          ...updateData?.data?.reactions
+        }))
       })
     },
     onError: (error) => {

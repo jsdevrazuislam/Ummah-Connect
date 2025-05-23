@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,15 +34,18 @@ import { toast } from "sonner"
 import { create_comment } from "@/lib/apis/comment"
 import { SharePostDialog } from "@/components/share-post-dialog"
 import EditPostModel from "@/components/edit-post-model"
+import { useSocketStore } from "@/hooks/use-socket"
+import SocketEventEnum from "@/constants/socket-event"
+import { addCommentToPost } from "@/lib/update-post-data"
 
 
 interface PostProps {
   post: PostsEntity
-  onDelete?: (postId: number) => void
 }
 
-export function Post({ post, onDelete }: PostProps) {
+export function Post({ post }: PostProps) {
   const { user } = useAuthStore()
+  const { socket } = useSocketStore()
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)
@@ -74,28 +77,7 @@ export function Post({ post, onDelete }: PostProps) {
     mutationFn: create_comment,
     onSuccess: (newComment, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-
-        const updatedPosts = oldData?.data?.posts?.map((post) => {
-
-          if (post.id === variable.postId) {
-            return {
-              ...post,
-              comments: {
-                total: post.comments.total + 1,
-                preview: [newComment.data, ...(post.comments.preview ?? [])]
-              }
-            }
-          }
-          return post
-        })
-
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            posts: updatedPosts
-          }
-        }
+        return addCommentToPost(oldData, variable.postId, newComment.data)
       })
       setCommentText("")
     },
@@ -127,31 +109,46 @@ export function Post({ post, onDelete }: PostProps) {
 
 
   const handleDeletePost = () => {
-    if (onDelete) {
-      onDelete(post.id)
+      queryClient.setQueryData(['get_all_posts'], (oldData:PostsResponse) =>{
+        const updatedPost = oldData?.data?.posts?.filter((newPost) => newPost.id !== post.id)
+        return {
+          ...oldData,
+          data:{
+            ...oldData.data,
+            posts: updatedPost
+          }
+        }
+      })
       mutate(post.id)
-    }
   }
 
   const getTotalReactions = () => {
-    if (post.reactions) {
+    if (Object.keys(post.reactions.counts).length > 0) {
       return Object.values(post.reactions.counts).reduce((sum, count) => sum + (count || 0), 0)
     }
-    return post.likes || 0
+    return 0
   }
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit(SocketEventEnum.JOIN_POST,  post.id.toString());
+    return () => {
+      socket.off(SocketEventEnum.JOIN_POST);
+    };
+  }, [socket, post]);
 
   return (
     <div className="border-b border-border p-4">
       <div className="flex gap-3">
         <Avatar>
-          <AvatarImage src={post?.user?.avatar || "/placeholder.svg"} alt={post?.user?.name} />
-          <AvatarFallback>{post?.user?.name?.charAt(0)}</AvatarFallback>
+          <AvatarImage src={post?.user?.avatar || "/placeholder.svg"} alt={post?.user?.full_name} />
+          <AvatarFallback>{post?.user?.full_name?.charAt(0)}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div>
-              <span className="font-semibold capitalize">{post?.user?.name}</span>{" "}
+              <span className="font-semibold capitalize">{post?.user?.full_name}</span>{" "}
               <span className="text-muted-foreground">
                 @{post?.user?.username} · {post?.timestamp}
               </span>

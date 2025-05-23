@@ -9,12 +9,6 @@ class Post extends Model{
     public privacy!:string
     public authorId!: string
     public share!: number
-    public author!: {
-        id: string
-        full_name: string,
-        username:string
-        avatar: string
-    }
     public createdAt!: Date
 }
 
@@ -35,7 +29,7 @@ Post.init(
         },
         authorId:{
             type: DataTypes.INTEGER,
-            primaryKey: true
+            allowNull: false
         }
     },
     {

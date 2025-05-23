@@ -6,7 +6,6 @@ import { CreatePostForm } from "@/components/create-post-form"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
 import { useQuery } from "@tanstack/react-query"
 import { get_all_posts } from "@/lib/apis/posts"
 import { RefreshCw } from "lucide-react"
@@ -20,10 +19,6 @@ export function MainFeed() {
   })
   const [posts, setPosts] = useState<PostsEntity[]>([])
   const [showContentGenerator, setShowContentGenerator] = useState(false)
-
-  const handleDeletePost = (postId: number) => {
-    setPosts(posts.filter((post) => post.id !== postId))
-  }
 
   useEffect(() => {
     if (data?.data) {
@@ -75,7 +70,6 @@ export function MainFeed() {
             <Post
               key={post.id}
               post={post}
-              onDelete={handleDeletePost}
             />
           ))
         }

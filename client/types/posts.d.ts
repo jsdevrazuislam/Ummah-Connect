@@ -1,6 +1,6 @@
 interface PostsResponse {
   statusCode: number;
-  data: PostsData;
+  data?: PostsData;
   message: string;
   success: boolean;
 }
@@ -25,7 +25,7 @@ interface PostsEntity {
 }
 interface PostAuthor {
   id: number;
-  name: string;
+  full_name: string;
   username: string;
   avatar?: string;
 }

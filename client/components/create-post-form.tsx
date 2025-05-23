@@ -34,7 +34,8 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
     mutationFn: create_post,
     onSuccess: (newPost) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        if (!oldData || !oldData.data || !Array.isArray(oldData.data.posts)) {
+        console.log("oldData.data.posts", oldData.data.posts)
+        if (oldData.data.posts?.length === 0) {
           return {
             data: {
               posts: [newPost.data],
@@ -46,7 +47,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
         return {
           ...oldData,
           data: {
-            posts: [newPost.data, ...oldData.data.posts]
+            posts: [newPost.data, ...(oldData.data.posts ?? [])]
           }
         }
       })

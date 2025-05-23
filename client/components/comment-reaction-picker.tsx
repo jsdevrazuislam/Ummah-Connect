@@ -52,7 +52,7 @@ export function CommentReactionPicker({
               if (isReply && comment.id === parentId) {
 
                 const updatedReplies = comment?.replies?.map((replyComment) => {
-                  if(replyComment.parentId === parentId){
+                  if(replyComment.parentId === parentId && replyComment.id === variable.id){
                     return {
                       ...replyComment,
                       reactions:{

@@ -2,16 +2,17 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, PostReaction, User, Comment } from "@/models";
+import { Post, Reaction, User, Comment } from "@/models";
 import { postSchema } from "@/schemas/post.schema";
 import uploadFileOnCloudinary, {
   removeOldImageOnCloudinary,
 } from "@/utils/cloudinary";
 import { formatTimeAgo } from "@/utils/helper";
 import sequelize from "@/config/db";
-import CommentReaction from "@/models/comment-react.models";
 import BookmarkPost from "@/models/bookmark.models";
-import { CommentResponse, ReactPostType } from "@/types/post";
+import { ReactPostType } from "@/types/post";
+import { formatPosts } from "@/utils/formater";
+import { emitSocketEvent, SocketEventEnum } from "@/socket";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -43,7 +44,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
     timestamp: formatTimeAgo(newPost.createdAt),
     user: {
       id: authorId,
-      name: req.user?.full_name,
+      full_name: req.user?.full_name,
       avatar: req.user?.avatar,
       username: req?.user?.username,
     },
@@ -85,16 +86,19 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  const oldReact = await PostReaction.findOne({ where: { userId, postId } });
+  const oldReact = await Reaction.findOne({ where: { userId, postId } });
   if (oldReact) {
-    await PostReaction.update(
+    await Reaction.update(
       { react_type, icon },
       {
         where: { userId, postId },
       }
     );
-    const posts = await PostReaction.findAll({ where: { postId } })
+    const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
+
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
+
 
     return res.json(
       new ApiResponse(
@@ -105,15 +109,17 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     );
   } else {
 
-    await PostReaction.create({
+    await Reaction.create({
       userId,
       postId,
       react_type,
       icon,
     });
 
-    const posts = await PostReaction.findAll({ where: { postId } })
+    const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
+
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
 
     return res.json(
       new ApiResponse(200, reactionCounts, "React Successfully")
@@ -127,216 +133,88 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
   const currentUserId = req.user?.id;
 
-  const { count, rows: posts } = await Post.findAndCountAll({
-    limit,
+  const user_attribute = ['id', 'username', 'full_name', 'avatar']
+  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
+  const comment_attribute = ['id', 'postId', 'isEdited', 'parentId', 'content', 'createdAt']
+
+  const { count, rows: posts} = await Post.findAndCountAll({
+    limit: limit,
     offset: skip,
-    order: [["createdAt", "DESC"]],
+    where: { privacy: 'public' },
     include: [
       {
-        model: User,
-        as: "author",
-        attributes: ["id", "full_name", "avatar", "username"],
-      },
-    ],
-  });
-
-  const userBookmarks = currentUserId
-    ? await BookmarkPost.findAll({
-      where: { userId: currentUserId },
-      attributes: ["postId"],
-    })
-    : [];
-  const bookmarkPostIds = new Set(userBookmarks.map((b) => b.postId));
-
-  const postIds = posts.map((post) => post.id);
-
-  const postReactions = await PostReaction.findAll({
-    where: { postId: postIds },
-    include: [
-      {
-        model: User,
-        as: "user",
-        attributes: ["id"],
-      },
-    ],
-  });
-
-  const commentCounts = await Comment.findAll({
-    attributes: [
-      "postId",
-      [sequelize.fn("COUNT", sequelize.col("id")), "totalComments"],
-    ],
-    where: { postId: postIds },
-    group: ["postId"],
-  });
-
-  const formattedPosts = await Promise.all(
-    posts.map(async (post) => {
-      const isBookmarked = bookmarkPostIds.has(post.id);
-
-      const currentPostReactions = postReactions.filter(
-        (r) => r.postId === post.id
-      );
-      const currentUserReaction = currentPostReactions.find(
-        (r) => r.userId === currentUserId
-      );
-
-      const reactionCounts = currentPostReactions.reduce((acc, reaction) => {
-        acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const commentCount = commentCounts.find((c) => c.postId === post.id);
-      const totalComments = commentCount
-        ? parseInt(commentCount.get("totalComments") as string)
-        : 0;
-
-      const comments = await Comment.findAll({
-        where: { postId: post.id, parentId: null },
-        limit: 10,
-        order: [["createdAt", "DESC"]],
+        model: Comment,
+        as: 'comments',
+        where: { parentId: null },
+        required: false,
+        attributes: comment_attribute,
         include: [
-          {
-            model: User,
-            as: "user",
-            attributes: ["id", "full_name", "avatar", "username"],
-          },
           {
             model: Comment,
-            as: "replies",
+            as: 'replies',
+            required: false,
+            attributes: comment_attribute,
             include: [
-              {
-                model: User,
-                as: "user",
-                attributes: ["id", "full_name", "avatar", "username"],
-              },
-            ],
-            order: [["createdAt", "ASC"]],
+              { model: User, attributes: user_attribute, as: 'user' },
+               {
+                model: Reaction,
+                required: false,
+                attributes: react_attribute,
+                as: 'reactions'
+              }
+            ]
           },
-        ],
-      });
-
-      const commentIds = comments.map((comment) => comment.id);
-      const replyIds: number[] = [];
-      comments.forEach(comment => {
-          comment.replies?.forEach(reply => {
-              replyIds.push(reply.id);
-          });
-      });
-      const allCommentAndReplyIds = [...commentIds, ...replyIds];
-
-
-      const commentsReactions = await CommentReaction.findAll({
-        where: { commentId: allCommentAndReplyIds }, 
-        include: [
+          { model: User, attributes: user_attribute, as: 'user' },
           {
-            model: User,
-            as: "user",
-            attributes: ["id"],
-          },
-        ],
-      });
+            model: Reaction,
+            required: false,
+            attributes: react_attribute,
+            as: 'reactions'
+          }
+        ]
+      },
+      {
+        model: Reaction,
+        required: false,
+        attributes: react_attribute,
+        as: 'reactions'
+      },
+      { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
+      {
+        model: User,
+        required: false,
+        attributes: user_attribute,
+        as: 'user'
+      }
+    ],
+    attributes: {
+    include: [
+      [
+        sequelize.literal(`(
+          SELECT COUNT(*) FROM "comments" AS c
+          WHERE c."postId" = "Post"."id"
+        )`),
+        'totalCommentsCount'
+      ],
+      [
+        sequelize.literal(`(
+          SELECT COUNT(*) FROM "reactions" AS r
+          WHERE r."postId" = "Post"."id"
+        )`),
+        'totalReactionsCount'
+      ],
+    ],
+  }
+  });
 
-      const formattedComments: CommentResponse[] = comments.map((comment) => {
-        const currentCommentReactions = commentsReactions.filter(
-          (r) => r.commentId === comment.id
-        );
-        const currentUserCommentReaction = currentCommentReactions.find(
-          (r) => r.userId === currentUserId
-        );
-
-        const commentReactionCounts = currentCommentReactions.reduce((acc, reaction) => {
-          acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        return {
-          id: comment.id,
-          content: comment.content,
-          isEdited: comment.isEdited,
-          user: {
-            id: comment.user.id,
-            name: comment.user.full_name,
-            username: comment.user.username,
-            avatar: comment.user.avatar,
-          },
-          replies:
-            comment.replies?.map((reply) => {
-              const currentReplyReactions = commentsReactions.filter(
-                (r) => r.commentId === reply.id
-              );
-              const currentUserReplyReaction = currentReplyReactions.find(
-                (r) => r.userId === currentUserId
-              );
-              const replyReactionCounts = currentReplyReactions.reduce((acc, reaction) => {
-                acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
-                return acc;
-              }, {} as Record<string, number>);
-
-              return {
-                id: reply.id,
-                content: reply.content,
-                parentId: comment.id,
-                user: {
-                  id: reply.user.id,
-                  name: reply.user.full_name,
-                  username: reply.user.username,
-                  avatar: reply.user.avatar,
-                },
-                isEdited: reply.isEdited,
-                createdAt: reply.createdAt,
-                replies: [],
-                repliesCount: 0, 
-                reactions: {
-                    counts: replyReactionCounts,
-                    currentUserReaction: currentUserReplyReaction?.react_type || null
-                },
-              };
-            }) || [],
-          repliesCount: comment.replies?.length || 0,
-          reactions: { counts: commentReactionCounts, currentUserReaction: currentUserCommentReaction?.react_type || null },
-          createdAt: comment.createdAt,
-        }
-      });
-
-      return {
-        id: post.id,
-        user: {
-          id: post.author.id,
-          name: post.author.full_name,
-          username: post.author.username,
-          avatar: post.author.avatar,
-        },
-        content: post.content,
-        privacy: post.privacy,
-        timestamp: formatTimeAgo(post.createdAt),
-        isBookmarked,
-        likes: Object.values(reactionCounts).reduce(
-          (sum, count) => sum + count,
-          0
-        ),
-        comments: {
-          total: totalComments,
-          preview: formattedComments,
-        },
-        shares: post.share || 0,
-        image: post.media,
-        location: post.location,
-        reactions: {
-          counts: reactionCounts,
-          currentUserReaction: currentUserReaction?.react_type || null,
-        },
-      };
-    })
-  );
+  const formatPostData = formatPosts(posts, currentUserId)
 
   return res.json(
     new ApiResponse(
-      200,
-      {
-        posts: formattedPosts,
+      200, {
+        posts: formatPostData,
         totalPages: Math.ceil(count / limit),
-        currentPage: page,
+        currentPage: page
       },
       "Posts retrieved successfully"
     )
@@ -410,7 +288,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     { content, location, privacy, media: media_url },
     { where: { id: postId, authorId }, returning: true }
   );
-
+  
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
 
