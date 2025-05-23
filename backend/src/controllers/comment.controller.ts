@@ -2,9 +2,10 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, User, Comment } from "@/models";
+import { Post, Comment } from "@/models";
 import { ReactPostType } from "@/types/post";
 import CommentReaction from "@/models/react.models";
+import { emitSocketEvent, SocketEventEnum } from "@/socket";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -19,24 +20,26 @@ export const create_comment = asyncHandler(
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
-    delete commentJSON.postId;
 
+    const response = {
+      ...commentJSON,
+      user: {
+        id: req.user.id,
+        full_name: req.user.full_name,
+        username: req.user.username,
+        avatar: req.user.avatar,
+      },
+      replies: [],
+      repliesCount: 0,
+      reactions: { counts: {}, currentUserReaction: null }
+    }
+
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } })
 
     return res.json(
       new ApiResponse(
         200,
-        {
-          ...commentJSON,
-          user: {
-            id: req.user.id,
-            full_name: req.user.full_name,
-            username: req.user.username,
-            avatar: req.user.avatar,
-          },
-          replies: [],
-          repliesCount: 0,
-          reactions : {counts: {}, currentUserReaction: null}
-        },
+        response,
         "Comment Created"
       )
     );
@@ -56,14 +59,8 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;
-  delete commentJSON.postId;
-  delete commentJSON.parentId;
 
-
-  return res.json(
-    new ApiResponse(
-      200,
-      {
+  const response = {
         ...commentJSON,
         user: {
           id: req.user.id,
@@ -73,26 +70,35 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
         },
         parentId,
         createdAt: comment.createdAt,
-        reactions : {counts: {}, currentUserReaction: null}
-      },
+        reactions: { counts: {}, currentUserReaction: null }
+      }
+
+
+  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } })
+
+
+  return res.json(
+    new ApiResponse(
+      200,
+      response,
       "Comment Created"
     )
   );
 })
 
 
-export const edit_comment = asyncHandler(async(req:Request, res:Response) =>{
+export const edit_comment = asyncHandler(async (req: Request, res: Response) => {
 
   const commentId = req.params.id
   const userId = req.user.id
-  const { postId, content, isReply} = req.body
+  const { postId, content, isReply } = req.body
 
-  const comment = await Comment.findOne({ where: { id: commentId, postId, userId }})
-  if(!comment) throw new ApiError(400, 'You are not eligible edit this comment')
+  const comment = await Comment.findOne({ where: { id: commentId, postId, userId } })
+  if (!comment) throw new ApiError(400, 'You are not eligible edit this comment')
 
   const [_, updatedComment] = await Comment.update(
-    {content, isEdited: true},
-    {where: { id: commentId }, returning: true}
+    { content, isEdited: true },
+    { where: { id: commentId }, returning: true }
   )
 
   const response = {
@@ -100,7 +106,7 @@ export const edit_comment = asyncHandler(async(req:Request, res:Response) =>{
     id: updatedComment[0].id,
     isEdited: updatedComment[0].isEdited,
     parentId: updatedComment[0].parentId,
-    user:{
+    user: {
       id: req.user.id,
       full_name: req.user.full_name,
       avatar: req.user.avatar,
@@ -112,15 +118,15 @@ export const edit_comment = asyncHandler(async(req:Request, res:Response) =>{
   return res.json(new ApiResponse(200, response, 'Updated comment'))
 })
 
-export const delete_comment = asyncHandler(async(req:Request, res:Response) =>{
+export const delete_comment = asyncHandler(async (req: Request, res: Response) => {
 
   const commentId = req.params.id;
   const userId = req.user.id
-  const comment = await Comment.findOne({ where: { id: commentId, userId}})
-  if(!comment) throw new ApiError(400, 'You are not eligible to delete this comment')
+  const comment = await Comment.findOne({ where: { id: commentId, userId } })
+  if (!comment) throw new ApiError(400, 'You are not eligible to delete this comment')
 
   await Comment.destroy({
-    where:{
+    where: {
       id: commentId
     }
   })
@@ -159,7 +165,7 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
         where: { userId, commentId },
       }
     );
-    const posts = await CommentReaction.findAll({ where: { commentId }})
+    const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
 
     return res.json(
@@ -178,7 +184,7 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
       icon,
     });
 
-    const posts = await CommentReaction.findAll({ where: { commentId }})
+    const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
 
     return res.json(

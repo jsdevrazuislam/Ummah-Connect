@@ -1,6 +1,6 @@
 interface PostsResponse {
   statusCode: number;
-  data: PostsData;
+  data?: PostsData;
   message: string;
   success: boolean;
 }

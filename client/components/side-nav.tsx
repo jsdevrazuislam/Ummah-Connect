@@ -74,7 +74,7 @@ export function SideNav() {
           ))}
         </nav>
       </div>
-      <div className="p-4 flex items-center gap-4">
+      <div className="p-4 flex-col flex md:flex-row items-center gap-4">
         <Button
           variant="outline"
           size="icon"
@@ -86,7 +86,7 @@ export function SideNav() {
         </Button>
          <Button onClick={handleLogout} variant="outline">
           <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          <span className="hidden md:block">Logout</span>
         </Button>
       </div>
     </div>

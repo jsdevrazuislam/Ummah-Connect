@@ -26,6 +26,16 @@ interface EmitSocketEventParams<T> {
   payload: T;
 }
 
+const joinRoom = (socket:Socket, eventEnum:string, roomPrefix:string) => {
+  socket.on(eventEnum, (id) => {
+    console.log(`User joined the ${roomPrefix} room. ${roomPrefix}Id: ${id}`);
+    socket.join(`${roomPrefix}_${id}`);
+  });
+};
+
+const setupSocketListeners = (socket:Socket) => {
+  joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
+};
 
 const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
   io.on("connection", async (socket: Socket) => {
@@ -73,6 +83,8 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
+      setupSocketListeners(socket);
+
       socket.on(SocketEventEnum.SOCKET_DISCONNECTED, () => {
         console.log(`User has disconnected userId: ${socket.user?.id || 'unknown'}`);
         if (socket.user?.id) {
@@ -100,6 +112,8 @@ const emitSocketEvent = <T>({
   try {
     const io: Server = req.app.get("io");
     io.to(roomId).emit(event, payload);
+    console.log(`Event sent roomId ${roomId} and event name is ${event}`);
+    
   } catch (error) {
     console.error("Failed to emit socket event:", error);
   }

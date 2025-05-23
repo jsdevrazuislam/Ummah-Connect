@@ -12,6 +12,7 @@ import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { ReactPostType } from "@/types/post";
 import { formatPosts } from "@/utils/formater";
+import { emitSocketEvent, SocketEventEnum } from "@/socket";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -96,6 +97,9 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
 
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
+
+
     return res.json(
       new ApiResponse(
         200,
@@ -114,6 +118,8 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
 
     const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
+
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
 
     return res.json(
       new ApiResponse(200, reactionCounts, "React Successfully")
@@ -282,7 +288,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     { content, location, privacy, media: media_url },
     { where: { id: postId, authorId }, returning: true }
   );
-
+  
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
 

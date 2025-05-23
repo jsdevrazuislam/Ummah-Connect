@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +34,9 @@ import { toast } from "sonner"
 import { create_comment } from "@/lib/apis/comment"
 import { SharePostDialog } from "@/components/share-post-dialog"
 import EditPostModel from "@/components/edit-post-model"
+import { useSocketStore } from "@/hooks/use-socket"
+import SocketEventEnum from "@/constants/socket-event"
+import { addCommentToPost } from "@/lib/update-post-data"
 
 
 interface PostProps {
@@ -42,6 +45,7 @@ interface PostProps {
 
 export function Post({ post }: PostProps) {
   const { user } = useAuthStore()
+  const { socket } = useSocketStore()
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)
@@ -73,28 +77,7 @@ export function Post({ post }: PostProps) {
     mutationFn: create_comment,
     onSuccess: (newComment, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-
-        const updatedPosts = oldData?.data?.posts?.map((post) => {
-
-          if (post.id === variable.postId) {
-            return {
-              ...post,
-              comments: {
-                total: post.comments.total + 1,
-                preview: [newComment.data, ...(post.comments.preview ?? [])]
-              }
-            }
-          }
-          return post
-        })
-
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            posts: updatedPosts
-          }
-        }
+        return addCommentToPost(oldData, variable.postId, newComment.data)
       })
       setCommentText("")
     },
@@ -145,6 +128,14 @@ export function Post({ post }: PostProps) {
     }
     return 0
   }
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit(SocketEventEnum.JOIN_POST,  post.id.toString());
+    return () => {
+      socket.off(SocketEventEnum.JOIN_POST);
+    };
+  }, [socket, post]);
 
   return (
     <div className="border-b border-border p-4">

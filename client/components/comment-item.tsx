@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { delete_comment, edit_comment, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
 import { useAuthStore } from "@/store/store"
+import { addReplyCommentToPost } from "@/lib/update-post-data"
 
 
 interface CommentItemProps {
@@ -44,42 +45,7 @@ export function CommentItem({
     mutationFn: reply_comment,
     onSuccess: (newComment, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-
-        const updatedPost = oldData?.data?.posts?.map((post) => {
-
-          if (post.id === variable.postId) {
-
-            const updatedComments = post?.comments?.preview?.map((comment) => {
-
-              if (comment.id === variable.id) {
-                return {
-                  ...comment,
-                  replies: [newComment.data, ...(comment.replies ?? [])]
-                }
-              }
-              return comment
-            })
-
-            return {
-              ...post,
-              comments: {
-                total: post.comments.total + 1,
-                preview: updatedComments
-              }
-
-            }
-          }
-
-          return post
-        })
-
-        return {
-          ...oldData,
-          data: {
-            posts: updatedPost
-          }
-        }
-
+       return addReplyCommentToPost(oldData, postId, variable.id, newComment.data)
       })
       setReplyText("")
       setShowReplyForm(false)
