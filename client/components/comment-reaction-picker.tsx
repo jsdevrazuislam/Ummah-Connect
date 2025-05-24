@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { comment_react } from "@/lib/apis/comment"
+import { addCommentReactionToPost } from "@/lib/update-post-data"
 
 
 interface CommentReactionPickerProps {
@@ -35,61 +36,9 @@ export function CommentReactionPicker({
     mutationFn: comment_react,
     onSuccess: (updateData, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-
-        const updatedPost = oldData?.data?.posts?.map((post) => {
-
-          if (post.id === postId) {
-
-            const updatedComments = post?.comments?.preview?.map((comment) => {
-              if (comment.id === variable.id) {
-                return {
-                  ...comment,
-                  reactions: {
-                    ...updateData.data.reactions
-                  }
-                }
-              }
-              if (isReply && comment.id === parentId) {
-
-                const updatedReplies = comment?.replies?.map((replyComment) => {
-                  if(replyComment.parentId === parentId && replyComment.id === variable.id){
-                    return {
-                      ...replyComment,
-                      reactions:{
-                        ...updateData.data.reactions
-                      }
-                    }
-                  }
-                  return replyComment
-                })
-
-                return {
-                  ...comment,
-                  replies: updatedReplies
-                }
-              }
-              return comment
-            })
-
-            return {
-              ...post,
-              comments: {
-                ...post.comments,
-                preview: updatedComments
-              }
-            }
-          }
-
-          return post
-        })
-
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            posts: updatedPost
-          }
-        }
+        return addCommentReactionToPost(oldData, postId, variable.id, parentId, isReply, () => ({
+          ...updateData?.data?.reactions
+        }))
       })
     },
     onError: (error) => {
@@ -129,7 +78,10 @@ export function CommentReactionPicker({
     const payload = {
       react_type: reaction ?? '',
       icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
-      id
+      id,
+      postId,
+      parentId, 
+      isReply
     }
     mutate(payload)
     setIsOpen(false)

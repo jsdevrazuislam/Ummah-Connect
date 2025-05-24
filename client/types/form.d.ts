@@ -1,5 +1,8 @@
 interface ReactPayload{
-    react_type:string, icon:string,id:number
+    react_type:string, 
+    icon:string,
+    id:number
+    postId?: number
 }
 
 interface CommentPayload{

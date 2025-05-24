@@ -12,6 +12,7 @@ const SocketEventEnum = Object.freeze({
   CREATE_COMMENT:"createComment",
   REPLY_COMMENT:"replyComment",
   EDITED_COMMENT:"edited_comment",
+  DELETE_COMMENT:"deleteComment",
 });
 
 export { DATA_LIMIT, DB_NAME, SocketEventEnum, API_VERSION };

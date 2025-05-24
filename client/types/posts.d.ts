@@ -43,6 +43,7 @@ interface CommentPreview {
   createdAt: string;
   isEdited:boolean
   parentId:number
+  postId?: number
 }
 
 type ReactionType =
@@ -58,6 +59,7 @@ type ReactionType =
 interface RepliesEntity {
   id: number;
   parentId: number;
+  postId?:number
   content: string;
   user: PostAuthor;
   repliesCount: number;

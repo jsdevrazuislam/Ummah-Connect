@@ -106,6 +106,7 @@ export const edit_comment = asyncHandler(async (req: Request, res: Response) => 
     id: updatedComment[0].id,
     isEdited: updatedComment[0].isEdited,
     parentId: updatedComment[0].parentId,
+    postId: Number(postId),
     user: {
       id: req.user.id,
       full_name: req.user.full_name,
@@ -114,6 +115,8 @@ export const edit_comment = asyncHandler(async (req: Request, res: Response) => 
     },
     isReply
   }
+
+  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.EDITED_COMMENT, payload: response })
 
   return res.json(new ApiResponse(200, response, 'Updated comment'))
 })
@@ -131,13 +134,15 @@ export const delete_comment = asyncHandler(async (req: Request, res: Response) =
     }
   })
 
+  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: {...comment.toJSON(), isReply: comment.parentId ? true: false} })
+
   return res.json(
     new ApiResponse(200, null, 'Comment delete success')
   )
 })
 
 export const comment_react = asyncHandler(async (req: Request, res: Response) => {
-  const { react_type, icon } = req.body;
+  const { react_type, icon, postId, parentId, isReply } = req.body;
   const commentId = req.params?.commentId;
   const userId = req.user?.id;
 
@@ -168,6 +173,9 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
     const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
 
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: {...reactionCounts}, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply)  } })
+
+
     return res.json(
       new ApiResponse(
         200,
@@ -186,6 +194,9 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
 
     const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
+
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: {...reactionCounts}, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply)  } })
+
 
     return res.json(
       new ApiResponse(200, reactionCounts, "React Successfully")

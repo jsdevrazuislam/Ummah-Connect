@@ -8,6 +8,7 @@ const SocketEventEnum = Object.freeze({
   CREATE_COMMENT:"createComment",
   EDITED_COMMENT:"edited_comment",
   REPLY_COMMENT:"replyComment",
+  DELETE_COMMENT:"deleteComment",
 });
 
 export default SocketEventEnum

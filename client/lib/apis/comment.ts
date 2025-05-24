@@ -23,6 +23,6 @@ export const delete_comment = async (id: number) => {
 }
 
 export const comment_react = async (payload:ReactPayload) => {
-    const response = await api.post(ApiStrings.COMMENT_REACT(payload.id), { react_type: payload.react_type, icon: payload.icon});
+    const response = await api.post(ApiStrings.COMMENT_REACT(payload.id), payload);
     return response.data;
 }
