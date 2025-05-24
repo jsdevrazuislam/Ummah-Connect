@@ -174,6 +174,14 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
         ]
       },
       {
+          model: Post,
+          as: 'originalPost',
+          attributes: ['id', 'media', 'content', 'location', 'privacy', 'createdAt'],
+          include: [
+            { model: User, as: 'user', attributes: user_attribute },
+          ]
+        },
+      {
         model: Reaction,
         required: false,
         attributes: react_attribute,
@@ -223,16 +231,28 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
 
 export const share = asyncHandler(async (req: Request, res: Response) => {
   const postId = Number(req.params.postId);
-  const post = await Post.findByPk(postId);
+  const currentUserId = req.user?.id;
 
-  if (!post) {
+  const originalPost = await Post.findByPk(postId);
+
+  if (!originalPost) {
     throw new ApiError(404, "Post not found");
   }
 
-  post.share = (post.share || 0) + 1;
-  await post.save();
+  originalPost.share = (originalPost.share || 0) + 1;
+  await originalPost.save();
 
-  return res.json(new ApiResponse(200, { shares: post.share }, "Success"));
+  const sharedPost = await Post.create({
+    authorId: currentUserId,
+    sharedPostId: originalPost.id,
+    content: req.body.message || null, 
+    privacy: req.body.visibility || 'public'
+  });
+
+  return res.json(new ApiResponse(201, {
+    shares: originalPost.share,
+    sharedPostId: sharedPost.id
+  }, "Post shared successfully"));
 });
 
 export const bookmarked_post = asyncHandler(

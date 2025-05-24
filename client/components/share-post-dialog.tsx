@@ -12,83 +12,62 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe, Lock, Users, User } from "lucide-react"
+import { useMutation } from "@tanstack/react-query"
+import { share_post } from "@/lib/apis/posts"
+import { toast } from "sonner"
 
 interface SharePostDialogProps {
   postId: number
-  postContent: string
   postUsername: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onShare: (postId: number, shareType: "feed" | "message", additionalText?: string) => void
 }
 
 export function SharePostDialog({
   postId,
-  postContent,
   postUsername,
   open,
   onOpenChange,
-  onShare,
 }: SharePostDialogProps) {
   const [additionalText, setAdditionalText] = useState("")
   const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only_me">("public")
-  const [isSharing, setIsSharing] = useState(false)
+  const { mutate, isPending} = useMutation({
+    mutationFn: share_post,
+    onSuccess: (data, variable) =>{
+      console.log("data", data)
+      onOpenChange(false)
+    },
+    onError:(error) =>{
+      toast.error(error.message)
+    }
+  })
 
   const handleCopyLink = () => {
     const postUrl = `https://ummahconnect.com/post/${postId}`
     navigator.clipboard
       .writeText(postUrl)
       .then(() => {
-        toast({
-          title: "Link copied to clipboard",
+        toast.success("Link copied to clipboard",{
           description: "You can now share this post with others",
         })
       })
       .catch(() => {
-        toast({
-          title: "Failed to copy link",
+        toast.error("Failed to copy link",{
           description: "Please try again",
-          variant: "destructive",
         })
       })
   }
 
   const handleShareToFeed = () => {
-    setIsSharing(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      onShare(postId, "feed", additionalText)
-      setAdditionalText("")
-      setIsSharing(false)
-      onOpenChange(false)
-
-      toast({
-        title: "Post shared to your feed",
-        description: "Your followers will now see this post",
-      })
-    }, 1000)
-  }
-
-  const handleShareToMessage = () => {
-    setIsSharing(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      onShare(postId, "message", additionalText)
-      setAdditionalText("")
-      setIsSharing(false)
-      onOpenChange(false)
-
-      toast({
-        title: "Post shared via message",
-        description: "You can select recipients in the messages tab",
-      })
-    }, 1000)
+    const payload = {
+      postId,
+      message:additionalText,
+      visibility
+    }
+    mutate(payload)
   }
 
   return (
@@ -171,20 +150,14 @@ export function SharePostDialog({
             </div>
           </div>
 
-          <div className="flex justify-center gap-4">
-            <Button variant="outline" className="flex-1 gap-2" onClick={handleShareToFeed} disabled={isSharing}>
+            <Button variant="outline" className="flex-1 gap-2" onClick={handleShareToFeed} disabled={isPending}>
               <Share className="h-4 w-4" />
               Share to Feed
             </Button>
-            <Button variant="outline" className="flex-1 gap-2" onClick={handleShareToMessage} disabled={isSharing}>
-              <MessageCircle className="h-4 w-4" />
-              Message
-            </Button>
-          </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSharing}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
         </DialogFooter>

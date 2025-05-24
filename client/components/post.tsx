@@ -37,6 +37,7 @@ import EditPostModel from "@/components/edit-post-model"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { addCommentToPost } from "@/lib/update-post-data"
+import { formatTimeAgo } from "@/lib/utils"
 
 
 interface PostProps {
@@ -109,29 +110,29 @@ export function Post({ post }: PostProps) {
 
 
   const handleDeletePost = () => {
-      queryClient.setQueryData(['get_all_posts'], (oldData:PostsResponse) =>{
-        const updatedPost = oldData?.data?.posts?.filter((newPost) => newPost.id !== post.id)
-        return {
-          ...oldData,
-          data:{
-            ...oldData.data,
-            posts: updatedPost
-          }
+    queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+      const updatedPost = oldData?.data?.posts?.filter((newPost) => newPost.id !== post.id)
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          posts: updatedPost
         }
-      })
-      mutate(post.id)
+      }
+    })
+    mutate(post.id)
   }
 
   const getTotalReactions = () => {
-    if (Object.keys(post.reactions.counts).length > 0) {
-      return Object.values(post.reactions.counts).reduce((sum, count) => sum + (count || 0), 0)
+    if (post?.reactions?.counts && Object.keys(post?.reactions?.counts).length > 0) {
+      return Object.values(post?.reactions?.counts).reduce((sum, count) => sum + (count || 0), 0)
     }
     return 0
   }
 
   useEffect(() => {
     if (!socket) return;
-    socket.emit(SocketEventEnum.JOIN_POST,  post.id.toString());
+    socket.emit(SocketEventEnum.JOIN_POST, post.id.toString());
     return () => {
       socket.off(SocketEventEnum.JOIN_POST);
     };
@@ -198,7 +199,40 @@ export function Post({ post }: PostProps) {
             </DropdownMenu>
           </div>
 
-          <div className="mt-2 text-sm">{post.content}</div>
+          {
+            post?.originalPost ? <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
+
+              {
+                post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
+                  <img
+                    src={post?.originalPost?.media || "/placeholder.svg"}
+                    alt="Post image"
+                    className="w-full h-auto max-h-[400px] object-cover"
+                  />
+                </div>
+              }
+
+              <div className="px-4 py-2">
+                <div className="flex items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
+                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
+                    <p className="text-muted-foreground">
+                      {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4">
+                {post?.originalPost?.content}
+                </p>
+              </div>
+
+
+            </div> : <div className="mt-2 text-sm">{post.content}</div>
+          }
           {post?.location && !isEditing && (
             <div className="mt-2">
               <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">
@@ -293,19 +327,13 @@ export function Post({ post }: PostProps) {
           )}
         </div>
       </div>
-        
+
       <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
       <SharePostDialog
         postId={post.id}
-        postContent={post.content}
         postUsername={post.user.username}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
-        onShare={(postId, shareType, additionalText) => {
-          if (shareType === "feed") {
-            post.shares += 1
-          }
-        }}
       />
     </div>
   )

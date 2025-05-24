@@ -3,6 +3,13 @@ interface ReactPayload{
     icon:string,
     id:number
     postId?: number
+    message?:string
+}
+
+interface SharePayload{
+    postId: number
+    message?:string
+    visibility?:string
 }
 
 interface CommentPayload{

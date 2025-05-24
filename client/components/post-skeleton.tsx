@@ -22,11 +22,9 @@ export function PostSkeleton() {
             <Skeleton className="h-4 w-[75%]" />
           </div>
 
-          {Math.random() > 0.5 && (
             <div className="mt-3">
               <Skeleton className="h-48 w-full rounded-md" />
             </div>
-          )}
 
           <div className="mt-4 flex justify-between">
             <Skeleton className="h-8 w-20" />

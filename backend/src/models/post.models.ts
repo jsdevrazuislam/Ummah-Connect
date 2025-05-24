@@ -9,6 +9,7 @@ class Post extends Model{
     public privacy!:string
     public authorId!: string
     public share!: number
+    public sharedPostId!: number
     public createdAt!: Date
 }
 
@@ -23,6 +24,11 @@ Post.init(
         content: DataTypes.STRING,
         location: DataTypes.STRING,
         share: DataTypes.INTEGER,
+        sharedPostId: {                  
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: { model: 'posts', key: 'id' }
+        },
         privacy: {
             type: DataTypes.ENUM('public', 'friends', 'only me'),
             defaultValue: 'public'

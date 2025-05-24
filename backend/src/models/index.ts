@@ -24,6 +24,8 @@ Post.hasMany(Comment, { foreignKey: 'postId', as: 'comments' });
 Comment.belongsTo(Post, { foreignKey: 'postId' });
 Post.belongsTo(User, { foreignKey: 'authorId', as:'user' });
 User.hasMany(Post, { foreignKey: 'authorId' });
+Post.belongsTo(Post, { as: 'originalPost', foreignKey: 'sharedPostId' });
+Post.hasMany(Post, { as: 'shares', foreignKey: 'sharedPostId' });
 
 
 // Comment model (self-referencing for replies)

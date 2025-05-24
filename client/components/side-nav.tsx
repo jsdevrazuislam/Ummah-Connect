@@ -48,13 +48,10 @@ export function SideNav() {
   ]
 
   return (
-    <div className="sticky top-0 h-screen w-[80px] md:w-[240px] p-2 flex flex-col justify-between">
+    <div className="sticky top-0 h-screen w-[240px] p-2 flex flex-col justify-between">
       <div className="space-y-2 py-4">
         <div className="px-3 py-2">
-          <h2 className="hidden md:block mb-2 px-4 text-lg font-semibold tracking-tight">Ummah Connect</h2>
-          <div className="md:hidden flex justify-center">
-            <span className="text-2xl font-bold">UC</span>
-          </div>
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Ummah Connect</h2>
         </div>
         <nav className="space-y-1">
           {navItems.map((item) => (
@@ -69,12 +66,12 @@ export function SideNav() {
               )}
             >
               <item.icon className="h-5 w-5 mr-2" />
-              <span className="hidden md:inline-flex">{item.label}</span>
+              <span className="inline-flex">{item.label}</span>
             </Link>
           ))}
         </nav>
       </div>
-      <div className="p-4 flex-col flex md:flex-row items-center gap-4">
+      <div className="p-4 flex items-center gap-4">
         <Button
           variant="outline"
           size="icon"
@@ -84,9 +81,9 @@ export function SideNav() {
           <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
-         <Button onClick={handleLogout} variant="outline">
+         <Button className=" flex justify-center items-center" onClick={handleLogout} variant="outline">
           <LogOut className="mr-2 h-4 w-4" />
-          <span className="hidden md:block">Logout</span>
+          <span>Logout</span>
         </Button>
       </div>
     </div>

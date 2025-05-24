@@ -14,12 +14,15 @@ interface PostsEntity {
   user: PostAuthor;
   content: string;
   timestamp: string;
+  createdAt?: string;
+  originalPost: PostsEntity | null
   privacy: string;
   isBookmarked: boolean;
   likes: number;
   comments: Comments;
   shares: number;
   image?: string;
+  media?: string;
   location: string;
   reactions: Reactions;
 }

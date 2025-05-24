@@ -27,7 +27,7 @@ export function MainFeed() {
   }, [data])
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <>
       <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">Home</h1>
@@ -60,20 +60,18 @@ export function MainFeed() {
 
       <div>
         {
-          isLoading ? <>
-            {
-              Array(10).fill(10).map((item, index) => (
-                <PostSkeleton key={index} />
-              ))
-            }
-          </> : posts?.map((post) => (
-            <Post
-              key={post.id}
-              post={post}
-            />
-          ))
+          isLoading ?
+            Array(10).fill(10).map((item, index) => (
+              <PostSkeleton key={index} />
+            ))
+            : posts?.map((post) => (
+              <Post
+                key={post.id}
+                post={post}
+              />
+            ))
         }
       </div>
-    </div>
+    </>
   )
 }

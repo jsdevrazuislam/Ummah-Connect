@@ -48,8 +48,8 @@ export const react_post = async (payload: ReactPayload) => {
     return response.data;
 }
 
-export const share_post = async (payload: ReactPayload) => {
-    const response = await api.get(ApiStrings.SHAREPOST(payload.id));
+export const share_post = async (payload: SharePayload) => {
+    const response = await api.post(ApiStrings.SHAREPOST(payload.postId), payload);
     return response.data;
 }
 

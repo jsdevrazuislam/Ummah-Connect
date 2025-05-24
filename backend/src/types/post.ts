@@ -19,6 +19,7 @@ export interface Post {
   reactions?: ReactionsEntity[] | null;
   bookmarks?: BookmarksEntity[] | null;
   user: User;
+  originalPost: Post
 }
 export interface CommentsEntity {
   id: number;

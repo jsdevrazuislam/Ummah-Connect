@@ -60,6 +60,7 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
       timestamp: formatTimeAgo(new Date(post.createdAt)),
       privacy: post.privacy,
       isBookmarked,
+      originalPost: post.originalPost ,
       comments: {
         total: Number(post.totalCommentsCount),
         preview: commentPreview

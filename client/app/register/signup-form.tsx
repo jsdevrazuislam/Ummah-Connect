@@ -23,9 +23,9 @@ const SignupForm = () => {
 
     const { mutate, isPending } = useMutation({
         mutationFn: registerUser,
-        onSuccess: () => {
+        onSuccess: (_, variable) => {
             toast.success("Register successfully")
-            router.push("/verify-email")
+            router.push(`/verify-email?email=${variable.email}`)
         },
         onError: (error) => {
             toast.error(error.message)
