@@ -200,38 +200,43 @@ export function Post({ post }: PostProps) {
           </div>
 
           {
-            post?.originalPost ? <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
+            post?.originalPost ? <>
+              {post?.content && <p className="mt-2">
+                {post?.content}
+              </p>}
+              <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
 
-              {
-                post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
-                  <img
-                    src={post?.originalPost?.media || "/placeholder.svg"}
-                    alt="Post image"
-                    className="w-full h-auto max-h-[400px] object-cover"
-                  />
-                </div>
-              }
-
-              <div className="px-4 py-2">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
-                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
-                    <p className="text-muted-foreground">
-                      {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
-                    </p>
+                {
+                  post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
+                    <img
+                      src={post?.originalPost?.media || "/placeholder.svg"}
+                      alt="Post image"
+                      className="w-full h-auto max-h-[400px] object-cover"
+                    />
                   </div>
+                }
+
+                <div className="px-4 py-2">
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
+                      <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
+                      <p className="text-muted-foreground">
+                        {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4">
+                    {post?.originalPost?.content}
+                  </p>
                 </div>
-                <p className="mt-4">
-                {post?.originalPost?.content}
-                </p>
+
+
               </div>
-
-
-            </div> : <div className="mt-2 text-sm">{post.content}</div>
+            </> : <div className="mt-2 text-sm">{post.content}</div>
           }
           {post?.location && !isEditing && (
             <div className="mt-2">
@@ -330,7 +335,7 @@ export function Post({ post }: PostProps) {
 
       <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
       <SharePostDialog
-        postId={post.id}
+        post={post}
         postUsername={post.user.username}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}

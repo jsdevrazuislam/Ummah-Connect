@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Globe, ImageIcon, Loader2, Lock, MapPin, Pencil, User, Users, X } from 'lucide-react'
+import { Globe, ImageIcon, Lock, MapPin, Pencil, User, Users, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -270,7 +270,7 @@ const EditPostModel = ({
                     </Button>
                     <Button
                         onClick={handleEdit}
-                        disabled={!editText.trim() || isPending}
+                        disabled={!editText?.trim() || isPending}
                     >
                         Save Changes
                     </Button>

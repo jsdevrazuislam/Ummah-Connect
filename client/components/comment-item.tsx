@@ -87,9 +87,9 @@ export function CommentItem({
   }
 
   const handleEdit = () => {
-    if (editText.trim()) {
+    if (editText?.trim()) {
       const payload = {
-        content: editText.trim(),
+        content: editText?.trim(),
         commentId: comment.id,
         postId,
         isReply,

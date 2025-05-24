@@ -232,8 +232,20 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
 export const share = asyncHandler(async (req: Request, res: Response) => {
   const postId = Number(req.params.postId);
   const currentUserId = req.user?.id;
+  const user_attribute = ['id', 'username', 'full_name', 'avatar']
 
-  const originalPost = await Post.findByPk(postId);
+
+  const originalPost = await Post.findOne({ 
+    where: { id: postId},
+    include: [
+      {
+        model: User,
+        required: false,
+        attributes: user_attribute,
+        as: 'user'
+      }
+    ]
+  });
 
   if (!originalPost) {
     throw new ApiError(404, "Post not found");
@@ -249,9 +261,34 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     privacy: req.body.visibility || 'public'
   });
 
+  const postData = {
+    ...sharedPost.toJSON(),
+    timestamp: formatTimeAgo(sharedPost.createdAt),
+    user: {
+      id: req.user.id,
+      full_name: req.user?.full_name,
+      avatar: req.user?.avatar,
+      username: req?.user?.username,
+    },
+    replies: [],
+    isBookmarked: false,
+    originalPost,
+    likes: 0,
+    comments: {
+      total: 0,
+      preview: [],
+    },
+    shares: 0,
+    reactions: {
+      counts: 0,
+      currentUserReaction: null,
+    },
+  };
+
   return res.json(new ApiResponse(201, {
     shares: originalPost.share,
-    sharedPostId: sharedPost.id
+    sharedPostId: sharedPost.id,
+    postData
   }, "Post shared successfully"));
 });
 

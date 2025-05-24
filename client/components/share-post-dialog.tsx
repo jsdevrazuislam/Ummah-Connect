@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Link2, Share, MessageCircle } from "lucide-react"
+import { Link2, Share } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -15,47 +15,72 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe, Lock, Users, User } from "lucide-react"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { share_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
 
 interface SharePostDialogProps {
-  postId: number
+  post: PostsEntity
   postUsername: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 export function SharePostDialog({
-  postId,
+  post,
   postUsername,
   open,
   onOpenChange,
 }: SharePostDialogProps) {
   const [additionalText, setAdditionalText] = useState("")
-  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only_me">("public")
-  const { mutate, isPending} = useMutation({
+  const queryClient = useQueryClient()
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
+  const { mutate, isPending } = useMutation({
     mutationFn: share_post,
-    onSuccess: (data, variable) =>{
-      console.log("data", data)
+    onSuccess: (data, variable) => {
+      if (data?.data?.postData?.privacy === 'public') {
+        queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+
+          const updatedPosts = oldData?.data?.posts?.map((post) => {
+
+            if (data?.data?.postData?.originalPost?.id === variable.postId) {
+              return {
+                ...post,
+                shares: post.shares + 1
+              }
+            }
+
+            return post
+          })
+
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              posts: [data?.data?.postData, ...(updatedPosts ?? [])]
+            }
+          }
+        })
+      }
+      setAdditionalText("")
       onOpenChange(false)
     },
-    onError:(error) =>{
+    onError: (error) => {
       toast.error(error.message)
     }
   })
 
   const handleCopyLink = () => {
-    const postUrl = `https://ummahconnect.com/post/${postId}`
+    const postUrl = `https://ummahconnect.com/post/${post.id}`
     navigator.clipboard
       .writeText(postUrl)
       .then(() => {
-        toast.success("Link copied to clipboard",{
+        toast.success("Link copied to clipboard", {
           description: "You can now share this post with others",
         })
       })
       .catch(() => {
-        toast.error("Failed to copy link",{
+        toast.error("Failed to copy link", {
           description: "Please try again",
         })
       })
@@ -63,8 +88,8 @@ export function SharePostDialog({
 
   const handleShareToFeed = () => {
     const payload = {
-      postId,
-      message:additionalText,
+      postId: post?.originalPost?.id ? post?.originalPost?.id : post.id,
+      message: additionalText,
       visibility
     }
     mutate(payload)
@@ -80,7 +105,7 @@ export function SharePostDialog({
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex items-center gap-2">
-            <Input value={`https://ummahconnect.com/post/${postId}`} readOnly className="flex-1" />
+            <Input value={`https://ummahconnect.com/post/${post.id}`} readOnly className="flex-1" />
             <Button onClick={handleCopyLink}>
               <Link2 className="h-4 w-4 mr-2" />
               Copy
@@ -103,7 +128,7 @@ export function SharePostDialog({
                     {visibility === "public" && <Globe className="h-4 w-4" />}
                     {visibility === "friends" && <Users className="h-4 w-4" />}
                     {visibility === "private" && <Lock className="h-4 w-4" />}
-                    {visibility === "only_me" && <User className="h-4 w-4" />}
+                    {visibility === "only me" && <User className="h-4 w-4" />}
                     <span>
                       {visibility === "public"
                         ? "Public"
@@ -137,7 +162,7 @@ export function SharePostDialog({
                       <p className="text-xs text-muted-foreground">Only you and mentioned users can see this post</p>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setVisibility("only_me")} className="gap-2">
+                  <DropdownMenuItem onClick={() => setVisibility("only me")} className="gap-2">
                     <User className="h-4 w-4" />
                     <div>
                       <p className="font-medium">Only me</p>
@@ -150,10 +175,10 @@ export function SharePostDialog({
             </div>
           </div>
 
-            <Button variant="outline" className="flex-1 gap-2" onClick={handleShareToFeed} disabled={isPending}>
-              <Share className="h-4 w-4" />
-              Share to Feed
-            </Button>
+          <Button variant="outline" className="flex-1 gap-2" onClick={handleShareToFeed} disabled={isPending}>
+            <Share className="h-4 w-4" />
+            Share to Feed
+          </Button>
         </div>
 
         <DialogFooter>
