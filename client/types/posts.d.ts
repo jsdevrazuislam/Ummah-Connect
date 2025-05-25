@@ -34,7 +34,17 @@ interface PostAuthor {
 }
 interface Comments {
   total: number;
-  preview?: CommentPreview[] | null;
+}
+
+interface CommentsResponse{
+  statusCode: number
+  data: {
+    comments: CommentPreview[] | null
+    totalPages:number
+    currentPage:number
+  },
+  message:string,
+  success:boolean
 }
 interface CommentPreview {
   id: number;
@@ -47,6 +57,7 @@ interface CommentPreview {
   isEdited:boolean
   parentId:number
   postId?: number
+  totalComments?: number
 }
 
 type ReactionType =
@@ -69,6 +80,7 @@ interface RepliesEntity {
   reactions: Reactions;
   createdAt: string;
   isEdited:boolean
+  totalComments?:number
 }
 
 interface Reactions {

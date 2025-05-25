@@ -1,30 +1,52 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Post } from "@/components/post"
 import { CreatePostForm } from "@/components/create-post-form"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { Button } from "@/components/ui/button"
-import { useQuery } from "@tanstack/react-query"
 import { get_all_posts } from "@/lib/apis/posts"
 import { RefreshCw } from "lucide-react"
 import { PostSkeleton } from "@/components/post-skeleton"
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { InfiniteScroll } from '@/components/infinite-scroll';
+import { useState } from "react"
 
 export function MainFeed() {
-  const [page, setPage] = useState(0)
-  const { isLoading, data, refetch } = useQuery<PostsResponse>({
-    queryKey: ['get_all_posts'],
-    queryFn: () => get_all_posts({ page: page + 1 })
-  })
-  const [posts, setPosts] = useState<PostsEntity[]>([])
   const [showContentGenerator, setShowContentGenerator] = useState(false)
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useInfiniteQuery<PostsResponse>({
+    queryKey: ['get_all_posts'],
+    queryFn: ({ pageParam = 1 }) => get_all_posts({ page: Number(pageParam) }),
+    getNextPageParam: (lastPage) => {
+      const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
+      return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
+    },
+    initialPageParam: 1,
+    staleTime: 1000 * 60, 
+    gcTime: 1000 * 60 * 5, 
+  });
 
-  useEffect(() => {
-    if (data?.data) {
-      setPosts(data.data.posts ?? [])
+  const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
+
+  const loadMorePosts = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [data])
+  };
+
+  if (isError) {
+    return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
+  }
+
 
   return (
     <>
@@ -59,18 +81,36 @@ export function MainFeed() {
       </div>
 
       <div>
-        {
-          isLoading ?
-            Array(10).fill(10).map((item, index) => (
-              <PostSkeleton key={index} />
-            ))
-            : posts?.map((post) => (
-              <Post
-                key={post.id}
-                post={post}
-              />
-            ))
-        }
+        <InfiniteScroll
+          hasMore={hasNextPage}
+          isLoading={isFetchingNextPage}
+          onLoadMore={loadMorePosts}
+        >
+          <div>
+            {isLoading ? (
+              Array(10).fill(10).map((_, index) => (
+                <PostSkeleton key={index} />
+              ))
+            ) : (
+              posts?.map((post) => (
+                <Post key={post?.id} post={post as PostsEntity} />
+              ))
+            )}
+
+            {isFetchingNextPage && (
+              <>
+                <PostSkeleton />
+                <PostSkeleton />
+              </>
+            )}
+
+            {!hasNextPage && posts.length > 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>You've reached the end of posts</p>
+              </div>
+            )}
+          </div>
+        </InfiniteScroll>
       </div>
     </>
   )

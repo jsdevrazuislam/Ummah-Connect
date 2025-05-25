@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import type React from "react"
 
 import { useEffect, useRef, useCallback } from "react"
@@ -10,9 +11,10 @@ interface InfiniteScrollProps {
   onLoadMore: () => void
   threshold?: number
   children: React.ReactNode
+  className?:string
 }
 
-export function InfiniteScroll({ hasMore, isLoading, onLoadMore, threshold = 100, children }: InfiniteScrollProps) {
+export function InfiniteScroll({ hasMore, isLoading, onLoadMore, threshold = 100, children, className }: InfiniteScrollProps) {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
 
@@ -47,7 +49,7 @@ export function InfiniteScroll({ hasMore, isLoading, onLoadMore, threshold = 100
   return (
     <>
       {children}
-      <div ref={loadingRef} className="h-4" />
+      <div ref={loadingRef} className={cn('h-4', className)} />
     </>
   )
 }

@@ -135,44 +135,12 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
 
   const user_attribute = ['id', 'username', 'full_name', 'avatar']
   const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
-  const comment_attribute = ['id', 'postId', 'isEdited', 'parentId', 'content', 'createdAt']
 
   const { count, rows: posts} = await Post.findAndCountAll({
     limit: limit,
     offset: skip,
     where: { privacy: 'public' },
     include: [
-      {
-        model: Comment,
-        as: 'comments',
-        where: { parentId: null },
-        required: false,
-        attributes: comment_attribute,
-        include: [
-          {
-            model: Comment,
-            as: 'replies',
-            required: false,
-            attributes: comment_attribute,
-            include: [
-              { model: User, attributes: user_attribute, as: 'user' },
-               {
-                model: Reaction,
-                required: false,
-                attributes: react_attribute,
-                as: 'reactions'
-              }
-            ]
-          },
-          { model: User, attributes: user_attribute, as: 'user' },
-          {
-            model: Reaction,
-            required: false,
-            attributes: react_attribute,
-            as: 'reactions'
-          }
-        ]
-      },
       {
           model: Post,
           as: 'originalPost',
@@ -342,7 +310,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const [_, updatePost] = await Post.update(
-    { content, location, privacy, media: media_url },
+    { content, location, privacy, media: media_url ? media_url : post.media },
     { where: { id: postId, authorId }, returning: true }
   );
   

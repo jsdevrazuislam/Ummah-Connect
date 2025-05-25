@@ -60,3 +60,13 @@ interface DeleteCommentPayload{
     updatedAt: string
     isReply: boolean
 }
+
+interface QueryOldDataPayload{
+  pageParams: number[]
+  pages: PostsResponse[]
+}
+
+interface QueryOldDataCommentsPayload{
+  pageParams: number[]
+  pages: CommentsResponse[]
+}
