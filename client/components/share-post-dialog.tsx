@@ -39,27 +39,39 @@ export function SharePostDialog({
     mutationFn: share_post,
     onSuccess: (data, variable) => {
       if (data?.data?.postData?.privacy === 'public') {
-        queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
 
-          const updatedPosts = oldData?.data?.posts?.map((post) => {
+          const updatedPages = oldData?.pages?.map?.((page, index) => {
 
-            if (data?.data?.postData?.originalPost?.id === variable.postId) {
+            if (index === 0) {
+              const updatedPosts = page?.data?.posts?.map((post) => {
+                if (data?.data?.postData?.originalPost?.id === variable.postId) {
+                  return {
+                    ...post,
+                    shares: post.shares + 1
+                  }
+                }
+                return post
+              })
+
               return {
-                ...post,
-                shares: post.shares + 1
-              }
+                ...page,
+                data: {
+                  ...page.data,
+                  posts: [data.data.postData, ...(updatedPosts ?? [])]
+                }
+              };
+
+
             }
 
-            return post
+            return page
           })
 
           return {
             ...oldData,
-            data: {
-              ...oldData.data,
-              posts: [data?.data?.postData, ...(updatedPosts ?? [])]
-            }
-          }
+            pages: updatedPages
+          };
         })
       }
       setAdditionalText("")

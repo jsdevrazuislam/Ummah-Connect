@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Sparkles, X } from "lucide-react"
+import { Sparkles, X } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { LocationPicker } from "@/components/location-picker"
 import { ImageUpload } from "@/components/image-upload"
@@ -33,22 +33,31 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const { mutate, isPending } = useMutation({
     mutationFn: create_post,
     onSuccess: (newPost) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        console.log("oldData.data.posts", oldData.data.posts)
-        if (oldData.data.posts?.length === 0) {
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+
+        const updatedPages = oldData?.pages?.map((page) => {
+          if (page?.data?.posts?.length === 0) {
+            return {
+              ...page,
+              data: {
+                posts: [newPost.data],
+                totalPages: 1,
+                currentPage: 1
+              },
+            };
+          }
           return {
+            ...page,
             data: {
-              posts: [newPost.data],
-              totalPages: 1,
-              currentPage: 1
-            },
-          };
-        }
+              ...page.data,
+              posts: [newPost.data, ...(page?.data?.posts ?? [])]
+            }
+          }
+        })
+
         return {
           ...oldData,
-          data: {
-            posts: [newPost.data, ...(oldData.data.posts ?? [])]
-          }
+          pages: updatedPages
         }
       })
       setContent("")

@@ -23,10 +23,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { AITranslation } from "@/components/ai-translation"
-import { AIContentModerationBanner } from "@/components/ai-content-moderation-banner"
 import { Badge } from "@/components/ui/badge"
 import { ReactionPicker, type ReactionType } from "@/components/reaction-picker"
-import { CommentItem, } from "@/components/comment-item"
+import { CommentItems, } from "@/components/comment-item"
 import { useAuthStore } from "@/store/store"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { bookmark_post, delete_post } from "@/lib/apis/posts"
@@ -36,7 +35,7 @@ import { SharePostDialog } from "@/components/share-post-dialog"
 import EditPostModel from "@/components/edit-post-model"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
-import { addCommentToPost } from "@/lib/update-post-data"
+import { addCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { formatTimeAgo } from "@/lib/utils"
 
 
@@ -77,8 +76,11 @@ export function Post({ post }: PostProps) {
   const { mutate: mnFun, isPending } = useMutation({
     mutationFn: create_comment,
     onSuccess: (newComment, variable) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
         return addCommentToPost(oldData, variable.postId, newComment.data)
+      })
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
       })
       setCommentText("")
     },
@@ -96,17 +98,6 @@ export function Post({ post }: PostProps) {
       mnFun(payload)
     }
   }
-
-  const handleReviewContent = (postId: number) => {
-    console.log(`Reviewing post ${postId}`)
-  }
-
-
-  const handleCommentReaction = (commentId: number, reaction: ReactionType) => {
-    // In a real app, this would update the backend
-    console.log(`Reaction ${reaction} on comment ${commentId}`)
-  }
-
 
 
   const handleDeletePost = () => {
@@ -199,44 +190,39 @@ export function Post({ post }: PostProps) {
             </DropdownMenu>
           </div>
 
+          {post?.originalPost && post?.content && <p>
+            {post.content}
+          </p>}
           {
-            post?.originalPost ? <>
-              {post?.content && <p className="mt-2">
-                {post?.content}
-              </p>}
-              <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
-
-                {
-                  post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
-                    <img
-                      src={post?.originalPost?.media || "/placeholder.svg"}
-                      alt="Post image"
-                      className="w-full h-auto max-h-[400px] object-cover"
-                    />
-                  </div>
-                }
-
-                <div className="px-4 py-2">
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
-                      <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
-                      <p className="text-muted-foreground">
-                        {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="mt-4">
-                    {post?.originalPost?.content}
-                  </p>
+            post?.originalPost ? <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
+              {
+                post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
+                  <img
+                    src={post?.originalPost?.media || "/placeholder.svg"}
+                    alt="Post image"
+                    className="w-full h-auto max-h-[400px] object-cover"
+                  />
                 </div>
+              }
 
-
+              <div className="px-4 py-2">
+                <div className="flex items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
+                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
+                    <p className="text-muted-foreground">
+                      {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4">
+                  {post?.originalPost?.content}
+                </p>
               </div>
-            </> : <div className="mt-2 text-sm">{post.content}</div>
+            </div> : <div className="mt-2 text-sm">{post.content}</div>
           }
           {post?.location && !isEditing && (
             <div className="mt-2">
@@ -318,16 +304,9 @@ export function Post({ post }: PostProps) {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-4 pt-2">
-                {post?.comments?.preview?.map((comment) => (
-                  <CommentItem
-                    key={comment.id}
-                    comment={comment}
-                    onReaction={handleCommentReaction}
-                    postId={post.id}
-                  />
-                ))}
-              </div>
+                <CommentItems
+                  postId={post.id}
+                />
             </div>
           )}
         </div>

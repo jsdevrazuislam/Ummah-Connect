@@ -10,24 +10,94 @@ import { CommentReactionPicker } from "@/components/comment-reaction-picker"
 import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
 import { formatTimeAgo } from "@/lib/utils"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { delete_comment, edit_comment, reply_comment } from "@/lib/apis/comment"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
 import { useAuthStore } from "@/store/store"
-import { addReplyCommentToPost, deleteCommentToPost, editCommentToPost } from "@/lib/update-post-data"
+import { addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
+import { Skeleton } from "@/components//ui/skeleton"
+import { InfiniteScroll } from "@/components/infinite-scroll"
 
 
 interface CommentItemProps {
   comment: CommentPreview
   isReply?: boolean
   postId: number
-  onReaction?: (commentId: number, reaction: ReactionType) => void
 }
 
-export function CommentItem({
+export const CommentItems = ({ postId }: { postId: number }) => {
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery<CommentsResponse>({
+    queryKey: ['get_comments', postId],
+    queryFn: ({ pageParam = 1 }) => get_comments({ page: Number(pageParam), id: postId, limit: 10 }),
+    getNextPageParam: (lastPage) => {
+      const nextPage = lastPage.data.currentPage + 1;
+      if (nextPage <= lastPage.data.totalPages) {
+        return nextPage;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+    enabled: !!postId
+  });
+
+  const comments = data?.pages?.flatMap(page => page.data.comments ?? []) || [];
+
+  const handleLoadMoreComments = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+
+  if (isError) {
+    return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
+  }
+
+  return (
+    <InfiniteScroll className="h-0" hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={handleLoadMoreComments}>
+      {
+        isLoading ? Array(5).fill(5).map((_, index) => (
+          <div key={index} className="flex gap-2">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex-1">
+              <Skeleton className="h-8 w-full" />
+            </div>
+          </div>
+        )) : <div className="space-y-4 pt-2">
+          {comments?.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              postId={postId}
+            />
+          ))}
+        </div>
+      }
+
+      {isFetchingNextPage && Array(5).fill(5).map((_, index) => (
+        <div key={index} className="flex gap-2">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="flex-1">
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+      ))}
+    </InfiniteScroll>
+  )
+}
+
+function CommentItem({
   comment,
   isReply = false,
-  onReaction,
   postId
 }: CommentItemProps) {
   const { user } = useAuthStore()
@@ -44,8 +114,12 @@ export function CommentItem({
   const { mutate, isPending } = useMutation({
     mutationFn: reply_comment,
     onSuccess: (newComment, variable) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-       return addReplyCommentToPost(oldData, postId, variable.id, newComment.data)
+      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return addReplyCommentToPost(oldData, variable.id, newComment.data)
+      })
+
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
       })
       setReplyText("")
       setShowReplyForm(false)
@@ -58,8 +132,8 @@ export function CommentItem({
   const { mutate: editMnFun, isPending: editLoading } = useMutation({
     mutationFn: edit_comment,
     onSuccess: (updatedComment, variable) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        return editCommentToPost(oldData, variable.postId, variable.commentId, updatedComment.data)
+      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return editCommentToPost(oldData, variable.commentId, updatedComment.data)
       })
       setIsEditing(false)
     },
@@ -99,17 +173,14 @@ export function CommentItem({
   }
 
   const handleDelete = (commentId: number, parentId: number) => {
-    queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-      return deleteCommentToPost(oldData, postId, commentId, parentId, isReply)
+    queryClient.setQueryData(['get_comments', postId], (oldData: QueryOldDataCommentsPayload) => {
+      return deleteCommentToPost(oldData, commentId, parentId, isReply)
     })
     deleteMuFunc(commentId)
   }
 
   const handleReaction = (reaction: ReactionType) => {
     setCurrentReaction(reaction)
-    if (onReaction) {
-      onReaction(comment.id, reaction)
-    }
   }
 
   const getTotalReactions = () => {
@@ -118,6 +189,7 @@ export function CommentItem({
   }
 
   return (
+
     <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
         <AvatarImage src={comment?.user?.avatar || "/placeholder.svg"} alt={comment.user?.full_name} />
@@ -246,7 +318,6 @@ export function CommentItem({
                     key={reply.id}
                     comment={reply}
                     isReply={true}
-                    onReaction={onReaction}
                     postId={postId}
                   />
                 ))}

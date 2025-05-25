@@ -1,267 +1,283 @@
 function updatePostInQueryData(
-  oldData: PostsResponse | undefined,
+  oldData: QueryOldDataPayload | undefined,
   postId: number,
   updateFn: (currentReactions: Reactions) => Reactions
 ) {
-  const updatedPosts = oldData?.data?.posts?.map((post) => {
-    if (post.id === postId) {
-      return {
-        ...post,
-        reactions: updateFn(post.reactions),
-      };
+
+  const updatedPages = oldData?.pages?.map((page) => {
+    const updatedPosts = page?.data?.posts?.map((post) => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          reactions: updateFn(post.reactions),
+        };
+      }
+      return post;
+    });
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        posts: updatedPosts,
+      },
     }
-    return post;
-  });
+  })
+
 
   return {
     ...oldData,
-    data: {
-      ...oldData?.data,
-      posts: updatedPosts,
-    },
+    pages: updatedPages
   };
 }
 
 export function addCommentToPost(
-  oldData: PostsResponse | undefined,
+  oldData: QueryOldDataCommentsPayload | undefined,
   postId: number | undefined,
   newComment: CommentPreview
 ) {
-  if (!oldData?.data?.posts) {
-    return oldData || { data: { posts: [] } };
-  }
+  if (!oldData || !postId) return oldData;
 
-  const updatedPosts = oldData.data.posts.map((post) => {
-    if (post.id === postId) {
+  const updatedPages = oldData.pages.map((page) => {
+    const existingComments = page.data.comments ?? [];
+    const shouldAddComment = existingComments.length === 0 || existingComments.some((c) => c.postId === postId);
+
+    if (shouldAddComment) {
       return {
-        ...post,
-        comments: {
-          total: post.comments.total + 1,
-          preview: [newComment, ...(post.comments.preview ?? [])],
+        ...page,
+        data: {
+          ...page.data,
+          comments: [newComment, ...existingComments],
         },
       };
     }
-    return post;
+
+    return page;
   });
 
   return {
     ...oldData,
-    data: {
-      ...oldData.data,
-      posts: updatedPosts,
-    },
+    pages: updatedPages,
   };
 }
 
-export function addReplyCommentToPost(oldData: PostsResponse | undefined,
-  postId: number | undefined,
+
+export function addReplyCommentToPost(
+  oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   newComment: RepliesEntity) {
-  const updatedPost = oldData?.data?.posts?.map((post) => {
-    if (post.id === postId) {
-      const updatedComments = post?.comments?.preview?.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            replies: [newComment, ...(comment.replies ?? [])],
-          };
-        }
-        return comment;
-      });
 
-      return {
-        ...post,
-        comments: {
-          total: post.comments.total + 1,
-          preview: updatedComments,
-        },
-      };
-    }
+  const updatedPages = oldData?.pages?.map((page) => {
 
-    return post;
-  });
+    const updatedComments = page?.data?.comments?.map((comment) => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          replies: [newComment, ...(comment.replies ?? [])],
+        };
+      }
+      return comment;
+    });
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        comments: updatedComments
+      }
+    };
+  })
 
   return {
     ...oldData,
-    data: {
-      posts: updatedPost,
-    },
+    pages: updatedPages
   };
 }
 
-export function addCommentReactionToPost(oldData: PostsResponse | undefined,
-  postId: number,
+export function addCommentReactionToPost(
+  oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   parentId: number,
   isReply: boolean | undefined,
   updateFn: (currentReactions: Reactions) => Reactions) {
-  const updatedPost = oldData?.data?.posts?.map((post) => {
 
-    if (post.id === postId) {
-
-      const updatedComments = post?.comments?.preview?.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            reactions: updateFn(comment.reactions)
-          }
-        }
-        if (isReply && comment.id === parentId) {
-
-          const updatedReplies = comment?.replies?.map((replyComment) => {
-            if (replyComment.parentId === parentId && replyComment.id === commentId) {
-              return {
-                ...replyComment,
-                reactions: updateFn(replyComment.reactions)
-              }
-            }
-            return replyComment
-          })
-
-          return {
-            ...comment,
-            replies: updatedReplies
-          }
-        }
-        return comment
-      })
-
-      return {
-        ...post,
-        comments: {
-          ...post.comments,
-          preview: updatedComments
+  const updatedPages = oldData?.pages?.map((page) => {
+    const updatedComments = page?.data?.comments?.map((comment) => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          reactions: updateFn(comment.reactions)
         }
       }
-    }
+      if (isReply && comment.id === parentId) {
 
-    return post
+        const updatedReplies = comment?.replies?.map((replyComment) => {
+          if (replyComment.parentId === parentId && replyComment.id === commentId) {
+            return {
+              ...replyComment,
+              reactions: updateFn(replyComment.reactions)
+            }
+          }
+          return replyComment
+        })
+
+        return {
+          ...comment,
+          replies: updatedReplies
+        }
+      }
+      return comment
+    })
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        comments: updatedComments
+      }
+    }
   })
+
 
   return {
     ...oldData,
-    data: {
-      ...oldData?.data,
-      posts: updatedPost
-    }
+    pages: updatedPages
   }
 }
 
-export function editCommentToPost(oldData: PostsResponse | undefined,
-  postId: number,
+export function editCommentToPost(
+  oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   updatedComment: UpdatedCommentPayload) {
-  const updatedPosts = oldData?.data?.posts?.map((post) => {
 
-    if (post.id === postId) {
+  const updatedPages = oldData?.pages?.map((page) => {
 
-      const updatedComments = post?.comments?.preview?.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            ...updatedComment
-          }
-        }
-
-        if (updatedComment.isReply) {
-
-          const updatedRepliesComments = comment?.replies?.map((reply) => {
-
-            if (reply.parentId === updatedComment.parentId && reply.id === updatedComment.id) {
-              return {
-                ...reply,
-                ...updatedComment
-              }
-            }
-
-            return reply
-          })
-
-          return {
-            ...comment,
-            replies: updatedRepliesComments
-          }
-        }
-        return comment
-      })
-
-      return {
-        ...post,
-        comments: {
-          ...post.comments,
-          preview: updatedComments
+    const updatedComments = page?.data?.comments?.map((comment) => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          ...updatedComment
         }
       }
-    }
 
-    return post
+      if (updatedComment.isReply) {
+
+        const updatedRepliesComments = comment?.replies?.map((reply) => {
+
+          if (reply.parentId === updatedComment.parentId && reply.id === updatedComment.id) {
+            return {
+              ...reply,
+              ...updatedComment
+            }
+          }
+
+          return reply
+        })
+
+        return {
+          ...comment,
+          replies: updatedRepliesComments
+        }
+      }
+      return comment
+    })
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        comments: updatedComments
+      }
+    }
   })
+
 
   return {
     ...oldData,
-    data: {
-      posts: updatedPosts
-    }
+    pages: updatedPages
   }
 }
 
-export function deleteCommentToPost(oldData: PostsResponse | undefined,
-  postId: number,
+export function deleteCommentToPost(
+  oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   parentId: number,
-  isReply:boolean) {
-  const updatedPosts = oldData?.data?.posts?.map((post) => {
+  isReply: boolean) {
 
-    let commentsRemovedCount = 0;
+  const updatedPages = oldData?.pages?.map((page) => {
 
+    const updatedComments = page?.data?.comments?.map((commentData) => {
 
-    if (post.id === postId) {
+      if (isReply && commentData.id === parentId) {
+        const initialRepliesCount = commentData.replies?.length || 0;
+        const updatedRepliesComments = commentData?.replies?.filter((repComment) => repComment.id !== commentId)
+        const finalRepliesCount = updatedRepliesComments?.length || 0;
 
-      const updatedComments = post?.comments?.preview?.map((commentData) => {
-
-        if (isReply && commentData.id === parentId) {
-          const initialRepliesCount = commentData.replies?.length || 0;
-          const updatedRepliesComments = commentData?.replies?.filter((repComment) => repComment.id !== commentId)
-          const finalRepliesCount = updatedRepliesComments?.length || 0;
-
-          if (initialRepliesCount > finalRepliesCount) {
-            commentsRemovedCount += 1;
-          }
-
-          return {
-            ...commentData,
-            replies: updatedRepliesComments
-          }
+        if (initialRepliesCount > finalRepliesCount) {
         }
 
-        if (!isReply && commentData.id === commentId) {
-          commentsRemovedCount += 1;
-          commentsRemovedCount += commentData.replies?.length || 0;
-          return null;
+        return {
+          ...commentData,
+          replies: updatedRepliesComments
         }
+      }
 
-        return commentData
-      }).filter(Boolean)
+      if (!isReply && commentData.id === commentId) {
+        return null;
+      }
+      return commentData
+    }).filter(Boolean)
 
-      const newTotalComments = post.comments.total - commentsRemovedCount;
 
-      return {
-        ...post,
-        comments: {
-          total: Math.max(0, newTotalComments),
-          preview: updatedComments
-        }
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        comments: updatedComments
       }
     }
 
-    return post
+
+  })
+  return {
+    ...oldData,
+    pages: updatedPages
+  }
+}
+
+export function incrementDecrementCommentCount(
+  oldData: QueryOldDataPayload | undefined,
+  postId: number | undefined,
+  amount: number
+) {
+
+  const updatedPages = oldData?.pages?.map((page) => {
+
+    const updatedPosts = page?.data?.posts?.map((post) => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: {
+            total: amount,
+          },
+        }
+      }
+
+      return post
+    })
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        posts: updatedPosts
+      }
+    }
   })
 
   return {
     ...oldData,
-    data: {
-      posts: updatedPosts
-    }
+    pages: updatedPages
   }
 }
 
