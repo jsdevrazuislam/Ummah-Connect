@@ -35,7 +35,7 @@ const EditPostModel = ({
     const [mode, setMode] = useState(post.privacy)
     const queryClient = useQueryClient()
 
-    const { mutate: deleteFun, isPending:deleteLoading } = useMutation({
+    const { mutate: deleteFun, isPending: deleteLoading } = useMutation({
         mutationFn: delete_post_media,
         onSuccess: () => {
             setSelectedImage('')
@@ -48,28 +48,38 @@ const EditPostModel = ({
     const { mutate, isPending } = useMutation({
         mutationFn: ({ postId, payload }: { postId: number; payload: FormData }) => edit_post(postId, payload),
         onSuccess: (updatePost, variable) => {
-            queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-                const updatedPost = oldData?.data?.posts?.map((post) => {
+            queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+                const updatedPages = oldData?.pages?.map((page) => {
 
-                    if (post.id === variable.postId) {
+                    const updatedPost = page?.data?.posts?.map((post) => {
 
-                        return {
-                            ...post,
-                            content: updatePost.data.content,
-                            location: updatePost.data.location,
-                            image: updatePost.data.media,
-                            privacy: updatePost.data.privacy
+                        if (post.id === variable.postId) {
+
+                            return {
+                                ...post,
+                                content: updatePost.data.content,
+                                location: updatePost.data.location,
+                                image: updatePost.data.media,
+                                privacy: updatePost.data.privacy
+                            }
+                        }
+
+                        return post
+                    })
+
+                    return {
+                        ...page,
+                        data: {
+                            ...page.data,
+                            posts: updatedPost
                         }
                     }
 
-                    return post
                 })
 
                 return {
                     ...oldData,
-                    data: {
-                        posts: updatedPost
-                    }
+                    pages: updatedPages
                 }
             })
             setShowEditDialog(false)

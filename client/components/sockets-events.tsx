@@ -2,7 +2,7 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useSocketStore } from "@/hooks/use-socket";
-import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost } from "@/lib/update-post-data";
+import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -18,7 +18,7 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.POST_REACT, (payload: PostReactPayload) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
         return updatePostInQueryData(oldData, payload.postId, () => ({
           ...payload?.postData?.reactions
         }))
@@ -36,8 +36,11 @@ const SocketEvents = () => {
 
     socket.on(SocketEventEnum.CREATE_COMMENT, (payload: CreateCommentPayload) => {
       if (payload?.data?.user?.id !== user?.id) {
-        queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
+        queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
           return addCommentToPost(oldData, payload?.data?.postId, payload.data)
+        })
+        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+            return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
       }
     });
@@ -53,8 +56,12 @@ const SocketEvents = () => {
 
     socket.on(SocketEventEnum.REPLY_COMMENT, (payload: CreateCommentReplyPayload) => {
       if (payload?.data?.user?.id !== user?.id) {
-        queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-          return addReplyCommentToPost(oldData, payload.data.postId, payload.data.parentId, payload.data)
+        queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
+          return addReplyCommentToPost(oldData, payload.data.parentId, payload.data)
+        })
+        
+        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+            return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
       }
     });
@@ -68,8 +75,8 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.COMMENT_REACT, (payload: CommentReactPayload) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        return addCommentReactionToPost(oldData, payload?.postId, payload?.commentId, payload?.parentId, payload?.isReply, () => ({
+      queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, () => ({
           ...payload?.data?.reactions
         }))
       })
@@ -83,8 +90,8 @@ const SocketEvents = () => {
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEventEnum.EDITED_COMMENT, (payload: UpdatedCommentPayload) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        return editCommentToPost(oldData, payload.postId, payload.id, payload)
+      queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return editCommentToPost(oldData, payload.id, payload)
       })
     });
     return () => {
@@ -96,8 +103,12 @@ const SocketEvents = () => {
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEventEnum.DELETE_COMMENT, (payload: DeleteCommentPayload) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-        return deleteCommentToPost(oldData, payload.postId, payload.id, payload.parentId, payload.isReply)
+      queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        if(!oldData) return { pageParams: [], pages: []}
+        return deleteCommentToPost(oldData, payload.id, payload.parentId, payload.isReply)
+      })
+       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, payload?.postId, payload?.totalComments ?? 0)
       })
     });
     return () => {

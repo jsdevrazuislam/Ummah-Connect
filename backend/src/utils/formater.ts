@@ -1,4 +1,4 @@
-import { Post, ReactPostType } from "@/types/post";
+import { CommentsEntity, Post, ReactPostType } from "@/types/post";
 import { formatTimeAgo } from "@/utils/helper";
 
 
@@ -27,28 +27,6 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
 
     const currentPostReactions = post?.reactions?.filter((r) => r?.postId === post.id);
 
-    const commentPreview = post?.comments?.map((comment) => {
-
-      const currentCommentReactions = comment?.reactions?.filter((r) => r?.commentId === comment.id);
-
-      const repliesPreview = comment?.replies?.map((replyComment) => {
-
-        const currentReplyCommentReactions = replyComment?.reactions?.filter((r) => r?.commentId === replyComment.id);
-
-        return {
-          ...replyComment,
-          ...reactions(currentReplyCommentReactions ?? [], currentUserId),
-        }
-
-      })
-
-      return {
-        ...comment,
-        ...reactions(currentCommentReactions ?? [], currentUserId),
-        replies: repliesPreview
-      }
-    })
-
     const bookmarkPostIds = new Set(post?.bookmarks?.map((b) => b.postId));
     const isBookmarked = bookmarkPostIds.has(post.id);
 
@@ -60,10 +38,9 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
       timestamp: formatTimeAgo(new Date(post.createdAt)),
       privacy: post.privacy,
       isBookmarked,
-      originalPost: post.originalPost ,
+      originalPost: post.originalPost,
       comments: {
         total: Number(post.totalCommentsCount),
-        preview: commentPreview
       },
       shares: post.share,
       image: post.media,
@@ -74,3 +51,33 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
 
   return formattedPosts;
 };
+
+export const formatComments = (comments: any[], currentUserId: number) => {
+
+  const plainComments = comments?.map(post => post.get({ plain: true }));
+
+  const commentPreview = plainComments?.map((comment: CommentsEntity) => {
+
+    const currentCommentReactions = comment?.reactions?.filter((r) => r?.commentId === comment.id);
+
+    const repliesPreview = comment?.replies?.map((replyComment) => {
+
+      const currentReplyCommentReactions = replyComment?.reactions?.filter((r) => r?.commentId === replyComment.id);
+
+      return {
+        ...replyComment,
+        ...reactions(currentReplyCommentReactions ?? [], currentUserId),
+      }
+
+    })
+
+    return {
+      ...comment,
+      ...reactions(currentCommentReactions ?? [], currentUserId),
+      replies: repliesPreview
+    }
+  })
+
+  return commentPreview
+
+}

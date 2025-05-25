@@ -2,10 +2,11 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, Comment } from "@/models";
+import { Post, Comment, User, Reaction } from "@/models";
 import { ReactPostType } from "@/types/post";
 import CommentReaction from "@/models/react.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
+import { formatComments } from "@/utils/formater";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -17,6 +18,11 @@ export const create_comment = asyncHandler(
     if (!post) throw new ApiError(404, "Post not found");
 
     const comment = await Comment.create({ content, userId, postId });
+    const totalComments = await Comment.count({
+      where: {
+        postId 
+      }
+    })
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
@@ -31,6 +37,7 @@ export const create_comment = asyncHandler(
       },
       replies: [],
       repliesCount: 0,
+      totalComments,
       reactions: { counts: {}, currentUserReaction: null }
     }
 
@@ -56,22 +63,28 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
   if (!post) throw new ApiError(404, "Post not found");
 
   const comment = await Comment.create({ content, userId, postId, parentId });
+  const totalComments = await Comment.count({
+      where: {
+        postId 
+      }
+    })
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;
 
   const response = {
-        ...commentJSON,
-        user: {
-          id: req.user.id,
-          full_name: req.user.full_name,
-          username: req.user.username,
-          avatar: req.user.avatar,
-        },
-        parentId,
-        createdAt: comment.createdAt,
-        reactions: { counts: {}, currentUserReaction: null }
-      }
+    ...commentJSON,
+    user: {
+      id: req.user.id,
+      full_name: req.user.full_name,
+      username: req.user.username,
+      avatar: req.user.avatar,
+    },
+    parentId,
+    createdAt: comment.createdAt,
+    totalComments,
+    reactions: { counts: {}, currentUserReaction: null }
+  }
 
 
   emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } })
@@ -134,10 +147,16 @@ export const delete_comment = asyncHandler(async (req: Request, res: Response) =
     }
   })
 
-  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: {...comment.toJSON(), isReply: comment.parentId ? true: false} })
+  const totalComments = await Comment.count({
+    where: { 
+      postId: comment.postId
+    }
+  })
+
+  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: comment.parentId ? true : false, totalComments } })
 
   return res.json(
-    new ApiResponse(200, null, 'Comment delete success')
+    new ApiResponse(200, totalComments, 'Comment delete success')
   )
 })
 
@@ -173,7 +192,7 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
     const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: {...reactionCounts}, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply)  } })
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: { ...reactionCounts }, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply) } })
 
 
     return res.json(
@@ -195,7 +214,7 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
     const posts = await CommentReaction.findAll({ where: { commentId } })
     const reactionCounts = reactions(posts)
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: {...reactionCounts}, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply)  } })
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.COMMENT_REACT, payload: { data: { ...reactionCounts }, postId: Number(postId), commentId: Number(commentId), parentId: Number(parentId), isReply: Boolean(isReply) } })
 
 
     return res.json(
@@ -203,3 +222,58 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
     );
   }
 });
+
+export const get_comments = asyncHandler(async (req: Request, res: Response) => {
+
+  const page = Number(req.query.page as string)
+  const limit = Number(req.query.limit as string)
+  const user_attribute = ['id', 'username', 'full_name', 'avatar']
+  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
+  const comment_attribute = ['id', 'postId', 'isEdited', 'parentId', 'content', 'createdAt']
+  const skip = (page - 1) * limit
+
+
+  const { count, rows: comments } = await Comment.findAndCountAll({
+    where: {
+      postId: req.params.postId,
+      parentId: null
+    },
+    offset: skip,
+    limit: limit,
+    order: [['createdAt', 'DESC']],
+    include: [
+      {
+        model: Comment,
+        as: 'replies',
+        required: false,
+        attributes: comment_attribute,
+        include: [
+          { model: User, attributes: user_attribute, as: 'user' },
+          {
+            model: Reaction,
+            required: false,
+            attributes: react_attribute,
+            as: 'reactions'
+          }
+        ]
+      },
+      { model: User, attributes: user_attribute, as: 'user' },
+      {
+        model: Reaction,
+        required: false,
+        attributes: react_attribute,
+        as: 'reactions'
+      }
+    ]
+  });
+
+  const formatData = formatComments(comments, req.user.id)
+
+  return res.json(
+    new ApiResponse(200, {
+      comments: formatData,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    }, 'Comment fetching')
+  )
+})
