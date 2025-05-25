@@ -209,13 +209,7 @@ export function deleteCommentToPost(
     const updatedComments = page?.data?.comments?.map((commentData) => {
 
       if (isReply && commentData.id === parentId) {
-        const initialRepliesCount = commentData.replies?.length || 0;
         const updatedRepliesComments = commentData?.replies?.filter((repComment) => repComment.id !== commentId)
-        const finalRepliesCount = updatedRepliesComments?.length || 0;
-
-        if (initialRepliesCount > finalRepliesCount) {
-        }
-
         return {
           ...commentData,
           replies: updatedRepliesComments
@@ -236,7 +230,6 @@ export function deleteCommentToPost(
         comments: updatedComments
       }
     }
-
 
   })
   return {

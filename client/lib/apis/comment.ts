@@ -17,8 +17,8 @@ export const edit_comment = async (payload: EditCommentPayload) => {
     return response.data;
 }
 
-export const delete_comment = async (id: number) => {
-    const response = await api.delete(ApiStrings.DELETE_COMMENT(id));
+export const delete_comment = async (payload:DeletePostCommentPayload) => {
+    const response = await api.delete(ApiStrings.DELETE_COMMENT(payload.commentId));
     return response.data;
 }
 

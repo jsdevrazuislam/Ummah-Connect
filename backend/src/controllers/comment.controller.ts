@@ -153,7 +153,7 @@ export const delete_comment = asyncHandler(async (req: Request, res: Response) =
     }
   })
 
-  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: comment.parentId ? true : false } })
+  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: comment.parentId ? true : false, totalComments } })
 
   return res.json(
     new ApiResponse(200, totalComments, 'Comment delete success')

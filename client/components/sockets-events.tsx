@@ -104,7 +104,11 @@ const SocketEvents = () => {
     if (!socket) return;
     socket.on(SocketEventEnum.DELETE_COMMENT, (payload: DeleteCommentPayload) => {
       queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        if(!oldData) return { pageParams: [], pages: []}
         return deleteCommentToPost(oldData, payload.id, payload.parentId, payload.isReply)
+      })
+       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, payload?.postId, payload?.totalComments ?? 0)
       })
     });
     return () => {

@@ -23,7 +23,10 @@ interface EditCommentPayload{
     isReply?:boolean
 }
 
-
+interface DeletePostCommentPayload{
+    commentId: number,
+    parentId: number
+}
 
 interface ReplyCommentPayload{
     content:string, 

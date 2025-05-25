@@ -39,8 +39,8 @@ export const CommentItems = ({ postId }: { postId: number }) => {
     queryKey: ['get_comments', postId],
     queryFn: ({ pageParam = 1 }) => get_comments({ page: Number(pageParam), id: postId, limit: 10 }),
     getNextPageParam: (lastPage) => {
-      const nextPage = lastPage.data.currentPage + 1;
-      if (nextPage <= lastPage.data.totalPages) {
+      const nextPage = lastPage?.data?.currentPage + 1;
+      if (nextPage <= lastPage?.data?.totalPages) {
         return nextPage;
       }
       return undefined;
@@ -49,7 +49,7 @@ export const CommentItems = ({ postId }: { postId: number }) => {
     enabled: !!postId
   });
 
-  const comments = data?.pages?.flatMap(page => page.data.comments ?? []) || [];
+  const comments = data?.pages?.flatMap(page => page?.data?.comments ?? []) || [];
 
   const handleLoadMoreComments = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -144,6 +144,14 @@ function CommentItem({
 
   const { mutate: deleteMuFunc } = useMutation({
     mutationFn: delete_comment,
+    onSuccess: (updatedData, variable) => {
+      queryClient.setQueryData(['get_comments', postId], (oldData: QueryOldDataCommentsPayload) => {
+        return deleteCommentToPost(oldData, variable.commentId, variable.parentId, isReply)
+      })
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, postId, updatedData?.data)
+      })
+    },
     onError: (error) => {
       toast.error(error.message)
     }
@@ -173,10 +181,11 @@ function CommentItem({
   }
 
   const handleDelete = (commentId: number, parentId: number) => {
-    queryClient.setQueryData(['get_comments', postId], (oldData: QueryOldDataCommentsPayload) => {
-      return deleteCommentToPost(oldData, commentId, parentId, isReply)
-    })
-    deleteMuFunc(commentId)
+    const payload = {
+      commentId,
+      parentId
+    }
+    deleteMuFunc(payload)
   }
 
   const handleReaction = (reaction: ReactionType) => {
@@ -184,8 +193,8 @@ function CommentItem({
   }
 
   const getTotalReactions = () => {
-    if (Object.keys(comment.reactions.counts).length == 0) return 0
-    return Object.values(comment.reactions.counts).reduce((sum, count) => sum + (count || 0), 0)
+    if (Object.keys(comment?.reactions?.counts)?.length == 0) return 0
+    return Object.values(comment?.reactions?.counts).reduce((sum, count) => sum + (count || 0), 0)
   }
 
   return (

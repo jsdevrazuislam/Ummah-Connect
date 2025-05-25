@@ -59,6 +59,7 @@ interface DeleteCommentPayload{
     createdAt: string,
     updatedAt: string
     isReply: boolean
+    totalComments?:number
 }
 
 interface QueryOldDataPayload{
