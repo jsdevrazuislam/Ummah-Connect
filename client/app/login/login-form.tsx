@@ -14,22 +14,33 @@ import { loginUser } from "@/lib/apis/auth"
 import { toast } from "sonner"
 import { LoadingOverlay } from "@/components/loading-overlay"
 import { useRouter } from "next/navigation"
+import { TwoFactorAuthModal } from "@/components/2fa-auth-model"
+import { useState } from "react"
 
 
 export default function LoginPage() {
 
     const { setLogin } = useAuthStore()
+    const [show2FAModel, setShow2FAModal] = useState(false)
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
     });
     const router = useRouter()
+    const [payload, setPayload] = useState({
+        emailOrUsername: '',
+        password: ''
+    })
 
     const { mutate, isPending } = useMutation({
         mutationFn: loginUser,
         onSuccess: ({ data, }) => {
+            if(!data?.user){
+                setShow2FAModal(true)
+            } else {
             setLogin(data.access_token, data.refresh_token, data.user)
             toast.success("Login successfully")
             router.push("/")
+            }
         },
         onError: (error) => {
             toast.error(error.message)
@@ -40,6 +51,7 @@ export default function LoginPage() {
             ...data
         }
         mutate(payload)
+        setPayload(payload)
     }
 
 
@@ -95,6 +107,16 @@ export default function LoginPage() {
                     </CardFooter>
                 </Card>
             </div>
+            {show2FAModel && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                    <TwoFactorAuthModal
+                        onCancel={() => setShow2FAModal(false)}
+                        onVerify={(code) => {
+                            mutate({ ...payload, token: code})
+                        }}
+                    />
+                </div>
+            )}
         </div>
     )
 }

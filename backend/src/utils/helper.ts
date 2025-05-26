@@ -24,3 +24,12 @@ export function formatTimeAgo(date: Date): string {
   if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} months ago`;
   return `${Math.floor(seconds / 31536000)} years ago`;
 }
+
+/**
+ * Generates a random 6-digit numeric code.
+ * @returns A string representing a 6-digit code (e.g., "123456").
+ */
+export function generateSixDigitCode(): string {
+  const code = Math.floor(100000 + Math.random() * 900000);
+  return code.toString();
+}

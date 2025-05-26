@@ -1,6 +1,7 @@
 interface LoginPayload {
   emailOrUsername: string;
   password: string;
+  token?:string
 }
 interface ChangePasswordPayload {
   oldPassword: string;

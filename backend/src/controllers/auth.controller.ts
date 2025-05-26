@@ -14,12 +14,15 @@ import {
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
 import uploadFileOnCloudinary, { removeOldImageOnCloudinary } from "@/utils/cloudinary";
-import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { formatPosts } from "@/utils/formater";
 import { UploadedFiles } from "@/types/global";
 import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import { getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+import { generateSixDigitCode } from "@/utils/helper";
+
 
 const options = {
   httpOnly: true,
@@ -64,7 +67,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+export const verify_email = asyncHandler(async (req: Request, res: Response) => {
   const token = req.query?.token as string;
 
   if (!token) throw new ApiError(400, "Token not found");
@@ -89,8 +92,9 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   return res.redirect(`${process.env.CLIENT_URL}/login`);
 });
 
-export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { emailOrUsername, password } = req.body;
+
+export const login_with_2FA = asyncHandler(async (req: Request, res: Response) => {
+  const { emailOrUsername, password, token } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -102,11 +106,29 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const is_password_correct = await compare_password(user.password, password);
   if (!is_password_correct) throw new ApiError(400, "Invalid User Details");
 
+  if (user?.is_two_factor_enabled) {
+    if (!token) return res.json(
+      new ApiResponse(200, true, '2FA is required')
+    )
+
+    const verified = speakeasy.totp.verify({
+      secret: user.two_factor_secret,
+      encoding: 'base32',
+      token,
+      window: 1
+    });
+
+    if (!verified) {
+      throw new ApiError(401, "Invalid 2FA token");
+    }
+  }
+
   const access_token = generate_access_token({
     id: user.id,
     email: user.email,
     role: user.role
   });
+
   const refresh_token = generate_refresh_token({
     id: user.id,
     email: user.email,
@@ -156,7 +178,7 @@ export const get_me = asyncHandler(async (req: Request, res: Response) => {
     }
   })
 
-  if(!user) throw new ApiError(404, 'Not found user')
+  if (!user) throw new ApiError(404, 'Not found user')
 
   return res.json(
     new ApiResponse(200, {
@@ -391,4 +413,62 @@ export const update_notification_preferences = asyncHandler(async (req: Request,
     new ApiResponse(200, updateData[0], 'Update Settings')
   )
 
+})
+
+export const enable_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const user = req.user;
+  const secret = speakeasy.generateSecret({
+    name: `Ummah Connect - ${user?.email}`,
+    length: 20
+  })
+
+  await User.update(
+    { two_factor_secret: secret.base32 },
+    { where: { id: req.user.id } }
+  )
+
+  const qrDataURL = await qrcode.toDataURL(secret.otpauth_url ?? '');
+
+
+  return res.json(
+    new ApiResponse(200, {
+      qrCode: qrDataURL,
+      secret: secret.base32
+    }, 'Scan the QR code in Google Authenticator')
+  )
+})
+
+export const verify_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const { token } = req.body
+  const user = await User.findOne({ where: { id: req.user.id } })
+  const verified = speakeasy.totp.verify({
+    secret: user?.two_factor_secret ?? '',
+    encoding: 'base32',
+    token,
+    window: 1
+  });
+
+  if (!verified) {
+    throw new ApiError(400, "Invalid or expired 2FA code");
+  }
+
+  await User.update(
+    { is_two_factor_enabled: true },
+    { where: { id: req.user.id } }
+  )
+
+  return res.json(
+    new ApiResponse(200, null, "2FA verified and enabled successfully")
+  )
+})
+
+export const disable_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  await User.update(
+    { is_two_factor_enabled: false, two_factor_secret: null },
+    { where: { id: req.user.id } }
+  )
+  return res.json(new ApiResponse(200, null, "2FA disabled successfully"));
 })

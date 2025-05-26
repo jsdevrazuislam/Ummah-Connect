@@ -7,6 +7,9 @@ const ApiStrings = {
   PRIVACY_SETTING: "/auth/privacy-settings",
   NOTIFICATION_PREFERENCE: "/auth/notification-preference",
   CHANGE_PASSWORD: "/auth/change-password",
+  ENABLE_2FA: "/auth/2fa/enable",
+  VERIFY_2FA: "/auth/2fa/verify",
+  DISABLE_2FA: "/auth/2fa/disable",
   // Posts
   ALL_POSTS: '/post/',
   FOLLOWING_ALL_POSTS: '/post/following/posts',

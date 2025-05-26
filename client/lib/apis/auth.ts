@@ -45,3 +45,15 @@ export const notificationPreferences = async (payload:object) => {
   const response = await api.post(ApiStrings.NOTIFICATION_PREFERENCE, payload);
   return response.data;
 }
+export const enable2FA = async () => {
+  const response = await api.post(ApiStrings.ENABLE_2FA);
+  return response.data;
+}
+export const disable2FA = async () => {
+  const response = await api.post(ApiStrings.DISABLE_2FA);
+  return response.data;
+}
+export const verify2FA = async (token:string) => {
+  const response = await api.post(ApiStrings.VERIFY_2FA, { token });
+  return response.data;
+}
