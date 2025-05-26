@@ -2,6 +2,10 @@ interface LoginPayload {
   emailOrUsername: string;
   password: string;
 }
+interface ChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+}
 
 interface RegisterPayload {
   email: string;

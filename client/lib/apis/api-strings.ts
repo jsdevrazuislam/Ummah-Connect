@@ -4,6 +4,9 @@ const ApiStrings = {
   ME: "/auth/me",
   USER_DETAILS: (username:string) => `/auth/${username}/details`,
   LOGOUT: "/auth/logout",
+  PRIVACY_SETTING: "/auth/privacy-settings",
+  NOTIFICATION_PREFERENCE: "/auth/notification-preference",
+  CHANGE_PASSWORD: "/auth/change-password",
   // Posts
   ALL_POSTS: '/post/',
   FOLLOWING_ALL_POSTS: '/post/following/posts',

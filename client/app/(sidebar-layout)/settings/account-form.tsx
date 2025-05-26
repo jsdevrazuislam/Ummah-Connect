@@ -23,9 +23,11 @@ import { UserProfileFormData, userProfileSchema } from "@/validation/auth.valida
 import { Controller, useForm } from "react-hook-form"
 import { ImageUpload } from "@/components/image-upload"
 import { Camera, X } from "lucide-react"
+import ProfileLoading from "@/app/profile/[username]/loading"
 
 const AccountForm = () => {
 
+    const [loading, setLoading] = useState(true)
     const { user } = useAuthStore()
     const { setUser } = useAuthStore()
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -106,9 +108,13 @@ const AccountForm = () => {
         setValue('username', user?.username ?? '')
     }, [user])
 
+    useEffect(() =>{
+        setLoading(false)
+    }, [])
+
     return (
         <>
-            <Card>
+           {loading ? <ProfileLoading /> :  <Card>
                 <CardHeader>
                     <CardTitle>Profile Information</CardTitle>
                     <CardDescription>Update your account profile information and settings.</CardDescription>
@@ -244,7 +250,7 @@ const AccountForm = () => {
                         </Button>
                     </form>
                 </CardContent>
-            </Card>
+            </Card>}
         </>
     )
 }

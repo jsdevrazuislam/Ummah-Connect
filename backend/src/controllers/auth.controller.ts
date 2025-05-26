@@ -18,6 +18,8 @@ import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { formatPosts } from "@/utils/formater";
 import { UploadedFiles } from "@/types/global";
+import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
 
 const options = {
   httpOnly: true,
@@ -148,10 +150,18 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const get_me = asyncHandler(async (req: Request, res: Response) => {
   const followerCount = await Follow.count({ where: { followingId: req.user.id } });
   const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+  const user = await User.findOne({
+    where: { id: req.user.id }, attributes: {
+      exclude: ['password', 'two_factor_secret']
+    }
+  })
+
+  if(!user) throw new ApiError(404, 'Not found user')
+
   return res.json(
     new ApiResponse(200, {
       user: {
-        ...req.user,
+        ...user?.toJSON(),
         following_count: followerCount,
         followers_count: followingCount
       }
@@ -258,8 +268,6 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
 
   if (!user) throw new ApiError(404, 'User not found')
 
-  const user_attribute = ['id', 'username', 'full_name', 'avatar']
-  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
 
   const { count, rows: posts } = await Post.findAndCountAll({
     limit: limit,
@@ -269,41 +277,29 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
       {
         model: Post,
         as: 'originalPost',
-        attributes: ['id', 'media', 'content', 'location', 'privacy', 'createdAt'],
+        attributes: POST_ATTRIBUTE,
         include: [
-          { model: User, as: 'user', attributes: user_attribute },
+          { model: User, as: 'user', attributes: USER_ATTRIBUTE },
         ]
       },
       {
         model: Reaction,
         required: false,
-        attributes: react_attribute,
+        attributes: REACT_ATTRIBUTE,
         as: 'reactions'
       },
       { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
       {
         model: User,
         required: false,
-        attributes: user_attribute,
+        attributes: REACT_ATTRIBUTE,
         as: 'user'
       }
     ],
     attributes: {
       include: [
-        [
-          sequelize.literal(`(
-          SELECT COUNT(*) FROM "comments" AS c
-          WHERE c."postId" = "Post"."id"
-        )`),
-          'totalCommentsCount'
-        ],
-        [
-          sequelize.literal(`(
-          SELECT COUNT(*) FROM "reactions" AS r
-          WHERE r."postId" = "Post"."id"
-        )`),
-          'totalReactionsCount'
-        ],
+        getTotalCommentsCountLiteral('"Post"'),
+        getTotalReactionsCountLiteral('"Post"')
       ],
     }
   });
@@ -318,4 +314,81 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
       currentPage: page
     }, 'Post Success')
   )
+})
+
+export const change_password = asyncHandler(async (req: Request, res: Response) => {
+
+  const { oldPassword, newPassword } = req.body
+
+  if (oldPassword === newPassword) throw new ApiError(400, 'Old password and new password is same')
+
+  const hashPassword = await hash_password(newPassword)
+
+  await User.update(
+    { password: hashPassword },
+    { where: { id: req.user.id } }
+  )
+
+  return res.json(
+    new ApiResponse(200, null, 'Password Change Successfully')
+  )
+})
+
+export const update_privacy_settings = asyncHandler(async (req: Request, res: Response) => {
+
+  const { active_status, private_account, read_receipts, location_share, post_see, message } = req.body
+
+  const [_, updateData] = await User.update(
+    {
+      privacy_settings: {
+        active_status,
+        private_account,
+        read_receipts,
+        location_share,
+        post_see,
+        message
+      }
+    },
+    {
+      where: { id: req.user.id },
+      returning: true
+    }
+  )
+
+
+  return res.json(
+    new ApiResponse(200, updateData[0], 'Update Settings')
+  )
+
+})
+
+export const update_notification_preferences = asyncHandler(async (req: Request, res: Response) => {
+
+  const { push_notification, email_notification, prayer_time_notification, like_post, comment_post, mention, new_follower, dm, islamic_event } = req.body
+
+  const [_, updateData] = await User.update(
+    {
+      notification_preferences: {
+        push_notification,
+        email_notification,
+        prayer_time_notification,
+        like_post,
+        comment_post,
+        mention,
+        new_follower,
+        dm,
+        islamic_event
+      }
+    },
+    {
+      where: { id: req.user.id },
+      returning: true
+    }
+  )
+
+
+  return res.json(
+    new ApiResponse(200, updateData[0], 'Update Settings')
+  )
+
 })
