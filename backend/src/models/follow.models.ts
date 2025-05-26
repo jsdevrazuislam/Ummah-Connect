@@ -2,18 +2,18 @@ import { DataTypes, Model } from 'sequelize'
 import sequelize from '@/config/db'
 
 class Follow extends Model {
-  public followerId!: number;
-  public followingId!: number;
+    public followerId!: number;
+    public followingId!: number;
 }
 
 
 Follow.init(
     {
-        followerId:{
+        followerId: {
             type: DataTypes.INTEGER,
             primaryKey: true
         },
-        followingId:{
+        followingId: {
             type: DataTypes.INTEGER,
             primaryKey: true
         }
@@ -22,7 +22,13 @@ Follow.init(
         sequelize,
         modelName: 'Follow',
         tableName: 'follows',
-        timestamps: true
+        timestamps: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['followerId', 'followingId']
+            }
+        ]
     }
 )
 

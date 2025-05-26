@@ -2,11 +2,13 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, Comment, User, Reaction } from "@/models";
+import { Post, Comment, User, Reaction, Follow } from "@/models";
 import { ReactPostType } from "@/types/post";
 import CommentReaction from "@/models/react.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { formatComments } from "@/utils/formater";
+import { REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -20,9 +22,12 @@ export const create_comment = asyncHandler(
     const comment = await Comment.create({ content, userId, postId });
     const totalComments = await Comment.count({
       where: {
-        postId 
+        postId
       }
     })
+
+    const followerCount = await Follow.count({ where: { followingId: req.user.id } });
+  const followingCount = await Follow.count({ where: { followerId: req.user.id } });
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
@@ -34,6 +39,11 @@ export const create_comment = asyncHandler(
         full_name: req.user.full_name,
         username: req.user.username,
         avatar: req.user.avatar,
+        location: req.user?.location,
+        bio: req.user?.bio,
+        followers_count: followerCount,
+        following_count: followingCount,
+        isFollowing: false
       },
       replies: [],
       repliesCount: 0,
@@ -64,10 +74,10 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
 
   const comment = await Comment.create({ content, userId, postId, parentId });
   const totalComments = await Comment.count({
-      where: {
-        postId 
-      }
-    })
+    where: {
+      postId
+    }
+  })
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;
@@ -148,7 +158,7 @@ export const delete_comment = asyncHandler(async (req: Request, res: Response) =
   })
 
   const totalComments = await Comment.count({
-    where: { 
+    where: {
       postId: comment.postId
     }
   })
@@ -227,8 +237,6 @@ export const get_comments = asyncHandler(async (req: Request, res: Response) => 
 
   const page = Number(req.query.page as string)
   const limit = Number(req.query.limit as string)
-  const user_attribute = ['id', 'username', 'full_name', 'avatar']
-  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
   const comment_attribute = ['id', 'postId', 'isEdited', 'parentId', 'content', 'createdAt']
   const skip = (page - 1) * limit
 
@@ -248,20 +256,38 @@ export const get_comments = asyncHandler(async (req: Request, res: Response) => 
         required: false,
         attributes: comment_attribute,
         include: [
-          { model: User, attributes: user_attribute, as: 'user' },
+          {
+            model: User,
+            as: 'user',
+            attributes: [
+              ...USER_ATTRIBUTE,
+              getFollowerCountLiteral('"user"."id"'),
+              getFollowingCountLiteral('"user"."id"'),
+              getIsFollowingLiteral(req.user.id, '"user"."id"'),
+            ]
+          },
           {
             model: Reaction,
             required: false,
-            attributes: react_attribute,
+            attributes: REACT_ATTRIBUTE,
             as: 'reactions'
           }
         ]
       },
-      { model: User, attributes: user_attribute, as: 'user' },
+      {
+        model: User,
+        as: 'user',
+        attributes: [
+          ...USER_ATTRIBUTE,
+          getFollowerCountLiteral('"user"."id"'),
+          getFollowingCountLiteral('"user"."id"'),
+          getIsFollowingLiteral(req.user.id, '"user"."id"')
+        ]
+      },
       {
         model: Reaction,
         required: false,
-        attributes: react_attribute,
+        attributes: REACT_ATTRIBUTE,
         as: 'reactions'
       }
     ]

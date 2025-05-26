@@ -5,6 +5,7 @@ import Reaction from '@/models/react.models'
 import Comment from '@/models/comment.models'
 import BookmarkPost from '@/models/bookmark.models'
 
+// follows associations
 User.belongsToMany(User, {
   through: Follow,
   as: 'Followers',
@@ -41,9 +42,9 @@ Comment.hasMany(Reaction, { foreignKey: 'commentId', as: 'reactions' });
 Reaction.belongsTo(Post);
 Reaction.belongsTo(Comment);
 
+// Bookmark associations
 Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
 BookmarkPost.belongsTo(Post, {foreignKey:'postId' })
-
 User.hasMany(BookmarkPost, { foreignKey: 'userId' });
 BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 

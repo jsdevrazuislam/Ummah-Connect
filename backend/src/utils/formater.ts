@@ -39,6 +39,7 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
       privacy: post.privacy,
       isBookmarked,
       originalPost: post.originalPost,
+      likes: Number(post?.totalReactionsCount),
       comments: {
         total: Number(post.totalCommentsCount),
       },

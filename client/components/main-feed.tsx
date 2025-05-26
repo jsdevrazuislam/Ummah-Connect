@@ -1,16 +1,14 @@
 "use client"
-
-import { Post } from "@/components/post"
 import { CreatePostForm } from "@/components/create-post-form"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AIContentGenerator } from "@/components/ai-content-generator"
 import { Button } from "@/components/ui/button"
 import { get_all_posts } from "@/lib/apis/posts"
 import { RefreshCw } from "lucide-react"
-import { PostSkeleton } from "@/components/post-skeleton"
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { InfiniteScroll } from '@/components/infinite-scroll';
 import { useState } from "react"
+import FollowingFeed from "@/components/following-feed"
+import InfiniteScrollPost from "@/components/infinite-scroll-post"
 
 export function MainFeed() {
   const [showContentGenerator, setShowContentGenerator] = useState(false)
@@ -31,8 +29,8 @@ export function MainFeed() {
       return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
     },
     initialPageParam: 1,
-    staleTime: 1000 * 60, 
-    gcTime: 1000 * 60 * 5, 
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
   });
 
   const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
@@ -67,50 +65,21 @@ export function MainFeed() {
               Following
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="for-you">
+            <div className="p-4 border-b border-border">
+              <CreatePostForm onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
+              {showContentGenerator && (
+                <div className="mt-4">
+                  <AIContentGenerator />
+                </div>
+              )}
+            </div>
+             <InfiniteScrollPost loading={isLoading} hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={loadMorePosts} posts={posts} />
+          </TabsContent>
+          <TabsContent value="following">
+            <FollowingFeed />
+          </TabsContent>
         </Tabs>
-      </div>
-
-      <div className="p-4 border-b border-border">
-        <CreatePostForm onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
-
-        {showContentGenerator && (
-          <div className="mt-4">
-            <AIContentGenerator />
-          </div>
-        )}
-      </div>
-
-      <div>
-        <InfiniteScroll
-          hasMore={hasNextPage}
-          isLoading={isFetchingNextPage}
-          onLoadMore={loadMorePosts}
-        >
-          <div>
-            {isLoading ? (
-              Array(10).fill(10).map((_, index) => (
-                <PostSkeleton key={index} />
-              ))
-            ) : (
-              posts?.map((post) => (
-                <Post key={post?.id} post={post as PostsEntity} />
-              ))
-            )}
-
-            {isFetchingNextPage && (
-              <>
-                <PostSkeleton />
-                <PostSkeleton />
-              </>
-            )}
-
-            {!hasNextPage && posts.length > 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>You've reached the end of posts</p>
-              </div>
-            )}
-          </div>
-        </InfiniteScroll>
       </div>
     </>
   )

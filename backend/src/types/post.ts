@@ -47,6 +47,9 @@ export interface User {
   username: string;
   full_name: string;
   avatar?: null;
+  followers_count:string
+  following_count:string
+  location:string
 }
 export interface ReactionsEntity {
   userId: number;

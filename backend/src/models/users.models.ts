@@ -7,14 +7,15 @@ class User extends Model {
   public username!: string;
   public full_name!: string;
   public avatar!: string;
+  public cover!: string;
   public location!: string;
   public website!: string;
   public role!: string;
-  public title!: string;
   public email!: string;
   public refresh_token!: string;
   public password!: string;
   public gender!: string;
+  public bio!: string;
   public is_verified!: boolean;
 }
 
@@ -43,7 +44,15 @@ User.init(
             type: DataTypes.STRING,
             allowNull: false
         },
+        bio: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         avatar: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        cover: {
             type: DataTypes.STRING,
             allowNull: true
         },
@@ -62,10 +71,6 @@ User.init(
         gender:{
             type: DataTypes.ENUM('male','female'),
             defaultValue: 'male'
-        },
-        title: {
-            type: DataTypes.STRING,
-            allowNull: true
         },
         refresh_token: DataTypes.STRING,
         is_verified: {

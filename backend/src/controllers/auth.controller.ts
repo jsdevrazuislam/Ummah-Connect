@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { User } from "@/models";
+import { Follow, Post, Reaction, User } from "@/models";
 import { Op } from "sequelize";
 import {
   compare_password,
@@ -13,6 +13,11 @@ import {
 } from "@/utils/auth-helper";
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
+import uploadFileOnCloudinary, { removeOldImageOnCloudinary } from "@/utils/cloudinary";
+import sequelize from "@/config/db";
+import BookmarkPost from "@/models/bookmark.models";
+import { formatPosts } from "@/utils/formater";
+import { UploadedFiles } from "@/types/global";
 
 const options = {
   httpOnly: true,
@@ -141,7 +146,176 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const get_me = asyncHandler(async (req: Request, res: Response) => {
+  const followerCount = await Follow.count({ where: { followingId: req.user.id } });
+  const followingCount = await Follow.count({ where: { followerId: req.user.id } });
   return res.json(
-    new ApiResponse(200, { user: req.user }, "Fetching User Success")
+    new ApiResponse(200, {
+      user: {
+        ...req.user,
+        following_count: followerCount,
+        followers_count: followingCount
+      }
+    }, "Fetching User Success")
   );
 });
+
+export const update_current_user_info = asyncHandler(async (req: Request, res: Response) => {
+
+  const { website, full_name, location, email, bio, username, gender } = req.body
+  const files = req.files as UploadedFiles | undefined;
+  const coverPath = files?.cover?.[0].path;
+  const avatarPath = files?.avatar?.[0].path
+
+  const user = await User.findOne({ where: { id: req.user.id } })
+
+  if (avatarPath && user?.avatar) {
+    await removeOldImageOnCloudinary(user?.avatar);
+  }
+  if (coverPath && user?.cover) {
+    await removeOldImageOnCloudinary(user?.cover);
+  }
+
+  let avatar_url = null;
+  let cover_url = null;
+  if (avatarPath) {
+    const media = await uploadFileOnCloudinary(
+      avatarPath,
+      "ummah_connect/profiles_pictures"
+    );
+    avatar_url = media;
+  }
+  if (coverPath) {
+    const media = await uploadFileOnCloudinary(
+      coverPath,
+      "ummah_connect/cover_photos"
+    );
+    cover_url = media;
+  }
+
+  const payload = {
+    website,
+    full_name,
+    location,
+    avatar: avatar_url,
+    email,
+    bio,
+    username,
+    gender,
+    cover: cover_url
+  };
+
+
+  const updateUser = await User.update(
+    { ...payload },
+    {
+      where: { id: req.user.id },
+      returning: true
+    }
+  )
+
+  const safeUser = updateUser[1][0].get({ plain: true });
+  delete safeUser.password;
+
+  return res.json(
+    new ApiResponse(200, safeUser, 'Update Profile Success')
+  )
+})
+
+export const get_user_profile = asyncHandler(async (req: Request, res: Response) => {
+
+  const user = await User.findOne({
+    where: { username: req.params.username },
+    attributes: {
+      exclude: ['password', 'refresh_token', 'role']
+    }
+  })
+
+  if (!user) throw new ApiError(404, 'User not found')
+
+  const followerCount = await Follow.count({ where: { followingId: user.id } });
+  const followingCount = await Follow.count({ where: { followerId: user.id } });
+
+
+  return res.json(
+    new ApiResponse(200, {
+      ...user.toJSON(),
+      following_count: followerCount,
+      followers_count: followingCount
+    }, 'Fetch success')
+  )
+})
+
+export const get_user_details = asyncHandler(async (req: Request, res: Response) => {
+
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const currentUserId = req.user?.id;
+
+  const user = await User.findOne({
+    where: { username: req.params.username },
+  })
+
+  if (!user) throw new ApiError(404, 'User not found')
+
+  const user_attribute = ['id', 'username', 'full_name', 'avatar']
+  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
+
+  const { count, rows: posts } = await Post.findAndCountAll({
+    limit: limit,
+    offset: skip,
+    where: { authorId: user.id },
+    include: [
+      {
+        model: Post,
+        as: 'originalPost',
+        attributes: ['id', 'media', 'content', 'location', 'privacy', 'createdAt'],
+        include: [
+          { model: User, as: 'user', attributes: user_attribute },
+        ]
+      },
+      {
+        model: Reaction,
+        required: false,
+        attributes: react_attribute,
+        as: 'reactions'
+      },
+      { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
+      {
+        model: User,
+        required: false,
+        attributes: user_attribute,
+        as: 'user'
+      }
+    ],
+    attributes: {
+      include: [
+        [
+          sequelize.literal(`(
+          SELECT COUNT(*) FROM "comments" AS c
+          WHERE c."postId" = "Post"."id"
+        )`),
+          'totalCommentsCount'
+        ],
+        [
+          sequelize.literal(`(
+          SELECT COUNT(*) FROM "reactions" AS r
+          WHERE r."postId" = "Post"."id"
+        )`),
+          'totalReactionsCount'
+        ],
+      ],
+    }
+  });
+
+  const formatPostData = formatPosts(posts, currentUserId)
+
+
+  return res.json(
+    new ApiResponse(200, {
+      posts: formatPostData,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    }, 'Post Success')
+  )
+})

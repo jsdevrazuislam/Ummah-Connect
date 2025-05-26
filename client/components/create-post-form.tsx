@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe, Lock, Users, User } from "lucide-react"
 import LoadingUi from "./ui-loading"
+import { useAuthStore } from "@/store/store"
 
 interface CreatePostFormProps {
   onAIHelp?: () => void
@@ -28,7 +29,8 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
-  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only_me">("public")
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
+  const { user } = useAuthStore()
 
   const { mutate, isPending } = useMutation({
     mutationFn: create_post,
@@ -120,8 +122,8 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
       }
       <div className="flex gap-3">
         <Avatar>
-          <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Your avatar" />
-          <AvatarFallback>YA</AvatarFallback>
+          <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
+          <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
         </Avatar>
         <Textarea
           ref={textareaRef}
@@ -185,7 +187,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
                 {visibility === "public" && <Globe className="h-4 w-4" />}
                 {visibility === "friends" && <Users className="h-4 w-4" />}
                 {visibility === "private" && <Lock className="h-4 w-4" />}
-                {visibility === "only_me" && <User className="h-4 w-4" />}
+                {visibility === "only me" && <User className="h-4 w-4" />}
                 <span className="hidden sm:inline">
                   {visibility === "public"
                     ? "Public"
@@ -219,7 +221,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
                   <p className="text-xs text-muted-foreground">Only you and mentioned users can see this post</p>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setVisibility("only_me")} className="gap-2">
+              <DropdownMenuItem onClick={() => setVisibility("only me")} className="gap-2">
                 <User className="h-4 w-4" />
                 <div>
                   <p className="font-medium">Only me</p>

@@ -43,7 +43,6 @@ export function SideNav() {
     { href: "/messages", icon: MessageCircle, label: "Messages" },
     { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
     { href: "/prayer-times", icon: Calendar, label: "Prayer Times" },
-    { href: "/profile", icon: User, label: "Profile" },
     { href: "/settings", icon: Settings, label: "Settings" },
   ]
 

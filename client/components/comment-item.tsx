@@ -17,6 +17,8 @@ import { useAuthStore } from "@/store/store"
 import { addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { Skeleton } from "@/components//ui/skeleton"
 import { InfiniteScroll } from "@/components/infinite-scroll"
+import CardHoverTooltip from "./card-hover-tooltip"
+import { useRouter } from "next/navigation"
 
 
 interface CommentItemProps {
@@ -25,7 +27,7 @@ interface CommentItemProps {
   postId: number
 }
 
-export const CommentItems = ({ postId }: { postId: number }) => {
+export const CommentItems = ({ postId, totalComment }: { postId: number, totalComment: number | undefined }) => {
 
   const {
     data,
@@ -46,7 +48,7 @@ export const CommentItems = ({ postId }: { postId: number }) => {
       return undefined;
     },
     initialPageParam: 1,
-    enabled: !!postId
+    enabled: postId && totalComment !== 0 ? true : false
   });
 
   const comments = data?.pages?.flatMap(page => page?.data?.comments ?? []) || [];
@@ -109,6 +111,7 @@ function CommentItem({
   const [showReplies, setShowReplies] = useState(false)
   const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction ?? null)
   const isCurrentUserComment = user && comment.user.username === user.username
+  const router = useRouter()
 
   const queryClient = useQueryClient()
   const { mutate, isPending } = useMutation({
@@ -207,7 +210,9 @@ function CommentItem({
       <div className="flex-1">
         <div className="bg-muted rounded-lg px-3 py-2">
           <div className="flex justify-between items-center">
-            <span className="font-medium capitalize text-sm">{comment?.user?.full_name}</span>
+            <CardHoverTooltip user={comment.user}>
+              <button onClick={() => router.push(`/profile/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.full_name}</button>
+            </CardHoverTooltip>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{formatTimeAgo(new Date(comment.createdAt))}</span>
               {isCurrentUserComment && (

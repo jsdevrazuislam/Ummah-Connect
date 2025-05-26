@@ -12,11 +12,14 @@ export interface User {
     email: string
     avatar: string
     location: string
+    bio: string
     role: string
     website: string
-    title: string
     refresh_token: string
     is_verified: boolean
     createdAt?: string
     updatedAt?: string
+    followers_count?:number
+    following_count?:number
+    isFollowing?:boolean
 }

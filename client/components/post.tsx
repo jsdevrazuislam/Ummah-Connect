@@ -37,6 +37,15 @@ import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { addCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { formatTimeAgo } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import CardHoverTooltip from "./card-hover-tooltip"
+import { useRouter } from "next/navigation"
+
 
 
 interface PostProps {
@@ -55,6 +64,7 @@ export function Post({ post }: PostProps) {
   const [showShareDialog, setShowShareDialog] = useState(false)
   const isCurrentUserPost = user && post?.user?.username === user?.username
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   const { mutate } = useMutation({
     mutationFn: delete_post,
@@ -101,15 +111,23 @@ export function Post({ post }: PostProps) {
 
 
   const handleDeletePost = () => {
-    queryClient.setQueryData(['get_all_posts'], (oldData: PostsResponse) => {
-      const updatedPost = oldData?.data?.posts?.filter((newPost) => newPost.id !== post.id)
+    queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+      const updatedPages = oldData?.pages?.map((page) => {
+        const updatedPost = page?.data?.posts?.filter((newPost) => newPost.id !== post.id)
+        return {
+          ...page,
+          data: {
+            ...page.data,
+            posts: updatedPost
+          }
+        }
+      })
+
       return {
         ...oldData,
-        data: {
-          ...oldData.data,
-          posts: updatedPost
-        }
+        pages: updatedPages
       }
+
     })
     mutate(post.id)
   }
@@ -140,7 +158,9 @@ export function Post({ post }: PostProps) {
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div>
-              <span className="font-semibold capitalize">{post?.user?.full_name}</span>{" "}
+              <CardHoverTooltip user={post.user}>
+                <button onClick={() => router.push(`/profile/${post?.user?.username}`)} className="font-semibold capitalize cursor-pointer hover:underline">{post?.user?.full_name}</button>
+              </CardHoverTooltip>
               <span className="text-muted-foreground">
                 @{post?.user?.username} · {post?.timestamp}
               </span>
@@ -190,7 +210,7 @@ export function Post({ post }: PostProps) {
             </DropdownMenu>
           </div>
 
-          {post?.originalPost && post?.content && <p>
+          {post?.originalPost && post?.content && <p className="mt-4">
             {post.content}
           </p>}
           {
@@ -222,7 +242,7 @@ export function Post({ post }: PostProps) {
                   {post?.originalPost?.content}
                 </p>
               </div>
-            </div> : <div className="mt-2 text-sm">{post.content}</div>
+            </div> : <div className="mt-4 text-sm">{post.content}</div>
           }
           {post?.location && !isEditing && (
             <div className="mt-2">
@@ -304,9 +324,10 @@ export function Post({ post }: PostProps) {
                   </Button>
                 </div>
               </div>
-                <CommentItems
-                  postId={post.id}
-                />
+              <CommentItems
+                postId={post.id}
+                totalComment={post?.comments?.total}
+              />
             </div>
           )}
         </div>

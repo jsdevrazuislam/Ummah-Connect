@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, Reaction, User, Comment } from "@/models";
+import { Follow, Post, Reaction, User } from "@/models";
 import { postSchema } from "@/schemas/post.schema";
 import uploadFileOnCloudinary, {
   removeOldImageOnCloudinary,
@@ -13,6 +13,9 @@ import BookmarkPost from "@/models/bookmark.models";
 import { ReactPostType } from "@/types/post";
 import { formatPosts } from "@/utils/formater";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
+import { Op } from "sequelize";
+import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -37,6 +40,10 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
   };
 
   const newPost = await Post.create(payload);
+  const followerCount = await Follow.count({ where: { followingId: req.user.id } });
+  const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+
+
 
   const postData = {
     ...newPost.toJSON(),
@@ -47,6 +54,11 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       full_name: req.user?.full_name,
       avatar: req.user?.avatar,
       username: req?.user?.username,
+      location: req.user?.location,
+      bio: req.user?.bio,
+      followers_count: followerCount,
+      following_count: followingCount,
+      isFollowing: false
     },
     replies: [],
     isBookmarked: false,
@@ -97,7 +109,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData: reactionCounts, postId: Number(postId) } })
 
 
     return res.json(
@@ -119,7 +131,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     const posts = await Reaction.findAll({ where: { postId } })
     const reactionCounts = reactions(posts)
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData:reactionCounts, postId: Number(postId)}})
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData: reactionCounts, postId: Number(postId) } })
 
     return res.json(
       new ApiResponse(200, reactionCounts, "React Successfully")
@@ -133,61 +145,67 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
   const currentUserId = req.user?.id;
 
-  const user_attribute = ['id', 'username', 'full_name', 'avatar']
-  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
 
-  const { count, rows: posts} = await Post.findAndCountAll({
+  const { count, rows: posts } = await Post.findAndCountAll({
     limit: limit,
     offset: skip,
     where: { privacy: 'public' },
     include: [
       {
-          model: Post,
-          as: 'originalPost',
-          attributes: ['id', 'media', 'content', 'location', 'privacy', 'createdAt'],
-          include: [
-            { model: User, as: 'user', attributes: user_attribute },
-          ]
-        },
+        model: Post,
+        as: 'originalPost',
+        attributes: POST_ATTRIBUTE,
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: [
+                ...USER_ATTRIBUTE,
+                getFollowerCountLiteral('"originalPost->user"."id"'), 
+                getFollowingCountLiteral('"originalPost->user"."id"'), 
+                getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
+            ]
+          },
+        ]
+      },
       {
         model: Reaction,
         required: false,
-        attributes: react_attribute,
+        attributes: REACT_ATTRIBUTE,
         as: 'reactions'
       },
-      { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
+      {
+        model: BookmarkPost,
+        attributes: ['id', 'postId', 'userId'],
+        as: 'bookmarks'
+      },
       {
         model: User,
         required: false,
-        attributes: user_attribute,
-        as: 'user'
+        as: 'user',
+        attributes: [
+          ...USER_ATTRIBUTE,
+           ...USER_ATTRIBUTE,
+            getFollowerCountLiteral('"Post"."authorId"'),
+            getFollowingCountLiteral('"Post"."authorId"'),
+            getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
+        ]
       }
     ],
     attributes: {
-    include: [
-      [
-        sequelize.literal(`(
-          SELECT COUNT(*) FROM "comments" AS c
-          WHERE c."postId" = "Post"."id"
-        )`),
-        'totalCommentsCount'
+      include: [
+        getTotalCommentsCountLiteral('"Post"'),
+        getTotalReactionsCountLiteral('"Post"')
       ],
-      [
-        sequelize.literal(`(
-          SELECT COUNT(*) FROM "reactions" AS r
-          WHERE r."postId" = "Post"."id"
-        )`),
-        'totalReactionsCount'
-      ],
-    ],
-  }
+    }
   });
 
-  const formatPostData = formatPosts(posts, currentUserId)
+  const formatPostData = formatPosts(posts, currentUserId);
 
   return res.json(
     new ApiResponse(
-      200, {
+      200,
+      {
         posts: formatPostData,
         totalPages: Math.ceil(count / limit),
         currentPage: page
@@ -200,16 +218,15 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
 export const share = asyncHandler(async (req: Request, res: Response) => {
   const postId = Number(req.params.postId);
   const currentUserId = req.user?.id;
-  const user_attribute = ['id', 'username', 'full_name', 'avatar']
 
 
-  const originalPost = await Post.findOne({ 
-    where: { id: postId},
+  const originalPost = await Post.findOne({
+    where: { id: postId },
     include: [
       {
         model: User,
         required: false,
-        attributes: user_attribute,
+        attributes: USER_ATTRIBUTE,
         as: 'user'
       }
     ]
@@ -225,7 +242,7 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
   const sharedPost = await Post.create({
     authorId: currentUserId,
     sharedPostId: originalPost.id,
-    content: req.body.message || null, 
+    content: req.body.message || null,
     privacy: req.body.visibility || 'public'
   });
 
@@ -313,7 +330,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     { content, location, privacy, media: media_url ? media_url : post.media },
     { where: { id: postId, authorId }, returning: true }
   );
-  
+
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
 
@@ -355,3 +372,79 @@ export const delete_post = asyncHandler(async (req: Request, res: Response) => {
 
   res.json(new ApiResponse(200, null, "Post delete successfully"));
 });
+
+export const get_following_posts = asyncHandler(
+  async (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const currentUserId = req.user?.id;
+
+    const { count, rows: posts } = await Post.findAndCountAll({
+      limit: limit,
+      offset: skip,
+      where: {
+        privacy: 'public',
+        authorId: {
+          [Op.in]: sequelize.literal(`(
+          SELECT "followingId" FROM "follows" WHERE "followerId" = ${currentUserId}
+        )`)
+        }
+      },
+      include: [
+        {
+          model: Post,
+          as: 'originalPost',
+          attributes: POST_ATTRIBUTE,
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: [
+                ...USER_ATTRIBUTE,
+                getFollowerCountLiteral('"originalPost->user"."id"'), 
+                getFollowingCountLiteral('"originalPost->user"."id"'), 
+                getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
+              ]
+            },
+          ]
+        },
+        {
+          model: Reaction,
+          required: false,
+          attributes: REACT_ATTRIBUTE,
+          as: 'reactions'
+        },
+        {
+          model: BookmarkPost,
+          attributes: ['id', 'postId', 'userId'],
+          as: 'bookmarks'
+        },
+        {
+          model: User,
+          required: false,
+          as: 'user',
+          attributes: [
+            ...USER_ATTRIBUTE,
+            getFollowerCountLiteral('"Post"."authorId"'),
+            getFollowingCountLiteral('"Post"."authorId"'),
+            getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
+          ]
+        }
+      ],
+      attributes: {
+        include: [
+          getTotalCommentsCountLiteral('"Post"'),
+          getTotalReactionsCountLiteral('"Post"')
+        ],
+      }
+    });
+
+    res.json(
+      new ApiResponse(200, {
+        posts: formatPosts(posts, currentUserId),
+        totalPages: Math.ceil(count / limit),
+        currentPage: page
+      }, 'Following posts retrieved successfully')
+    )
+  })

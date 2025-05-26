@@ -5,9 +5,10 @@ interface PostsResponse {
   success: boolean;
 }
 interface PostsData {
-  posts?: PostsEntity[] | null;
+  posts?: PostsEntity[];
   totalPages: number;
   currentPage: number;
+  user?:User
 }
 interface PostsEntity {
   id: number;
@@ -31,6 +32,11 @@ interface PostAuthor {
   full_name: string;
   username: string;
   avatar?: string;
+  location:string
+  following_count:string
+  followers_count:string
+  bio:string
+  isFollowing?: boolean;
 }
 interface Comments {
   total: number;

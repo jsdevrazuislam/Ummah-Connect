@@ -11,6 +11,16 @@ export const get_all_posts = async ({
     return response.data;
 };
 
+export const get_all_following_posts = async ({
+    page = 1,
+    limit = 10,
+}): Promise<PostsResponse> => {
+    const response = await api.get<PostsResponse>(ApiStrings.FOLLOWING_ALL_POSTS, {
+        params: { page, limit },
+    });
+    return response.data;
+};
+
 export const create_post = async (payload: FormData) => {
     const response = await api.post(ApiStrings.ALL_POSTS, payload, {
         headers: {

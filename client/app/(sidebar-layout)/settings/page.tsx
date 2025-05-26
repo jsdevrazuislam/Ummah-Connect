@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bell, User, Moon, Lock, Sun, Laptop } from "lucide-react"
+import AccountForm from "@/app/(sidebar-layout)/settings/account-form"
 
 export default function SettingsPage() {
   return (
@@ -34,59 +35,7 @@ export default function SettingsPage() {
             </TabsList>
 
             <TabsContent value="account" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>Update your account profile information and settings.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src="/placeholder.svg?height=80&width=80" alt="Profile" />
-                      <AvatarFallback>AB</AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-2">
-                      <Button variant="outline" size="sm">
-                        Change Avatar
-                      </Button>
-                      <p className="text-xs text-muted-foreground">JPG, GIF or PNG. 1MB max size.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" defaultValue="Abdullah Muhammad" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input id="username" defaultValue="abdullah_m" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" defaultValue="abdullah@example.com" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input id="location" defaultValue="Kuala Lumpur, Malaysia" />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        defaultValue="Software Engineer | Muslim | Sharing knowledge and inspiration | Interested in tech, Islamic history, and photography"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="website">Website</Label>
-                      <Input id="website" defaultValue="https://abdullah.dev" />
-                    </div>
-                  </div>
-
-                  <Button>Save Changes</Button>
-                </CardContent>
-              </Card>
+              <AccountForm />
 
               <Card>
                 <CardHeader>

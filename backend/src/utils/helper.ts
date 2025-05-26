@@ -1,3 +1,18 @@
+/**
+ * Formats a given Date object into a human-readable "time ago" string.
+ * It calculates the difference between the current time and the provided date
+ * and returns a string like "X seconds ago", "Y minutes ago", "Z hours ago", etc.
+ *
+ * @param {Date} date - The Date object to format.
+ * @returns {string} A string representing how long ago the date occurred.
+ *
+ * @example
+ * const pastDate = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
+ * console.log(formatTimeAgo(pastDate)); // Output: "5 minutes ago"
+ *
+ * const anotherPastDate = new Date(2023, 0, 1); // January 1, 2023
+ * console.log(formatTimeAgo(anotherPastDate)); // Output: "1 year ago" (or similar, depending on current date)
+ */
 export function formatTimeAgo(date: Date): string {
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);

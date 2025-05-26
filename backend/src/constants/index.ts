@@ -15,4 +15,8 @@ const SocketEventEnum = Object.freeze({
   DELETE_COMMENT:"deleteComment",
 });
 
-export { DATA_LIMIT, DB_NAME, SocketEventEnum, API_VERSION };
+const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio'];
+const REACT_ATTRIBUTE = ['userId', 'react_type', 'icon', 'commentId', 'postId'];
+const POST_ATTRIBUTE = ['id', 'media', 'content', 'location', 'privacy', 'createdAt']
+
+export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE };

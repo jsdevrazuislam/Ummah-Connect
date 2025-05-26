@@ -2,9 +2,11 @@ const ApiStrings = {
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
   ME: "/auth/me",
+  USER_DETAILS: (username:string) => `/auth/${username}/details`,
   LOGOUT: "/auth/logout",
   // Posts
   ALL_POSTS: '/post/',
+  FOLLOWING_ALL_POSTS: '/post/following/posts',
   EDITPOST: (id:number) => `/post/edit/${id}`,
   DELETEPOST: (id:number) => `/post/delete/${id}`,
   DELETE_MEDIA: (id:number) => `/post/delete/media/${id}`,
@@ -18,6 +20,8 @@ const ApiStrings = {
   DELETE_COMMENT:(id:number) =>  `/comment/delete/${id}`,
   COMMENT_REACT:(id:number) =>  `/comment/react/${id}`,
   GET_COMMENTS:(id:number) =>  `/comment/${id}/comments`,
+  // Follow
+  FOLLOW_UNFOLLOW:(id:number) =>  `/follow/${id}`,
 };
 
 export default ApiStrings;

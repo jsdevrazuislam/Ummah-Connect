@@ -22,7 +22,7 @@ export const verify_auth = asyncHandler(
     });
     if (!user) throw new ApiError(404, "User not found in jwt");
 
-    req.user = user;
+    req.user = user?.toJSON();
     next();
   }
 );

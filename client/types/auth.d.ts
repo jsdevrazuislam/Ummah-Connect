@@ -4,6 +4,17 @@ interface UserResponse {
   message: string;
   success: boolean;
 }
+interface ProfileUser{
+  data: User
+}
+interface UpdateUserResponse {
+  statusCode: number;
+  data: User;
+  message: string;
+  success: boolean;
+}
+
+
 interface Data {
   user: User;
   access_token: string;
@@ -23,6 +34,11 @@ interface User {
   is_verified: boolean;
   createdAt: string;
   updatedAt: string;
+  bio:string
+  gender:string
+  cover:string
+  followers_count:number
+  following_count:number
 }
 
 interface JwtResponsePayload {
