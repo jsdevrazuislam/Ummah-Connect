@@ -35,6 +35,72 @@ export const userProfileSchema = z.object({
     .optional()
 })
 
+export const privacySettingsSchema = z.object({
+  private_account: z.boolean().default(false),
+  active_status: z.boolean().default(false),
+  read_receipts: z.boolean().default(false),
+  location_share: z.boolean().default(false),
+  post_see: z.string().default('everyone'),
+  message: z.string().default('followers'),
+});
+
+export const notificationPreferenceSchema = z.object({
+  push_notification: z.boolean().default(false),
+  email_notification: z.boolean().default(false),
+  prayer_time_notification: z.boolean().default(false),
+  like_post: z.boolean().default(false),
+  comment_post: z.boolean().default(false),
+  mention: z.boolean().default(false),
+  new_follower: z.boolean().default(false),
+  dm: z.boolean().default(false),
+  islamic_event: z.boolean().default(false),
+});
+
+export const changePasswordSchema = z.object({
+  oldPassword: z.string().min(8, "Old password must be at least 8 characters long."),
+  newPassword: z.string().min(8, "New password must be at least 8 characters long."),
+  confirmPassword: z.string().min(8, "Confirm password must be at least 8 characters long."),
+})
+.refine((data) => data.oldPassword !== data.newPassword, {
+  message: "New password cannot be the same as the old password.",
+  path: ["newPassword"], 
+})
+.refine((data) => data.newPassword === data.confirmPassword, {
+  message: "New password and confirm password do not match.",
+  path: ["confirmPassword"], 
+});
+
+export const loginRecoverySchema = z.object({
+  emailOrUsername: z.string().min(1, "Email or username is required."),
+  recoveryCode: z.string().optional(),
+  otp: z.string().optional(),
+  activeMethod: z.enum(['recovery', 'otp'], {
+    required_error: "An active method (recovery or OTP) must be selected."
+  }).default('recovery'),
+}).superRefine((data, ctx) => {
+  if (data.activeMethod === 'recovery') {
+    if (data?.recoveryCode?.length !== 16) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Recovery code must be 16 characters long.",
+        path: ['recoveryCode'],
+      });
+    }
+  } else if (data.activeMethod === 'otp') {
+    if (data?.otp?.length !== 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "OTP code must be 6 digits long.",
+        path: ['otp'],
+      });
+    } 
+  }
+});
+
+export type RecoveryLoginFormData = z.infer<typeof loginRecoverySchema>;
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+export type NotificationPreferenceFormData = z.infer<typeof notificationPreferenceSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignupFormData = z.infer<typeof registerSchema>;
 export type UserProfileFormData = z.infer<typeof userProfileSchema>;
+export type PrivacyFormData = z.infer<typeof privacySettingsSchema>;

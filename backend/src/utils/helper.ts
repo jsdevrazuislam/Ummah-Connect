@@ -1,3 +1,6 @@
+import bcrypt from 'bcryptjs';
+
+
 /**
  * Formats a given Date object into a human-readable "time ago" string.
  * It calculates the difference between the current time and the provided date
@@ -23,4 +26,57 @@ export function formatTimeAgo(date: Date): string {
   if (seconds < 2592000) return `${Math.floor(seconds / 604800)} weeks ago`;
   if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} months ago`;
   return `${Math.floor(seconds / 31536000)} years ago`;
+}
+
+/**
+ * Generates a random 6-digit numeric code.
+ * @returns A string representing a 6-digit code (e.g., "123456").
+ */
+export function generateSixDigitCode(): string {
+  const code = Math.floor(100000 + Math.random() * 900000);
+  return code.toString();
+}
+
+const RECOVERY_CODE_LENGTH = 16;
+const NUMBER_OF_RECOVERY_CODES = 10;
+const HASH_SALT_ROUNDS = 10;
+
+/**
+ * Generates a random alphanumeric string for a recovery code.
+ */
+function generateRandomCode(length: number): string {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+/**
+ * Generates a set of unique recovery codes and their hashes.
+ * @returns An object containing `plainCodes` (array of plain text codes) and `hashedCodes` (array of hashed codes).
+ */
+export async function generateRecoveryCodes(): Promise<{ plainCodes: string[]; hashedCodes: string[] }> {
+  const plainCodes: string[] = [];
+  const hashedCodes: string[] = [];
+
+  for (let i = 0; i < NUMBER_OF_RECOVERY_CODES; i++) {
+    let code = generateRandomCode(RECOVERY_CODE_LENGTH);
+    while (plainCodes.includes(code)) {
+      code = generateRandomCode(RECOVERY_CODE_LENGTH);
+    }
+    const hashedCode = await bcrypt.hash(code, HASH_SALT_ROUNDS);
+    plainCodes.push(code);
+    hashedCodes.push(hashedCode);
+  }
+  return { plainCodes, hashedCodes };
+}
+
+/**
+ * Compares a plain recovery code with a hashed code.
+ */
+export async function compareRecoveryCode(plainCode: string, hashedCode: string): Promise<boolean> {
+  return bcrypt.compare(plainCode, hashedCode);
 }

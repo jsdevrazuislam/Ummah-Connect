@@ -26,7 +26,7 @@ const FollowButton = ({ isFollowing, id }: { isFollowing: boolean, id: number })
 
     return (
         <Button onClick={handleFollow} size="sm">
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4" />
             {follow ? 'Unfollow' : 'Follow'}
         </Button>
     )

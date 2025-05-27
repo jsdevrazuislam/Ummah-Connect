@@ -31,3 +31,41 @@ export const getUserProfileDetails = async ({ page = 1, limit = 10, username = '
   const response = await api.get<PostsResponse>(ApiStrings.USER_DETAILS(username));
   return response.data;
 }
+
+export const updatePrivacySetting = async (payload:object) => {
+  const response = await api.post(ApiStrings.PRIVACY_SETTING, payload);
+  return response.data;
+}
+
+export const changePassword = async (payload:ChangePasswordPayload) => {
+  const response = await api.post(ApiStrings.CHANGE_PASSWORD, payload);
+  return response.data;
+}
+export const notificationPreferences = async (payload:object) => {
+  const response = await api.post(ApiStrings.NOTIFICATION_PREFERENCE, payload);
+  return response.data;
+}
+export const enable2FA = async () => {
+  const response = await api.post(ApiStrings.ENABLE_2FA);
+  return response.data;
+}
+export const disable2FA = async () => {
+  const response = await api.post(ApiStrings.DISABLE_2FA);
+  return response.data;
+}
+export const verify2FA = async (token:string) => {
+  const response = await api.post(ApiStrings.VERIFY_2FA, { token });
+  return response.data;
+}
+export const recoverLogin = async (payload:RecoverLoginPayload) => {
+  const response = await api.post(ApiStrings.RECOVER_LOGIN, payload);
+  return response.data;
+}
+export const recoverLoginWithEmail = async (payload:EmailVerifyPayload) => {
+  const response = await api.post(ApiStrings.EMAIL_VERIFY_2FA, payload);
+  return response.data;
+}
+export const requestOtp = async (email:string) => {
+  const response = await api.post(ApiStrings.REQUEST_OTP, { email });
+  return response.data;
+}

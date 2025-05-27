@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Follow, Post, Reaction, User } from "@/models";
+import { Follow, Otp, Post, Reaction, RecoveryCodes, User } from "@/models";
 import { Op } from "sequelize";
 import {
   compare_password,
@@ -14,10 +14,15 @@ import {
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
 import uploadFileOnCloudinary, { removeOldImageOnCloudinary } from "@/utils/cloudinary";
-import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { formatPosts } from "@/utils/formater";
 import { UploadedFiles } from "@/types/global";
+import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
+
 
 const options = {
   httpOnly: true,
@@ -62,7 +67,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+export const verify_email = asyncHandler(async (req: Request, res: Response) => {
   const token = req.query?.token as string;
 
   if (!token) throw new ApiError(400, "Token not found");
@@ -87,8 +92,9 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   return res.redirect(`${process.env.CLIENT_URL}/login`);
 });
 
-export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { emailOrUsername, password } = req.body;
+
+export const login_with_2FA = asyncHandler(async (req: Request, res: Response) => {
+  const { emailOrUsername, password, token } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -100,11 +106,29 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const is_password_correct = await compare_password(user.password, password);
   if (!is_password_correct) throw new ApiError(400, "Invalid User Details");
 
+  if (user?.is_two_factor_enabled) {
+    if (!token) return res.json(
+      new ApiResponse(200, true, '2FA is required')
+    )
+
+    const verified = speakeasy.totp.verify({
+      secret: user.two_factor_secret,
+      encoding: 'base32',
+      token,
+      window: 1
+    });
+
+    if (!verified) {
+      throw new ApiError(401, "Invalid 2FA token");
+    }
+  }
+
   const access_token = generate_access_token({
     id: user.id,
     email: user.email,
     role: user.role
   });
+
   const refresh_token = generate_refresh_token({
     id: user.id,
     email: user.email,
@@ -148,10 +172,18 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const get_me = asyncHandler(async (req: Request, res: Response) => {
   const followerCount = await Follow.count({ where: { followingId: req.user.id } });
   const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+  const user = await User.findOne({
+    where: { id: req.user.id }, attributes: {
+      exclude: ['password', 'two_factor_secret']
+    }
+  })
+
+  if (!user) throw new ApiError(404, 'Not found user')
+
   return res.json(
     new ApiResponse(200, {
       user: {
-        ...req.user,
+        ...user?.toJSON(),
         following_count: followerCount,
         followers_count: followingCount
       }
@@ -165,6 +197,7 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
   const files = req.files as UploadedFiles | undefined;
   const coverPath = files?.cover?.[0].path;
   const avatarPath = files?.avatar?.[0].path
+
 
   const user = await User.findOne({ where: { id: req.user.id } })
 
@@ -196,12 +229,12 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
     website,
     full_name,
     location,
-    avatar: avatar_url,
+    ...(avatar_url && {avatar: avatar_url}),
     email,
     bio,
     username,
     gender,
-    cover: cover_url
+    ...(cover_url && {cover: cover_url})
   };
 
 
@@ -258,8 +291,6 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
 
   if (!user) throw new ApiError(404, 'User not found')
 
-  const user_attribute = ['id', 'username', 'full_name', 'avatar']
-  const react_attribute = ['userId', 'react_type', 'icon', 'commentId', 'postId']
 
   const { count, rows: posts } = await Post.findAndCountAll({
     limit: limit,
@@ -269,41 +300,29 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
       {
         model: Post,
         as: 'originalPost',
-        attributes: ['id', 'media', 'content', 'location', 'privacy', 'createdAt'],
+        attributes: POST_ATTRIBUTE,
         include: [
-          { model: User, as: 'user', attributes: user_attribute },
+          { model: User, as: 'user', attributes: USER_ATTRIBUTE },
         ]
       },
       {
         model: Reaction,
         required: false,
-        attributes: react_attribute,
+        attributes: REACT_ATTRIBUTE,
         as: 'reactions'
       },
       { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
       {
         model: User,
         required: false,
-        attributes: user_attribute,
+        attributes: USER_ATTRIBUTE,
         as: 'user'
       }
     ],
     attributes: {
       include: [
-        [
-          sequelize.literal(`(
-          SELECT COUNT(*) FROM "comments" AS c
-          WHERE c."postId" = "Post"."id"
-        )`),
-          'totalCommentsCount'
-        ],
-        [
-          sequelize.literal(`(
-          SELECT COUNT(*) FROM "reactions" AS r
-          WHERE r."postId" = "Post"."id"
-        )`),
-          'totalReactionsCount'
-        ],
+        getTotalCommentsCountLiteral('"Post"'),
+        getTotalReactionsCountLiteral('"Post"')
       ],
     }
   });
@@ -318,4 +337,336 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
       currentPage: page
     }, 'Post Success')
   )
+})
+
+export const change_password = asyncHandler(async (req: Request, res: Response) => {
+
+  const { oldPassword, newPassword } = req.body
+
+  if (oldPassword === newPassword) throw new ApiError(400, 'Old password and new password is same')
+
+  const hashPassword = await hash_password(newPassword)
+
+  await User.update(
+    { password: hashPassword },
+    { where: { id: req.user.id } }
+  )
+
+  return res.json(
+    new ApiResponse(200, null, 'Password Change Successfully')
+  )
+})
+
+export const update_privacy_settings = asyncHandler(async (req: Request, res: Response) => {
+
+  const { active_status, private_account, read_receipts, location_share, post_see, message } = req.body
+
+  const [_, updateData] = await User.update(
+    {
+      privacy_settings: {
+        active_status,
+        private_account,
+        read_receipts,
+        location_share,
+        post_see,
+        message
+      }
+    },
+    {
+      where: { id: req.user.id },
+      returning: true
+    }
+  )
+
+
+  return res.json(
+    new ApiResponse(200, updateData[0], 'Update Settings')
+  )
+
+})
+
+export const update_notification_preferences = asyncHandler(async (req: Request, res: Response) => {
+
+  const { push_notification, email_notification, prayer_time_notification, like_post, comment_post, mention, new_follower, dm, islamic_event } = req.body
+
+  const [_, updateData] = await User.update(
+    {
+      notification_preferences: {
+        push_notification,
+        email_notification,
+        prayer_time_notification,
+        like_post,
+        comment_post,
+        mention,
+        new_follower,
+        dm,
+        islamic_event
+      }
+    },
+    {
+      where: { id: req.user.id },
+      returning: true
+    }
+  )
+
+
+  return res.json(
+    new ApiResponse(200, updateData[0], 'Update Settings')
+  )
+
+})
+
+export const enable_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const user = req.user;
+  const secret = speakeasy.generateSecret({
+    name: `Ummah Connect - ${user?.email}`,
+    length: 20
+  })
+
+  await User.update(
+    { two_factor_secret: secret.base32 },
+    { where: { id: req.user.id } }
+  )
+
+  const qrDataURL = await qrcode.toDataURL(secret.otpauth_url ?? '');
+
+
+  return res.json(
+    new ApiResponse(200, {
+      qrCode: qrDataURL,
+      secret: secret.base32
+    }, 'Scan the QR code in Google Authenticator')
+  )
+})
+
+export const verify_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const { token } = req.body
+  const user_id = req.user.id
+  const user = await User.findOne({ where: { id: user_id } })
+  const verified = speakeasy.totp.verify({
+    secret: user?.two_factor_secret ?? '',
+    encoding: 'base32',
+    token,
+    window: 1
+  });
+
+  if (!verified) {
+    throw new ApiError(400, "Invalid or expired 2FA code");
+  }
+
+  const { plainCodes, hashedCodes } = await generateRecoveryCodes();
+
+  await RecoveryCodes.destroy({ where: { user_id: user_id, used: false } });
+
+  const recovery_codes = hashedCodes?.map((hash) => ({
+    user_id,
+    code_hash: hash,
+    used: false
+  }))
+
+  await RecoveryCodes.bulkCreate(recovery_codes)
+
+  await User.update(
+    { is_two_factor_enabled: true },
+    { where: { id: user_id } }
+  )
+
+  return res.json(
+    new ApiResponse(200, plainCodes, "2FA verified and enabled successfully")
+  )
+})
+
+export const disable_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  await User.update(
+    { is_two_factor_enabled: false, two_factor_secret: null },
+    { where: { id: req.user.id } }
+  )
+  return res.json(new ApiResponse(200, null, "2FA disabled successfully"));
+})
+
+export const recover_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const { emailOrUsername, recoveryCode } = req.body
+
+  const user = await User.findOne({
+    where: {
+      [Op.or]: [{ email: emailOrUsername }, { username: emailOrUsername }]
+    },
+    include: [{
+      model: RecoveryCodes,
+      as: 'recoveryCodes',
+      where: { used: false },
+      required: false
+    }]
+  })
+
+  if (!user) throw new ApiError(404, 'User not found')
+
+  let matchCode = null
+
+  for (const rc of user?.recoveryCodes) {
+    const isMatch = await compareRecoveryCode(recoveryCode, rc.code_hash)
+    if (isMatch) {
+      matchCode = rc
+      break
+    }
+  }
+
+  if (!matchCode) throw new ApiError(401, 'Invalid recovery code or already used')
+
+  await matchCode.update(
+    { used: true },
+    { where: { user_id: user.id } }
+  )
+
+  await RecoveryCodes.destroy(
+    { where: { user_id: user.id, used: false } }
+  )
+
+  const access_token = generate_access_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const refresh_token = generate_refresh_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const updated_user = await User.update(
+    { refresh_token, is_two_factor_enabled: false, two_factor_secret: null },
+    {
+      where: { email: user.email },
+      returning: true,
+    }
+  );
+
+  const safeUser = updated_user[1][0].get({ plain: true });
+  delete safeUser.password;
+
+  return res
+    .cookie("access_token", access_token, options)
+    .cookie("refresh_token", refresh_token, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: safeUser,
+          access_token,
+          refresh_token,
+        },
+        "Login Successfully"
+      )
+    );
+})
+
+export const request_email_otp = asyncHandler(async (req: Request, res: Response) => {
+
+  const user = await User.findOne({ where: { email: req.body.email } })
+  if (!user) throw new ApiError(404, 'User not found')
+
+  const lastOtp = await Otp.findOne({
+    where: {
+      user_id: user.id,
+    },
+    order: [['createdAt', 'DESC']],
+  });
+
+  const COOLDOWN_PERIOD_MS = 10 * 60 * 1000;
+
+  if (lastOtp) {
+    const timeSinceLastOtp = Date.now() - lastOtp.createdAt.getTime();
+
+    if (timeSinceLastOtp < COOLDOWN_PERIOD_MS) {
+      const remainingTimeMs = COOLDOWN_PERIOD_MS - timeSinceLastOtp;
+      const remainingMinutes = Math.ceil(remainingTimeMs / (60 * 1000));
+      throw new ApiError(
+        429,
+        `Please wait ${remainingMinutes} minute(s) before requesting another OTP.`
+      );
+    }
+  }
+
+  const otp = generateSixDigitCode()
+  const expires = Date.now() + 10 * 60 * 1000;
+
+  await Otp.create({
+    user_id: user.id,
+    otp,
+    otp_expire: expires
+  })
+
+  await sendEmail(
+    `2FA Otp Request - ${otp}`,
+    user.email,
+    user.full_name,
+    { name: user.full_name, YEAR: new Date().getFullYear(), CODE: otp },
+    10
+  );
+
+  return res.json(
+    new ApiResponse(200, null, 'OTP sent to your email')
+  )
+})
+
+export const verify_2FA_otp = asyncHandler(async (req: Request, res: Response) => {
+
+  const { email, otpCode } = req.body
+
+  const user = await User.findOne({ where: { email } })
+  if (!user) throw new ApiError(404, 'User not found')
+
+
+  const userOtp = await Otp.findOne({ where: { user_id: user.id } })
+
+  if (userOtp?.otp !== Number(otpCode) || Date.now() > new Date(userOtp?.otp_expire ?? '').getTime()) throw new ApiError(401, 'Invalid or expired otp')
+
+  await Otp.destroy({
+    where: {
+      user_id: user.id
+    }
+  })
+
+  const access_token = generate_access_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const refresh_token = generate_refresh_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const updated_user = await User.update(
+    { refresh_token },
+    {
+      where: { email: user.email },
+      returning: true,
+    }
+  );
+
+  const safeUser = updated_user[1][0].get({ plain: true });
+  delete safeUser.password;
+
+  return res
+    .cookie("access_token", access_token, options)
+    .cookie("refresh_token", refresh_token, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: safeUser,
+          access_token,
+          refresh_token,
+        },
+        "Login Successfully"
+      )
+    );
 })

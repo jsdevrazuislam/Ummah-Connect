@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { useMutation } from "@tanstack/react-query"
 import { updateCurrentUser } from "@/lib/apis/auth"
 import { toast } from "sonner"
@@ -23,9 +23,12 @@ import { UserProfileFormData, userProfileSchema } from "@/validation/auth.valida
 import { Controller, useForm } from "react-hook-form"
 import { ImageUpload } from "@/components/image-upload"
 import { Camera, X } from "lucide-react"
+import ProfileLoading from "@/app/profile/[username]/loading"
+import { ImageWithSkeleton } from "@/components/image"
 
 const AccountForm = () => {
 
+    const [loading, setLoading] = useState(true)
     const { user } = useAuthStore()
     const { setUser } = useAuthStore()
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -97,6 +100,8 @@ const AccountForm = () => {
     }
 
     useEffect(() => {
+        setSelectAvatar(user?.avatar ?? '')
+        setCover(user?.cover ?? '')
         setValue('website', user?.website ?? '')
         setValue('bio', user?.bio ?? '')
         setValue('email', user?.email ?? '')
@@ -106,9 +111,13 @@ const AccountForm = () => {
         setValue('username', user?.username ?? '')
     }, [user])
 
+    useEffect(() =>{
+        setLoading(false)
+    }, [])
+
     return (
         <>
-            <Card>
+           {loading ? <ProfileLoading /> :  <Card>
                 <CardHeader>
                     <CardTitle>Profile Information</CardTitle>
                     <CardDescription>Update your account profile information and settings.</CardDescription>
@@ -133,20 +142,11 @@ const AccountForm = () => {
                                         className="hidden"
                                         aria-label="Upload image"
                                     />
-                                    {
-                                        cover && <img
+                                    <ImageWithSkeleton
                                             src={cover}
                                             alt="Cover photo"
                                             className="w-full h-full object-cover"
                                         />
-                                    }
-                                    {
-                                        user?.cover && <img
-                                            src={user?.cover}
-                                            alt="Cover photo"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    }
 
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                         <div className="flex gap-2">
@@ -154,13 +154,6 @@ const AccountForm = () => {
                                                 <Camera className="h-4 w-4 mr-2" />
                                                 Upload Cover
                                             </Button>
-                                            {
-                                                cover &&
-                                                <Button onClick={() => setCover('')} type="button" variant="secondary" size="sm" className="bg-white/90 text-black hover:bg-white">
-                                                    <X className="h-4 w-4 mr-2" />
-                                                    Remove
-                                                </Button>
-                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -174,9 +167,7 @@ const AccountForm = () => {
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-2 mt-4">
                             <Avatar className="h-20 w-20">
-                                {selectAvatar && <AvatarImage src={selectAvatar} alt="Profile" />}
-                                {user?.avatar && <AvatarImage src={user?.avatar} alt="Profile" />}
-                                <AvatarFallback>AB</AvatarFallback>
+                                <ImageWithSkeleton src={selectAvatar} alt="Profile" />
                             </Avatar>
                             <div className="space-y-2">
                                 <ImageUpload
@@ -244,7 +235,7 @@ const AccountForm = () => {
                         </Button>
                     </form>
                 </CardContent>
-            </Card>
+            </Card>}
         </>
     )
 }
