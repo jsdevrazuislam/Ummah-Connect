@@ -138,14 +138,14 @@ const mockMessages = {
   ],
 }
 
-export default function ConversationPage({ params }: { params: { id: string } }) {
+export default function ConversationPage() {
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState(mockMessages[params.id as keyof typeof mockMessages] || [])
+  const [messages, setMessages] = useState(mockMessages["1" as keyof typeof mockMessages] || [])
   const [activeCall, setActiveCall] = useState<{ type: "audio" | "video" } | null>(null)
   const [incomingCall, setIncomingCall] = useState<{ type: "audio" | "video" } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const conversation = conversations.find((c) => c.id === params.id) || conversations[0]
+  const conversation = conversations.find((c) => c.id === "1") || conversations[0]
 
   useEffect(() => {
     // Scroll to bottom of messages
@@ -196,7 +196,6 @@ export default function ConversationPage({ params }: { params: { id: string } })
 
   return (
     <div className="flex min-h-screen bg-background">
-      <SideNav />
       <div className="flex-1 flex">
         {/* Conversations list */}
         <div className="w-full md:w-80 border-r border-border">
@@ -209,11 +208,9 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </div>
           <div className="overflow-y-auto h-[calc(100vh-130px)]">
             {conversations.map((conv) => (
-              <Link href={`/messages/${conv.id}`} key={conv.id}>
                 <div
-                  className={`p-4 border-b border-border hover:bg-muted/50 cursor-pointer ${
-                    conv.id === params.id ? "bg-muted/50" : ""
-                  }`}
+                  className={`p-4 border-b border-border hover:bg-muted/50 cursor-pointer`}
+                  key={conv.id}
                 >
                   <div className="flex gap-3 items-center">
                     <div className="relative">
@@ -241,7 +238,6 @@ export default function ConversationPage({ params }: { params: { id: string } })
                     </div>
                   </div>
                 </div>
-              </Link>
             ))}
           </div>
         </div>
@@ -345,10 +341,8 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </div>
         </div>
       </div>
-
       {/* Call modals */}
       {activeCall && <CallModal user={conversation.user} callType={activeCall.type} onClose={handleCloseCall} />}
-
       {incomingCall && (
         <CallModal user={conversation.user} callType={incomingCall.type} onClose={handleCloseCall} incoming={true} />
       )}
