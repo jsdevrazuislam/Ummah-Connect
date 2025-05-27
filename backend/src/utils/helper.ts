@@ -1,3 +1,4 @@
+import redis from '@/config/redis';
 import bcrypt from 'bcryptjs';
 
 
@@ -80,3 +81,33 @@ export async function generateRecoveryCodes(): Promise<{ plainCodes: string[]; h
 export async function compareRecoveryCode(plainCode: string, hashedCode: string): Promise<boolean> {
   return bcrypt.compare(plainCode, hashedCode);
 }
+
+/**
+ * Asynchronously retrieves data from cache or computes it if not found, then caches the result.
+ * This function acts as a "cache-aside" pattern, checking Redis first before executing a callback
+ * to fetch or compute the data.
+ *
+ * @template T - The type of the value being cached.
+ * @param {string} key - The unique key used to store and retrieve the data from the cache.
+ * @param {function(): Promise<T>} cb - An asynchronous callback function that will be executed
+ * to fetch or compute the data if it's not found in the cache. This function must return a Promise
+ * that resolves to the data of type `T`.
+ * @param {number} [ttl=60] - The time-to-live (TTL) for the cached data in seconds.
+ * After this duration, the cached item will expire and be re-computed on the next request.
+ * Defaults to 60 seconds.
+ * @returns {Promise<T>} A Promise that resolves to the cached or newly computed data of type `T`.
+ */
+export const getOrSetCache = async <T>(
+  key: string,
+  cb: () => Promise<T>,
+  ttl: number = 60 
+): Promise<T> => {
+  const cached = await redis.get(key);
+  if (cached) {
+    return JSON.parse(cached) as T;
+  }
+
+  const result = await cb();
+  await redis.set(key, JSON.stringify(result), 'EX', ttl);
+  return result;
+};

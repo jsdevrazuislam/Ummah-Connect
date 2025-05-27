@@ -21,6 +21,7 @@ import postRoutes from '@/routes/posts.routes'
 import commentRoutes from '@/routes/comments.routes'
 import followRoutes from '@/routes/follows.routes'
 import { initializeSocketIO } from "@/socket";
+import { connectRedis } from "@/config/redis";
 
 
 const app: Application = express();
@@ -35,6 +36,7 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io);
+connectRedis()
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,

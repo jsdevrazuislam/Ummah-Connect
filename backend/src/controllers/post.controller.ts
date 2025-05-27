@@ -7,7 +7,7 @@ import { postSchema } from "@/schemas/post.schema";
 import uploadFileOnCloudinary, {
   removeOldImageOnCloudinary,
 } from "@/utils/cloudinary";
-import { formatTimeAgo } from "@/utils/helper";
+import { formatTimeAgo, getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { ReactPostType } from "@/types/post";
@@ -144,73 +144,76 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
   const currentUserId = req.user?.id;
+  const cacheKey = `posts:public:page=${page}:limit=${limit}:user=${currentUserId}`;
 
 
-  const { count, rows: posts } = await Post.findAndCountAll({
-    limit: limit,
-    offset: skip,
-    where: { privacy: 'public' },
-    include: [
-      {
-        model: Post,
-        as: 'originalPost',
-        attributes: POST_ATTRIBUTE,
-        include: [
-          {
-            model: User,
-            as: 'user',
-            attributes: [
-                ...USER_ATTRIBUTE,
-                getFollowerCountLiteral('"originalPost->user"."id"'), 
-                getFollowingCountLiteral('"originalPost->user"."id"'), 
-                getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
-            ]
-          },
-        ]
-      },
-      {
-        model: Reaction,
-        required: false,
-        attributes: REACT_ATTRIBUTE,
-        as: 'reactions'
-      },
-      {
-        model: BookmarkPost,
-        attributes: ['id', 'postId', 'userId'],
-        as: 'bookmarks'
-      },
-      {
-        model: User,
-        required: false,
-        as: 'user',
-        attributes: [
-          ...USER_ATTRIBUTE,
-           ...USER_ATTRIBUTE,
-            getFollowerCountLiteral('"Post"."authorId"'),
-            getFollowingCountLiteral('"Post"."authorId"'),
-            getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
-        ]
-      }
-    ],
-    attributes: {
+  const responseData = await getOrSetCache(cacheKey, async () =>{
+     const { count, rows: posts } = await Post.findAndCountAll({
+      limit: limit,
+      offset: skip,
+      where: { privacy: 'public' },
       include: [
-        getTotalCommentsCountLiteral('"Post"'),
-        getTotalReactionsCountLiteral('"Post"')
+        {
+          model: Post,
+          as: 'originalPost',
+          attributes: POST_ATTRIBUTE,
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: [
+                  ...USER_ATTRIBUTE,
+                  getFollowerCountLiteral('"originalPost->user"."id"'), 
+                  getFollowingCountLiteral('"originalPost->user"."id"'), 
+                  getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
+              ]
+            },
+          ]
+        },
+        {
+          model: Reaction,
+          required: false,
+          attributes: REACT_ATTRIBUTE,
+          as: 'reactions'
+        },
+        {
+          model: BookmarkPost,
+          attributes: ['id', 'postId', 'userId'],
+          as: 'bookmarks'
+        },
+        {
+          model: User,
+          required: false,
+          as: 'user',
+          attributes: [
+            ...USER_ATTRIBUTE,
+            ...USER_ATTRIBUTE,
+              getFollowerCountLiteral('"Post"."authorId"'),
+              getFollowingCountLiteral('"Post"."authorId"'),
+              getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
+          ]
+        }
       ],
-    }
-  });
+      attributes: {
+        include: [
+          getTotalCommentsCountLiteral('"Post"'),
+          getTotalReactionsCountLiteral('"Post"')
+        ],
+      }
+    });
 
-  const formatPostData = formatPosts(posts, currentUserId);
-
-  return res.json(
-    new ApiResponse(
-      200,
-      {
+    const formatPostData = formatPosts(posts, currentUserId);
+    return {
         posts: formatPostData,
         totalPages: Math.ceil(count / limit),
         currentPage: page
-      },
-      "Posts retrieved successfully"
+      };
+    }, 60)
+
+
+  return res.json(
+    new ApiResponse(
+      200, responseData, "Posts retrieved successfully"
     )
   );
 });
