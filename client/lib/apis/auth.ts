@@ -57,3 +57,15 @@ export const verify2FA = async (token:string) => {
   const response = await api.post(ApiStrings.VERIFY_2FA, { token });
   return response.data;
 }
+export const recoverLogin = async (payload:RecoverLoginPayload) => {
+  const response = await api.post(ApiStrings.RECOVER_LOGIN, payload);
+  return response.data;
+}
+export const recoverLoginWithEmail = async (payload:EmailVerifyPayload) => {
+  const response = await api.post(ApiStrings.EMAIL_VERIFY_2FA, payload);
+  return response.data;
+}
+export const requestOtp = async (email:string) => {
+  const response = await api.post(ApiStrings.REQUEST_OTP, { email });
+  return response.data;
+}

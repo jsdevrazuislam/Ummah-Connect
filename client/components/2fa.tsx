@@ -10,6 +10,7 @@ import { useMutation } from "@tanstack/react-query"
 import { Loader2, Key } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+import { BackupCodes } from "@/components/recover-backcodes"
 
 export function TwoFactorAuth() {
 
@@ -18,13 +19,14 @@ export function TwoFactorAuth() {
     const [showVerificationSetup, setShowVerificationSetup] = useState(false)
     const [verificationCode, setVerificationCode] = useState('')
     const [qrCode, setQrCode] = useState<string | undefined>(undefined) 
+    const [showBackupCode, setShowBackupCode] = useState(false)
+    const [backUpCodes, setBackUpCodes] = useState<string[]>([])
 
     const { mutate, isPending } = useMutation({
         mutationFn: enable2FA,
         onSuccess: (qrData) => {
             setQrCode(qrData?.data?.qrCode)
             setShowVerificationSetup(true) 
-            toast.info("Scan the QR code and enter the verification code.")
         },
         onError: (error) => {
             toast.error(error.message)
@@ -35,10 +37,12 @@ export function TwoFactorAuth() {
 
     const { mutate: muFun, isPending: isLoading } = useMutation({
         mutationFn: verify2FA,
-        onSuccess: () => {
+        onSuccess: (data) => {
             toast.success("2FA verified and enabled successfully")
             setIs2FAActive(true)
             setShowVerificationSetup(false) 
+            setBackUpCodes(data?.data)
+            setShowBackupCode(true)
             setQrCode(undefined); 
             setVerificationCode('');
         },
@@ -81,7 +85,7 @@ export function TwoFactorAuth() {
     }
 
     return (
-        <Card>
+    showBackupCode ? <BackupCodes backUpCodes={backUpCodes} setShowBackupCode={setShowBackupCode} /> :  <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Key className="h-5 w-5" />

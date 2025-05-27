@@ -3,6 +3,15 @@ interface LoginPayload {
   password: string;
   token?:string
 }
+interface RecoverLoginPayload {
+  emailOrUsername?: string;
+  recoveryCode?:string
+}
+
+interface EmailVerifyPayload{
+  email?:string
+  otpCode?:string
+}
 interface ChangePasswordPayload {
   oldPassword: string;
   newPassword: string;

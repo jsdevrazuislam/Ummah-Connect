@@ -16,6 +16,7 @@ import { LoadingOverlay } from "@/components/loading-overlay"
 import { useRouter } from "next/navigation"
 import { TwoFactorAuthModal } from "@/components/2fa-auth-model"
 import { useState } from "react"
+import { RecoveryLogin } from "@/components/recover-login"
 
 
 export default function LoginPage() {
@@ -30,6 +31,7 @@ export default function LoginPage() {
         emailOrUsername: '',
         password: ''
     })
+    const [showRecoveryModel, setShowRecoveryModel] = useState(false)
 
     const { mutate, isPending } = useMutation({
         mutationFn: loginUser,
@@ -114,9 +116,11 @@ export default function LoginPage() {
                         onVerify={(code) => {
                             mutate({ ...payload, token: code})
                         }}
+                        setShowRecoveryModel={setShowRecoveryModel}
                     />
                 </div>
             )}
+            <RecoveryLogin setShowRecoveryModel={setShowRecoveryModel} showRecoveryModel={showRecoveryModel} />
         </div>
     )
 }

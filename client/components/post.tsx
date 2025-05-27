@@ -336,7 +336,7 @@ export function Post({ post }: PostProps) {
       <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
       <SharePostDialog
         post={post}
-        postUsername={post.user.username}
+        postUsername={post?.user?.username}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
       />

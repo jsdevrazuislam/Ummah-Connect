@@ -1,35 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Link2, MapPin, Grid3X3, List, Lock, Unlock, Settings, Heart, MessageCircle } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
+import { Calendar, Link2, MapPin, Grid3X3, List, Lock, Heart, MessageCircle } from "lucide-react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { getUserProfileDetails } from "@/lib/apis/auth"
 import { SideNav } from "@/components/side-nav"
 import { format } from 'date-fns';
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
+import FollowButton from "@/components/follow-button"
+import { ImageWithSkeleton } from "@/components/image"
 
 
 
-// Mock data for demonstration
-const userProfile = {
-    name: "Abdullah Muhammad",
-    username: "abdullah_m",
-    avatar: "/placeholder.svg?height=120&width=120",
-    bio: "Software Engineer | Muslim | Sharing knowledge and inspiration | Interested in tech, Islamic history, and photography",
-    location: "Kuala Lumpur, Malaysia",
-    website: "abdullah.dev",
-    joinedDate: "Joined March 2020",
-    following: 245,
-    followers: 1024,
-    coverImage: "/placeholder.svg?height=200&width=600",
-    isPrivate: false,
-    isCurrentUser: true, // Set to false to test private profile view
-}
 
 export default function ProfilePage({ username, user }: { username: string, user: User }) {
 
@@ -51,7 +37,7 @@ export default function ProfilePage({ username, user }: { username: string, user
         initialPageParam: 1,
         staleTime: 1000 * 60,
         gcTime: 1000 * 60 * 5,
-        enabled: !!username
+        enabled: username && !user?.privacy_settings?.private_account ? true : false
     });
 
     const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
@@ -63,35 +49,7 @@ export default function ProfilePage({ username, user }: { username: string, user
     };
 
     const [viewMode, setViewMode] = useState<"list" | "grid">("list")
-    const [isPrivate, setIsPrivate] = useState(userProfile.isPrivate)
-    const [showPrivacyDialog, setShowPrivacyDialog] = useState(false)
-    const [pendingPrivacyChange, setPendingPrivacyChange] = useState<boolean | null>(null)
-
-    const handlePrivacyToggle = () => {
-        setPendingPrivacyChange(!isPrivate)
-        setShowPrivacyDialog(true)
-    }
-
-    const confirmPrivacyChange = () => {
-        if (pendingPrivacyChange !== null) {
-            setIsPrivate(pendingPrivacyChange)
-            setShowPrivacyDialog(false)
-            setPendingPrivacyChange(null)
-
-            toast({
-                title: pendingPrivacyChange ? "Profile is now private" : "Profile is now public",
-                description: pendingPrivacyChange ? "Only your followers can see your posts" : "Anyone can see your posts",
-            })
-        }
-    }
-
-    const cancelPrivacyChange = () => {
-        setShowPrivacyDialog(false)
-        setPendingPrivacyChange(null)
-    }
-
-    // If viewing someone else's private profile and not following
-    const isViewingPrivateProfile = !userProfile.isCurrentUser && isPrivate
+    const isViewingPrivateProfile = user?.privacy_settings?.private_account
 
     if (isError) {
         return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
@@ -103,8 +61,8 @@ export default function ProfilePage({ username, user }: { username: string, user
             <main className="flex-1 border-x border-border">
                 <div className="relative">
                     <div className="h-48 bg-muted w-full">
-                        <img
-                            src={user?.cover || "/placeholder.svg"}
+                        <ImageWithSkeleton
+                            src={user?.cover}
                             alt="Cover"
                             className="w-full h-full object-cover"
                         />
@@ -114,11 +72,10 @@ export default function ProfilePage({ username, user }: { username: string, user
                         <div className="flex justify-between items-start">
                             <div className="flex items-end gap-4">
                                 <Avatar className="h-24 w-24 border-4 border-background -mt-12">
-                                    <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.full_name} />
-                                    <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
+                                    <ImageWithSkeleton src={user?.avatar ?? ''} alt={user?.full_name} />
                                 </Avatar>
 
-                                {isPrivate && (
+                                {user?.privacy_settings?.private_account && (
                                     <Badge variant="secondary" className="flex items-center gap-1 mb-2">
                                         <Lock className="h-3 w-3" />
                                         Private Account
@@ -127,7 +84,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                             </div>
 
                             <div className="flex gap-2">
-                                <Button>{isPrivate ? "Follow" : "Following"}</Button>
+                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
                                 <Button variant='outline'>Message</Button>
                             </div>
                         </div>
@@ -180,9 +137,9 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 <Lock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                                 <h3 className="text-lg font-semibold mb-2">This Account is Private</h3>
                                 <p className="text-muted-foreground mb-4">
-                                    Follow @{userProfile.username} to see their posts and stories.
+                                    Follow @{user?.username} to see their posts and stories.
                                 </p>
-                                <Button>Send Follow Request</Button>
+                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
                             </div>
                         </div>
                     ) : (

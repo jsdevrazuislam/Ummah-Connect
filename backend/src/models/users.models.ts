@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize'
 import sequelize from '@/config/db'
+import RecoveryCodes from '@/models/recoverycodes.models';
 
 
 class User extends Model {
@@ -21,6 +22,8 @@ class User extends Model {
     public notification_preferences!: object
     public is_two_factor_enabled!: boolean
     public two_factor_secret!: string
+    public is_saved_backup_codes!:boolean
+    public recoveryCodes!: RecoveryCodes[]
 }
 
 User.init(
@@ -98,7 +101,7 @@ User.init(
         two_factor_secret: {
             type: DataTypes.STRING,
             allowNull: true
-        }
+        },
     },
     {
         sequelize,

@@ -70,6 +70,34 @@ export const changePasswordSchema = z.object({
   path: ["confirmPassword"], 
 });
 
+export const loginRecoverySchema = z.object({
+  emailOrUsername: z.string().min(1, "Email or username is required."),
+  recoveryCode: z.string().optional(),
+  otp: z.string().optional(),
+  activeMethod: z.enum(['recovery', 'otp'], {
+    required_error: "An active method (recovery or OTP) must be selected."
+  }).default('recovery'),
+}).superRefine((data, ctx) => {
+  if (data.activeMethod === 'recovery') {
+    if (data?.recoveryCode?.length !== 16) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Recovery code must be 16 characters long.",
+        path: ['recoveryCode'],
+      });
+    }
+  } else if (data.activeMethod === 'otp') {
+    if (data?.otp?.length !== 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "OTP code must be 6 digits long.",
+        path: ['otp'],
+      });
+    } 
+  }
+});
+
+export type RecoveryLoginFormData = z.infer<typeof loginRecoverySchema>;
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export type NotificationPreferenceFormData = z.infer<typeof notificationPreferenceSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;

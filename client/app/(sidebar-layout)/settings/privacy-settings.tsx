@@ -15,16 +15,25 @@ import { updatePrivacySetting } from '@/lib/apis/auth'
 
 const PrivacySettings = () => {
 
-    const { user } = useAuthStore()
+    const { user, setUser } = useAuthStore()
     const { handleSubmit, control, setValue } = useForm<PrivacyFormData>({
-        resolver: zodResolver(privacySettingsSchema)
+        resolver: zodResolver(privacySettingsSchema),
+        defaultValues: {
+            active_status: user?.privacy_settings?.active_status ?? false,
+            location_share: user?.privacy_settings?.location_share ?? false,
+            message: user?.privacy_settings?.message ?? 'followers',
+            post_see: user?.privacy_settings?.post_see ?? 'everyone',
+            private_account: user?.privacy_settings?.private_account ?? false,
+            read_receipts: user?.privacy_settings?.read_receipts ?? false,
+
+        }
     });
 
     const { mutate, isPending } = useMutation({
         mutationFn: updatePrivacySetting,
         onSuccess: (updateData) => {
             toast.success("Settings Update Success")
-            console.log(updateData)
+            setUser(updateData?.data)
         },
         onError: (error) => {
             toast.error(error?.message)
@@ -33,20 +42,11 @@ const PrivacySettings = () => {
 
     const onSubmit = (data: PrivacyFormData) => {
         const payload = {
-                ...data
+            ...data
         }
         mutate(payload);
     };
 
-
-    useEffect(() => {
-        setValue('active_status', user?.privacy_settings?.active_status ?? false)
-        setValue('location_share', user?.privacy_settings?.location_share ?? false)
-        setValue('message', user?.privacy_settings?.message ?? 'followers')
-        setValue('post_see', user?.privacy_settings?.post_see ?? 'everyone')
-        setValue('private_account', user?.privacy_settings?.private_account ?? false)
-        setValue('read_receipts', user?.privacy_settings?.read_receipts ?? false)
-    }, [user])
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -59,7 +59,7 @@ const PrivacySettings = () => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label htmlFor='private_account'>Private Account</Label>
+                                <Label htmlFor='private_account' className='cursor-pointer'>Private Account</Label>
                                 <p className="text-sm text-muted-foreground">Only approved followers can see your posts</p>
                             </div>
                             <Controller
@@ -72,7 +72,7 @@ const PrivacySettings = () => {
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label htmlFor='active_status'>Activity Status</Label>
+                                <Label htmlFor='active_status' className='cursor-pointer'>Activity Status</Label>
                                 <p className="text-sm text-muted-foreground">Show when you're active on the platform</p>
                             </div>
                             <Controller
@@ -85,7 +85,7 @@ const PrivacySettings = () => {
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label htmlFor='read_receipts'>Read Receipts</Label>
+                                <Label htmlFor='read_receipts' className='cursor-pointer'>Read Receipts</Label>
                                 <p className="text-sm text-muted-foreground">Let others know when you've read their messages</p>
                             </div>
                             <Controller
@@ -98,7 +98,7 @@ const PrivacySettings = () => {
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <Label htmlFor='location_share'>Location Sharing</Label>
+                                <Label htmlFor='location_share' className='cursor-pointer'>Location Sharing</Label>
                                 <p className="text-sm text-muted-foreground">Allow sharing your location in posts</p>
                             </div>
                             <Controller
@@ -151,7 +151,9 @@ const PrivacySettings = () => {
                             )}
                         />
                     </div>
-                    <Button type='submit'>Save Privacy Settings</Button>
+                    <Button type='submit' disabled={isPending}>
+                        {isPending ? 'Updating...' : 'Save Privacy Settings'}
+                    </Button>
                 </CardContent>
             </Card>
         </form>

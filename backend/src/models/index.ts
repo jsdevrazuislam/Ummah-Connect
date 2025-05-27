@@ -4,6 +4,8 @@ import Post from '@/models/post.models'
 import Reaction from '@/models/react.models'
 import Comment from '@/models/comment.models'
 import BookmarkPost from '@/models/bookmark.models'
+import RecoveryCodes from '@/models/recoverycodes.models'
+import Otp from '@/models/otp.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -48,6 +50,10 @@ BookmarkPost.belongsTo(Post, {foreignKey:'postId' })
 User.hasMany(BookmarkPost, { foreignKey: 'userId' });
 BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 
+// Recovery Codes Association
+User.hasMany(RecoveryCodes, { foreignKey: 'user_id', as: 'recoveryCodes' });
+RecoveryCodes.belongsTo(User, { foreignKey: 'user_id' });
 
-export { User, Follow, Post, Reaction, Comment };
-export default { User, Follow, Post, Reaction, Comment };
+
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };

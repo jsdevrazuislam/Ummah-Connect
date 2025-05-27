@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Follow, Post, Reaction, User } from "@/models";
+import { Follow, Otp, Post, Reaction, RecoveryCodes, User } from "@/models";
 import { Op } from "sequelize";
 import {
   compare_password,
@@ -21,7 +21,7 @@ import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import { getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
-import { generateSixDigitCode } from "@/utils/helper";
+import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
 
 
 const options = {
@@ -198,6 +198,7 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
   const coverPath = files?.cover?.[0].path;
   const avatarPath = files?.avatar?.[0].path
 
+
   const user = await User.findOne({ where: { id: req.user.id } })
 
   if (avatarPath && user?.avatar) {
@@ -228,12 +229,12 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
     website,
     full_name,
     location,
-    avatar: avatar_url,
+    ...(avatar_url && {avatar: avatar_url}),
     email,
     bio,
     username,
     gender,
-    cover: cover_url
+    ...(cover_url && {cover: cover_url})
   };
 
 
@@ -314,7 +315,7 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
       {
         model: User,
         required: false,
-        attributes: REACT_ATTRIBUTE,
+        attributes: USER_ATTRIBUTE,
         as: 'user'
       }
     ],
@@ -442,7 +443,8 @@ export const enable_2FA = asyncHandler(async (req: Request, res: Response) => {
 export const verify_2FA = asyncHandler(async (req: Request, res: Response) => {
 
   const { token } = req.body
-  const user = await User.findOne({ where: { id: req.user.id } })
+  const user_id = req.user.id
+  const user = await User.findOne({ where: { id: user_id } })
   const verified = speakeasy.totp.verify({
     secret: user?.two_factor_secret ?? '',
     encoding: 'base32',
@@ -454,13 +456,25 @@ export const verify_2FA = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, "Invalid or expired 2FA code");
   }
 
+  const { plainCodes, hashedCodes } = await generateRecoveryCodes();
+
+  await RecoveryCodes.destroy({ where: { user_id: user_id, used: false } });
+
+  const recovery_codes = hashedCodes?.map((hash) => ({
+    user_id,
+    code_hash: hash,
+    used: false
+  }))
+
+  await RecoveryCodes.bulkCreate(recovery_codes)
+
   await User.update(
     { is_two_factor_enabled: true },
-    { where: { id: req.user.id } }
+    { where: { id: user_id } }
   )
 
   return res.json(
-    new ApiResponse(200, null, "2FA verified and enabled successfully")
+    new ApiResponse(200, plainCodes, "2FA verified and enabled successfully")
   )
 })
 
@@ -471,4 +485,188 @@ export const disable_2FA = asyncHandler(async (req: Request, res: Response) => {
     { where: { id: req.user.id } }
   )
   return res.json(new ApiResponse(200, null, "2FA disabled successfully"));
+})
+
+export const recover_2FA = asyncHandler(async (req: Request, res: Response) => {
+
+  const { emailOrUsername, recoveryCode } = req.body
+
+  const user = await User.findOne({
+    where: {
+      [Op.or]: [{ email: emailOrUsername }, { username: emailOrUsername }]
+    },
+    include: [{
+      model: RecoveryCodes,
+      as: 'recoveryCodes',
+      where: { used: false },
+      required: false
+    }]
+  })
+
+  if (!user) throw new ApiError(404, 'User not found')
+
+  let matchCode = null
+
+  for (const rc of user?.recoveryCodes) {
+    const isMatch = await compareRecoveryCode(recoveryCode, rc.code_hash)
+    if (isMatch) {
+      matchCode = rc
+      break
+    }
+  }
+
+  if (!matchCode) throw new ApiError(401, 'Invalid recovery code or already used')
+
+  await matchCode.update(
+    { used: true },
+    { where: { user_id: user.id } }
+  )
+
+  await RecoveryCodes.destroy(
+    { where: { user_id: user.id, used: false } }
+  )
+
+  const access_token = generate_access_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const refresh_token = generate_refresh_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const updated_user = await User.update(
+    { refresh_token, is_two_factor_enabled: false, two_factor_secret: null },
+    {
+      where: { email: user.email },
+      returning: true,
+    }
+  );
+
+  const safeUser = updated_user[1][0].get({ plain: true });
+  delete safeUser.password;
+
+  return res
+    .cookie("access_token", access_token, options)
+    .cookie("refresh_token", refresh_token, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: safeUser,
+          access_token,
+          refresh_token,
+        },
+        "Login Successfully"
+      )
+    );
+})
+
+export const request_email_otp = asyncHandler(async (req: Request, res: Response) => {
+
+  const user = await User.findOne({ where: { email: req.body.email } })
+  if (!user) throw new ApiError(404, 'User not found')
+
+  const lastOtp = await Otp.findOne({
+    where: {
+      user_id: user.id,
+    },
+    order: [['createdAt', 'DESC']],
+  });
+
+  const COOLDOWN_PERIOD_MS = 10 * 60 * 1000;
+
+  if (lastOtp) {
+    const timeSinceLastOtp = Date.now() - lastOtp.createdAt.getTime();
+
+    if (timeSinceLastOtp < COOLDOWN_PERIOD_MS) {
+      const remainingTimeMs = COOLDOWN_PERIOD_MS - timeSinceLastOtp;
+      const remainingMinutes = Math.ceil(remainingTimeMs / (60 * 1000));
+      throw new ApiError(
+        429,
+        `Please wait ${remainingMinutes} minute(s) before requesting another OTP.`
+      );
+    }
+  }
+
+  const otp = generateSixDigitCode()
+  const expires = Date.now() + 10 * 60 * 1000;
+
+  await Otp.create({
+    user_id: user.id,
+    otp,
+    otp_expire: expires
+  })
+
+  await sendEmail(
+    `2FA Otp Request - ${otp}`,
+    user.email,
+    user.full_name,
+    { name: user.full_name, YEAR: new Date().getFullYear(), CODE: otp },
+    10
+  );
+
+  return res.json(
+    new ApiResponse(200, null, 'OTP sent to your email')
+  )
+})
+
+export const verify_2FA_otp = asyncHandler(async (req: Request, res: Response) => {
+
+  const { email, otpCode } = req.body
+
+  const user = await User.findOne({ where: { email } })
+  if (!user) throw new ApiError(404, 'User not found')
+
+
+  const userOtp = await Otp.findOne({ where: { user_id: user.id } })
+
+  if (userOtp?.otp !== Number(otpCode) || Date.now() > new Date(userOtp?.otp_expire ?? '').getTime()) throw new ApiError(401, 'Invalid or expired otp')
+
+  await Otp.destroy({
+    where: {
+      user_id: user.id
+    }
+  })
+
+  const access_token = generate_access_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const refresh_token = generate_refresh_token({
+    id: user.id,
+    email: user.email,
+    role: user.role
+  });
+
+  const updated_user = await User.update(
+    { refresh_token },
+    {
+      where: { email: user.email },
+      returning: true,
+    }
+  );
+
+  const safeUser = updated_user[1][0].get({ plain: true });
+  delete safeUser.password;
+
+  return res
+    .cookie("access_token", access_token, options)
+    .cookie("refresh_token", refresh_token, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: safeUser,
+          access_token,
+          refresh_token,
+        },
+        "Login Successfully"
+      )
+    );
 })

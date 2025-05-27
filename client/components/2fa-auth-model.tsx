@@ -2,22 +2,23 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
+import { Dispatch, SetStateAction, useState } from "react"
 
-export function TwoFactorAuthModal({ onCancel, onVerify }: {
+export function TwoFactorAuthModal({ onCancel, onVerify, setShowRecoveryModel }: {
     onCancel: () => void
     onVerify: (code: string) => void
+    setShowRecoveryModel: Dispatch<SetStateAction<boolean>>
 }) {
     const [verificationCode, setVerificationCode] = useState('')
 
     return (
         <Card className="w-full max-w-sm mx-auto">
             <CardHeader className="text-center">
-                 <CardTitle>Verify Your Login</CardTitle>
+                <CardTitle>Verify Your Login</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-6">
-                 <div className="text-center text-sm text-muted-foreground">
+                <div className="text-center text-sm text-muted-foreground">
                     <p>Enter the 6-digit code from your authenticator app.</p>
                 </div>
 
@@ -31,6 +32,14 @@ export function TwoFactorAuthModal({ onCancel, onVerify }: {
                         id="verificationCode"
                     />
                 </div>
+                <div className="flex flex-col items-center justify-center">
+                    <button onClick={() => {
+                        onCancel()
+                        setShowRecoveryModel(true)
+                    }} className="text-sm font-medium text-primary hover:underline">
+                        Lost your authenticator codes?
+                    </button>
+                </div>
 
             </CardContent>
 
@@ -38,7 +47,11 @@ export function TwoFactorAuthModal({ onCancel, onVerify }: {
                 <Button
                     className="w-full"
                     disabled={verificationCode.length !== 6}
-                    onClick={() => onVerify(verificationCode)}
+                    onClick={() => {
+                        onVerify(verificationCode)
+                        setVerificationCode('')
+                        onCancel()
+                    }}
                 >
                     Verify
                 </Button>

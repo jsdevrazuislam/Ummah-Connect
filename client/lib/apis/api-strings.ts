@@ -10,6 +10,9 @@ const ApiStrings = {
   ENABLE_2FA: "/auth/2fa/enable",
   VERIFY_2FA: "/auth/2fa/verify",
   DISABLE_2FA: "/auth/2fa/disable",
+  RECOVER_LOGIN: "/auth/recover-login",
+  REQUEST_OTP: "/auth/request-otp",
+  EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts
   ALL_POSTS: '/post/',
   FOLLOWING_ALL_POSTS: '/post/following/posts',

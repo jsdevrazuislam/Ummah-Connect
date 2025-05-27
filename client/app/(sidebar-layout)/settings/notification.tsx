@@ -14,16 +14,19 @@ import { NotificationPreferenceFormData, notificationPreferenceSchema } from '@/
 
 const Notification = () => {
 
-    const { user } = useAuthStore()
+    const { user, setUser } = useAuthStore()
     const { handleSubmit, control, setValue } = useForm<NotificationPreferenceFormData>({
-        resolver: zodResolver(notificationPreferenceSchema)
+        resolver: zodResolver(notificationPreferenceSchema),
+        defaultValues:{
+
+        }
     });
 
     const { mutate, isPending } = useMutation({
         mutationFn: notificationPreferences,
         onSuccess: (updateData) => {
             toast.success("Settings Update Success")
-            console.log(updateData)
+            setUser(updateData?.data)
         },
         onError: (error) => {
             toast.error(error?.message)
@@ -62,7 +65,7 @@ const Notification = () => {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor='push_notification'>Push Notifications</Label>
+                                    <Label htmlFor='push_notification' className='cursor-pointer'>Push Notifications</Label>
                                     <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
                                 </div>
                                 <Controller
@@ -75,7 +78,7 @@ const Notification = () => {
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor='email_notification'>Email Notifications</Label>
+                                    <Label htmlFor='email_notification' className='cursor-pointer'>Email Notifications</Label>
                                     <p className="text-sm text-muted-foreground">Receive notifications via email</p>
                                 </div>
                                 <Controller
@@ -88,7 +91,7 @@ const Notification = () => {
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor='prayer_time_notification'>Prayer Time Notifications</Label>
+                                    <Label htmlFor='prayer_time_notification' className='cursor-pointer'>Prayer Time Notifications</Label>
                                     <p className="text-sm text-muted-foreground">Receive notifications for prayer times</p>
                                 </div>
                                 <Controller
@@ -112,7 +115,7 @@ const Notification = () => {
                                             <Switch id='likes' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="likes">Likes on my posts</Label>
+                                    <Label htmlFor="likes" className='cursor-pointer'>Likes on my posts</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -122,7 +125,7 @@ const Notification = () => {
                                             <Switch id='comments' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="comments">Comments on my posts</Label>
+                                    <Label htmlFor="comments" className='cursor-pointer'>Comments on my posts</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -132,7 +135,7 @@ const Notification = () => {
                                             <Switch id='mentions' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="mentions">Mentions</Label>
+                                    <Label htmlFor="mentions" className='cursor-pointer'>Mentions</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -142,7 +145,7 @@ const Notification = () => {
                                             <Switch id='follows' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="follows">New followers</Label>
+                                    <Label htmlFor="follows" className='cursor-pointer'>New followers</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -152,7 +155,7 @@ const Notification = () => {
                                             <Switch id='messages' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="messages">Direct messages</Label>
+                                    <Label htmlFor="messages" className='cursor-pointer'>Direct messages</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Controller
@@ -162,7 +165,7 @@ const Notification = () => {
                                             <Switch id='events' checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="events">Islamic events and holidays</Label>
+                                    <Label htmlFor="events" className='cursor-pointer'>Islamic events and holidays</Label>
                                 </div>
                             </div>
                         </div>

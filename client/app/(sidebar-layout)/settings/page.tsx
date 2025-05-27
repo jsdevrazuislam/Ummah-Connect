@@ -9,6 +9,7 @@ import PrivacySettings from "@/app/(sidebar-layout)/settings/privacy-settings"
 import ChangePassword from "@/app/(sidebar-layout)/settings/change-password"
 import Notification from "@/app/(sidebar-layout)/settings/notification"
 import { TwoFactorAuth } from "@/components/2fa"
+import { BackupCodes } from "@/components/recover-backcodes"
 
 export default function SettingsPage() {
   return (

@@ -12,6 +12,20 @@ export const loginSchema = z.object({
   password: z.string().min(8, "password must be at least 8 characters "),
 });
 
+export const loginRecoverSchema = z.object({
+  emailOrUsername: z.string().min(1, "emailOrUsername is required").transform((s) => s.toLowerCase()),
+  recoveryCode: z.string().min(16, "code must be at least 16 characters "),
+});
+
+export const emailSchema = z.object({
+  email: z.string().email().transform((s) => s.toLowerCase()),
+});
+
+export const email2FALoginSchema = z.object({
+  email: z.string().email().transform((s) => s.toLowerCase()),
+  otpCode: z.string().min(6, "code must be at least 6 characters "),
+});
+
 export const tokenSchema = z.object({
   token: z.string().min(6, "token must be at least 6 digit ")
 })

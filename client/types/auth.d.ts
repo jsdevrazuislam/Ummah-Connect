@@ -42,6 +42,8 @@ interface User {
   is_two_factor_enabled:boolean
   privacy_settings: PrivacySettings
   notification_preferences: NotificationPreference
+  is_saved_backup_codes:boolean
+  isFollowing: boolean
 }
 
 interface JwtResponsePayload {

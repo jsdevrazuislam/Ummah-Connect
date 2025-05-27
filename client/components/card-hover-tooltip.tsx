@@ -75,7 +75,7 @@ const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
                                     <MessageSquare className="h-4 w-4 mr-2" />
                                     Message
                                 </Button>
-                                <FollowButton isFollowing={user.isFollowing ?? false} id={user.id} />
+                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
                             </div>
                         </div>
                     </TooltipContent>
