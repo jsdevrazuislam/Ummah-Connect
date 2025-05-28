@@ -2,6 +2,7 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useSocketStore } from "@/hooks/use-socket";
+import { addedConversation, addMessageConversation } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,7 +41,7 @@ const SocketEvents = () => {
           return addCommentToPost(oldData, payload?.data?.postId, payload.data)
         })
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-            return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+          return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
       }
     });
@@ -59,9 +60,9 @@ const SocketEvents = () => {
         queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
           return addReplyCommentToPost(oldData, payload.data.parentId, payload.data)
         })
-        
+
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-            return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+          return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
       }
     });
@@ -104,10 +105,10 @@ const SocketEvents = () => {
     if (!socket) return;
     socket.on(SocketEventEnum.DELETE_COMMENT, (payload: DeleteCommentPayload) => {
       queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
-        if(!oldData) return { pageParams: [], pages: []}
+        if (!oldData) return { pageParams: [], pages: [] }
         return deleteCommentToPost(oldData, payload.id, payload.parentId, payload.isReply)
       })
-       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
         return incrementDecrementCommentCount(oldData, payload?.postId, payload?.totalComments ?? 0)
       })
     });
@@ -115,6 +116,33 @@ const SocketEvents = () => {
       socket.off(SocketEventEnum.DELETE_COMMENT);
     };
   }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, (payload: ConversationMessages) => {
+      if (payload?.sender_id !== user?.id) {
+        queryClient.setQueryData(['get_conversation_messages'], (oldData: QueryOldDataPayloadConversation) => {
+          return addMessageConversation(oldData, payload, payload.conversation_id)
+        })
+      }
+    });
+    return () => {
+      socket.off(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION);
+    };
+  }, [socket, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.SEND_CONVERSATION_REQUEST, (payload: Conversation) => {
+      queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+        return addedConversation(oldData, payload, payload?.id)
+      })
+    });
+    return () => {
+      socket.off(SocketEventEnum.SEND_CONVERSATION_REQUEST);
+    };
+  }, [socket, user]);
 
   return null
 }

@@ -6,6 +6,10 @@ import Comment from '@/models/comment.models'
 import BookmarkPost from '@/models/bookmark.models'
 import RecoveryCodes from '@/models/recoverycodes.models'
 import Otp from '@/models/otp.models'
+import Conversation from '@/models/conversation.models'
+import ConversationParticipant from '@/models/conversation-participant.modes'
+import Message from '@/models/messages.models'
+import MessageReaction from '@/models/message-reaction.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -54,6 +58,25 @@ BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(RecoveryCodes, { foreignKey: 'user_id', as: 'recoveryCodes' });
 RecoveryCodes.belongsTo(User, { foreignKey: 'user_id' });
 
+// Conversation Associations
+User.hasMany(Conversation, { foreignKey: 'created_by', as: 'createdConversations'})
+Conversation.hasMany(ConversationParticipant, { foreignKey: 'conversation_id', as: 'participants' });
+ConversationParticipant.belongsTo(Conversation, { foreignKey: 'conversation_id', as:'conversation' });
+User.hasMany(ConversationParticipant, { foreignKey: 'user_id', as: 'conversationParticipants' });
+ConversationParticipant.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Conversation.belongsTo(Message, { foreignKey: 'last_message_id', as: 'lastMessage' });
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };
+
+// Message Association
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+Message.hasMany(MessageReaction, { foreignKey: 'message_id', as: 'reactions' });
+MessageReaction.belongsTo(Message, { foreignKey: 'message_id' });
+MessageReaction.belongsTo(User, { foreignKey: 'user_id', as: 'reactedUser' });
+
+
+
+
+
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction };
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction };

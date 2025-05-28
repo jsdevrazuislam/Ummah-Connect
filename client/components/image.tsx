@@ -32,8 +32,6 @@ const ImageWithSkeleton: React.FC<ImageWithSkeletonProps> = ({
         onError?.(event);
     };
 
-    console.log(src)
-
     return (
         <div className="relative w-full h-full">
             {isLoading && (

@@ -31,6 +31,11 @@ const ApiStrings = {
   GET_COMMENTS:(id:number) =>  `/comment/${id}/comments`,
   // Follow
   FOLLOW_UNFOLLOW:(id:number) =>  `/follow/${id}`,
+  // Conversation
+  GET_CONVERSATION: `/conversation/`,
+  GET_CONVERSATION_MESSAGE: (id:number) => `/conversation/${id}`,
+  SEND_MESSAGE: `/conversation/send-message`,
+  CREATE_CONVERSATION: `/conversation/create`,
 };
 
 export default ApiStrings;

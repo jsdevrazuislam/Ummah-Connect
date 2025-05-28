@@ -28,6 +28,11 @@ interface DeletePostCommentPayload{
     parentId: number
 }
 
+interface SendMessagePayload{
+    conversationId:number,
+    content:string
+    type:string
+}
 interface ReplyCommentPayload{
     content:string, 
     postId:number,

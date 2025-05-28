@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
 import { ImageWithSkeleton } from "@/components/image"
+import MessageButton from "@/components/message-button"
 
 
 
@@ -85,7 +86,7 @@ export default function ProfilePage({ username, user }: { username: string, user
 
                             <div className="flex gap-2">
                                 <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
-                                <Button variant='outline'>Message</Button>
+                                <MessageButton user={user} />
                             </div>
                         </div>
 

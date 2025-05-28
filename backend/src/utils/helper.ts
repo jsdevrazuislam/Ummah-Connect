@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
  * and returns a string like "X seconds ago", "Y minutes ago", "Z hours ago", etc.
  *
  * @param {Date} date - The Date object to format.
+ * @param {Boolean} isShort - The Boolean to format.
  * @returns {string} A string representing how long ago the date occurred.
  *
  * @example
@@ -17,16 +18,16 @@ import bcrypt from 'bcryptjs';
  * const anotherPastDate = new Date(2023, 0, 1); // January 1, 2023
  * console.log(formatTimeAgo(anotherPastDate)); // Output: "1 year ago" (or similar, depending on current date)
  */
-export function formatTimeAgo(date: Date): string {
+export function formatTimeAgo(date: Date, isShort = false): string {
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds} seconds ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} weeks ago`;
-  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} months ago`;
-  return `${Math.floor(seconds / 31536000)} years ago`;
+  if (seconds < 60) return `${seconds} ${isShort ? 's' : 'seconds ago'}`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${isShort ? 'm' : 'minutes ago'}`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} ${isShort ? 'h' : 'hours ago'}`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ${isShort ? 'd' : 'days ago'}`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} ${isShort ? 'w' : 'weeks ago'}`;
+  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} ${isShort ? 'mon' : 'months ago'}`;
+  return `${Math.floor(seconds / 31536000)} ${isShort ? 'y' : 'years ago'}`;
 }
 
 /**

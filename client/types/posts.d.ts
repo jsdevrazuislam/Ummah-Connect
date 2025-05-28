@@ -37,6 +37,7 @@ interface PostAuthor {
   followers_count:string
   bio:string
   isFollowing?: boolean;
+  privacy_settings?:PrivacySettings
 }
 interface Comments {
   total: number;

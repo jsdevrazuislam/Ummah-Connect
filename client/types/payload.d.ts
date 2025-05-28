@@ -80,7 +80,21 @@ interface QueryOldDataPayload{
   pageParams: number[]
   pages: PostsResponse[]
 }
+interface QueryOldDataPayloadConversation{
+  pageParams: number[]
+  pages: ConversationMessagesResponse[]
+}
+interface QueryOldDataPayloadConversations{
+  pageParams: number[]
+  pages: ConversationResponse[]
+}
 
+interface CreateConversationPayload{
+  receiverId: string
+  content: string
+  messageType: string
+  type: string
+}
 interface QueryOldDataCommentsPayload{
   pageParams: number[]
   pages: CommentsResponse[]

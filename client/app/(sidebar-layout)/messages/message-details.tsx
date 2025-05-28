@@ -6,146 +6,104 @@ import { SideNav } from "@/components/side-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Send, Phone, Video, Info, ImageIcon, Paperclip, Smile, Mic } from "lucide-react"
+import { Search, Send, Phone, Video, Info, ImageIcon, Paperclip, Smile, Mic, Users, MessageSquare } from "lucide-react"
 import { CallModal } from "@/components/call-modal"
 import Link from "next/link"
+import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { get_conversation_messages, get_conversations, send_message } from "@/lib/apis/conversation"
+import { InfiniteScroll } from "@/components/infinite-scroll"
+import Loader from "@/components/loader"
+import { useAuthStore } from "@/store/store"
+import { toast } from "sonner"
+import { format } from "date-fns"
+import { addMessageConversation } from "@/lib/update-conversation"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import ConversationItem from "@/components/conversation-item"
 
-// Mock conversations
-const conversations = [
-  {
-    id: "1",
-    user: {
-      name: "Aisha Rahman",
-      username: "aisha_r",
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: true,
-    },
-    lastMessage: "JazakAllah Khair for the information!",
-    time: "2m",
-    unread: 2,
-  },
-  {
-    id: "2",
-    user: {
-      name: "Ibrahim Khan",
-      username: "ibrahim_k",
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: false,
-    },
-    lastMessage: "Are you going to the Islamic conference next week?",
-    time: "1h",
-    unread: 0,
-  },
-  {
-    id: "3",
-    user: {
-      name: "Yusuf Islam",
-      username: "yusuf_i",
-      avatar: "/placeholder.svg?height=40&width=40",
-      online: true,
-    },
-    lastMessage: "I'll share the resources about Islamic finance with you.",
-    time: "3h",
-    unread: 0,
-  },
-]
-
-// Mock messages for the active conversation
-const mockMessages = {
-  "1": [
-    {
-      id: "1",
-      sender: "them",
-      content: "Assalamu alaikum! How are you doing today?",
-      time: "10:30 AM",
-      status: "read",
-    },
-    {
-      id: "2",
-      sender: "me",
-      content: "Wa alaikum assalam! Alhamdulillah, I'm doing well. How about you?",
-      time: "10:32 AM",
-      status: "read",
-    },
-    {
-      id: "3",
-      sender: "them",
-      content: "Alhamdulillah, all good. I wanted to ask you about the Islamic book club meeting this weekend.",
-      time: "10:35 AM",
-      status: "read",
-    },
-    {
-      id: "4",
-      sender: "me",
-      content:
-        "Yes, it's scheduled for Saturday after Asr prayer at the community center. We'll be discussing 'Reclaim Your Heart' by Yasmin Mogahed.",
-      time: "10:40 AM",
-      status: "read",
-    },
-    {
-      id: "5",
-      sender: "them",
-      content: "JazakAllah Khair for the information!",
-      time: "10:42 AM",
-      status: "read",
-    },
-  ],
-  "2": [
-    {
-      id: "1",
-      sender: "them",
-      content: "Assalamu alaikum brother, are you going to the Islamic conference next week?",
-      time: "Yesterday, 3:30 PM",
-      status: "read",
-    },
-    {
-      id: "2",
-      sender: "me",
-      content: "Wa alaikum assalam! Yes, I'm planning to attend. Are you going as well?",
-      time: "Yesterday, 4:15 PM",
-      status: "read",
-    },
-    {
-      id: "3",
-      sender: "them",
-      content: "Yes, I'll be there. I heard Sheikh Yasir Qadhi will be speaking. Looking forward to it!",
-      time: "Yesterday, 4:20 PM",
-      status: "read",
-    },
-  ],
-  "3": [
-    {
-      id: "1",
-      sender: "them",
-      content: "Assalamu alaikum! I found some great resources on Islamic finance that I think you'll find useful.",
-      time: "Monday, 2:15 PM",
-      status: "read",
-    },
-    {
-      id: "2",
-      sender: "me",
-      content: "Wa alaikum assalam! That would be very helpful, JazakAllah Khair in advance.",
-      time: "Monday, 2:30 PM",
-      status: "read",
-    },
-    {
-      id: "3",
-      sender: "them",
-      content: "I'll share the resources about Islamic finance with you.",
-      time: "Monday, 3:45 PM",
-      status: "read",
-    },
-  ],
-}
 
 export default function ConversationPage() {
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState(mockMessages["1" as keyof typeof mockMessages] || [])
   const [activeCall, setActiveCall] = useState<{ type: "audio" | "video" } | null>(null)
   const [incomingCall, setIncomingCall] = useState<{ type: "audio" | "video" } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [selectedConversation, setSelectedConversation] = useState<MessageSender | null>(null)
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
 
-  const conversation = conversations.find((c) => c.id === "1") || conversations[0]
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery<ConversationResponse>({
+    queryKey: ['get_conversations'],
+    queryFn: ({ pageParam = 1 }) => get_conversations({ page: Number(pageParam) }),
+    getNextPageParam: (lastPage) => {
+      const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
+      return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
+    },
+    initialPageParam: 1,
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
+  });
+
+  const conversations = data?.pages.flatMap(page => page?.data?.conversations) ?? [];
+
+
+  const loadMoreConversation = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const {
+    data: messagesData,
+    fetchNextPage: messageNextPage,
+    hasNextPage: messageHasNextPage,
+    isFetchingNextPage: isMessageFetchNextPage,
+    isLoading: messageLoading,
+    isError: isMessageError,
+    error: messageError,
+  } = useInfiniteQuery<ConversationMessagesResponse>({
+    queryKey: ['get_conversation_messages'],
+    queryFn: ({ pageParam = 1 }) => get_conversation_messages({ page: Number(pageParam), id: selectedConversation?.id }),
+    getNextPageParam: (lastPage) => {
+      const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
+      return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
+    },
+    initialPageParam: 1,
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
+    enabled: !!selectedConversation?.id
+  });
+
+  const messages = messagesData?.pages.flatMap(page => page?.data?.messages) ?? [];
+
+  const { isPending, mutate } = useMutation({
+    mutationFn: send_message,
+    onSuccess: (newMessage, variable) => {
+      setMessage("")
+      queryClient.setQueryData(['get_conversation_messages'], (oldData: QueryOldDataPayloadConversation) => {
+        return addMessageConversation(oldData, newMessage.data, variable.conversationId)
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+
+  const loadMoreMessage = () => {
+    if (messageHasNextPage && !isMessageFetchNextPage) {
+      messageNextPage();
+    }
+  };
+
+
 
   useEffect(() => {
     // Scroll to bottom of messages
@@ -166,15 +124,11 @@ export default function ConversationPage() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim()) {
-      const newMessage = {
-        id: Date.now().toString(),
-        sender: "me",
-        content: message,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        status: "sent",
-      }
-      setMessages([...messages, newMessage])
-      setMessage("")
+      mutate({
+        conversationId: selectedConversation?.id ?? 0,
+        type: 'text',
+        content: message
+      })
     }
   }
 
@@ -194,10 +148,14 @@ export default function ConversationPage() {
     }
   }
 
+  if (isError) {
+    return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message}</div>;
+  }
+
+
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-1 h-screen bg-background">
       <div className="flex-1 flex">
-        {/* Conversations list */}
         <div className="w-full md:w-80 border-r border-border">
           <div className="p-4 border-b border-border">
             <h1 className="text-xl font-bold mb-4">Messages</h1>
@@ -206,146 +164,160 @@ export default function ConversationPage() {
               <Input placeholder="Search messages" className="pl-10" />
             </div>
           </div>
-          <div className="overflow-y-auto h-[calc(100vh-130px)]">
-            {conversations.map((conv) => (
-                <div
-                  className={`p-4 border-b border-border hover:bg-muted/50 cursor-pointer`}
-                  key={conv.id}
-                >
-                  <div className="flex gap-3 items-center">
-                    <div className="relative">
-                      <Avatar>
-                        <AvatarImage src={conv.user.avatar || "/placeholder.svg"} alt={conv.user.name} />
-                        <AvatarFallback>{conv.user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      {conv.user.online && (
-                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-background"></span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium truncate">{conv.user.name}</span>
-                        <span className="text-xs text-muted-foreground">{conv.time}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
-                        {conv.unread > 0 && (
-                          <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {conv.unread}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Active conversation */}
-        <div className="hidden md:flex flex-col flex-1">
-          <div className="p-4 border-b border-border flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={conversation.user.avatar || "/placeholder.svg"} alt={conversation.user.name} />
-                <AvatarFallback>{conversation.user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
+          <div>
+            <InfiniteScroll
+              hasMore={hasNextPage}
+              isLoading={isLoading}
+              onLoadMore={loadMoreConversation}
+            >
               <div>
-                <div className="font-medium">{conversation.user.name}</div>
-                <div className="text-xs text-muted-foreground">{conversation.user.online ? "Online" : "Offline"}</div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon" onClick={() => startCall("audio")}>
-                <Phone className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => startCall("video")}>
-                <Video className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Info className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`}>
-                {message.sender !== "me" && (
-                  <Avatar className="h-8 w-8 mr-2 mt-1">
-                    <AvatarImage src={conversation.user.avatar || "/placeholder.svg"} alt={conversation.user.name} />
-                    <AvatarFallback>{conversation.user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={`max-w-[70%] rounded-lg p-3 ${
-                    message.sender === "me" ? "bg-primary text-primary-foreground" : "bg-muted"
-                  }`}
-                >
-                  <p>{message.content}</p>
-                  <div className="flex items-center justify-end gap-1 mt-1">
-                    <span
-                      className={`text-xs ${
-                        message.sender === "me" ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}
-                    >
-                      {message.time}
-                    </span>
-                    {message.sender === "me" && (
-                      <span className="text-xs text-primary-foreground/70">
-                        {message.status === "sent" ? "✓" : message.status === "delivered" ? "✓✓" : "✓✓"}
-                      </span>
-                    )}
+                {isLoading ? (
+                  Array.from({ length: 10 }).map((_, i) => (
+                    <ConversationSkeleton key={i} />
+                  ))
+                ) : (
+                  conversations?.length > 0 ? conversations.map((conv) => (
+                    <ConversationItem key={conv.id} conv={conv} onClick={() => setSelectedConversation({
+                      full_name: conv.name ?? '',
+                      avatar: conv.avatar,
+                      username: '',
+                      id: 1
+                    })} />
+                  )) : <div className="text-center py-16 flex flex-col justify-center items-center rounded-lg">
+                    <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h4 className="font-medium mb-2">No conversation yet</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Start a new conversation to see it appear here
+                    </p>
                   </div>
+                )}
+
+                {isFetchingNextPage && (
+                  <>
+                    <ConversationSkeleton />
+                    <ConversationSkeleton />
+                  </>
+                )}
+              </div>
+            </InfiniteScroll>
+          </div>
+        </div>
+
+        {
+          selectedConversation && !messageLoading ? <div className="flex flex-col flex-1">
+            <div className="p-4 border-b border-border flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={selectedConversation?.avatar} alt={selectedConversation?.full_name} />
+                  <AvatarFallback>{selectedConversation?.full_name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
+                  <div className="text-xs text-muted-foreground">{true ? "Online" : "Offline"}</div>
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-4 border-t border-border">
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-              <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                <Smile className="h-5 w-5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                <Paperclip className="h-5 w-5" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                <ImageIcon className="h-5 w-5" />
-              </Button>
-              <Input
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="flex-1"
-              />
-              {message.trim() ? (
-                <Button type="submit" size="icon" className="shrink-0">
-                  <Send className="h-4 w-4" />
+              <div className="flex gap-2">
+                <Button variant="ghost" size="icon" onClick={() => startCall("audio")}>
+                  <Phone className="h-4 w-4" />
                 </Button>
-              ) : (
+                <Button variant="ghost" size="icon" onClick={() => startCall("video")}>
+                  <Video className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <Info className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 p-4">
+              <InfiniteScroll
+                hasMore={messageHasNextPage}
+                isLoading={messageLoading}
+                onLoadMore={loadMoreMessage}
+              >
+                <div>
+                  {messages?.length > 0 ? messages.map((message) => (
+                    <div key={message?.id} className={`flex ${message?.sender_id === user?.id ? "justify-end" : "justify-start"} mt-4 mb-4`}>
+                      {message?.sender_id !== user?.id && (
+                        <Avatar className="h-8 w-8 mr-2 mt-1">
+                          <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.full_name} />
+                          <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={`max-w-[70%] rounded-lg px-3 py-2 ${message?.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
+                          }`}
+                      >
+                        <p>{message?.content}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span
+                            className={`text-xs ${message?.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                              }`}
+                          >
+                            {format(new Date(message?.sent_at ?? ''), "hh:mmaaaaa'm'")}
+                          </span>
+                          {message?.sender_id === user?.id && (
+                            <span className="text-xs text-primary-foreground/70">
+                              {message?.status === "sent" ? "✓" : message?.status === "delivered" ? "✓✓" : "✓✓"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )) : <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No messages yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Send a message to start the conversation
+                    </p>
+                  </div>}
+                  <div ref={messagesEndRef} />
+                </div>
+              </InfiniteScroll>
+            </ScrollArea>
+
+            <div className="p-4 border-t border-border">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                 <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                  <Mic className="h-5 w-5" />
+                  <Smile className="h-5 w-5" />
                 </Button>
-              )}
-            </form>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                  <ImageIcon className="h-5 w-5" />
+                </Button>
+                <Input
+                  placeholder="Type a message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="flex-1"
+                />
+                {message.trim() ? (
+                  <Button onClick={handleSendMessage} disabled={isPending} type="submit" size="icon" className="shrink-0">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                    <Mic className="h-5 w-5" />
+                  </Button>
+                )}
+              </form>
+            </div>
+          </div> : <div className="flex flex-1 items-center justify-center">
+            {messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">
+              <h3 className="font-medium">Select a conversation</h3>
+              <p className="text-sm text-muted-foreground mt-1">Choose from your existing conversations</p>
+            </div>}
           </div>
-        </div>
+        }
 
-        {/* Empty state for mobile */}
-        <div className="flex-1 flex items-center justify-center md:hidden">
-          <div className="text-center p-4">
-            <h3 className="font-medium">Select a conversation</h3>
-            <p className="text-sm text-muted-foreground mt-1">Choose from your existing conversations</p>
-          </div>
-        </div>
       </div>
       {/* Call modals */}
-      {activeCall && <CallModal user={conversation.user} callType={activeCall.type} onClose={handleCloseCall} />}
-      {incomingCall && (
+      {/* {activeCall && <CallModal user={conversation.user} callType={activeCall.type} onClose={handleCloseCall} />} */}
+      {/* {incomingCall && (
         <CallModal user={conversation.user} callType={incomingCall.type} onClose={handleCloseCall} incoming={true} />
-      )}
+      )} */}
     </div>
   )
 }
