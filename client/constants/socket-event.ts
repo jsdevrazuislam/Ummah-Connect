@@ -12,6 +12,9 @@ const SocketEventEnum = Object.freeze({
   JOIN_CONVERSATION: "joinConversation",
   SEND_MESSAGE_TO_CONVERSATION:"sendMessageToConversation",
   SEND_CONVERSATION_REQUEST:"sendMessageToConversation",
+  MESSAGE_RECEIVED:"messageReceived",
+  TYPING:"typing:start",
+  DISPLAY_TYPING:"displayTyping",
 
 });
 

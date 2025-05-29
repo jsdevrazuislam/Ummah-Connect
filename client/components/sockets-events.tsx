@@ -2,17 +2,25 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useSocketStore } from "@/hooks/use-socket";
-import { addedConversation, addMessageConversation } from "@/lib/update-conversation";
+import { read_message } from "@/lib/apis/conversation";
+import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
-  const { user } = useAuthStore()
+  const { user, selectedConversation } = useAuthStore()
+  const { mutate: readMessageFun } = useMutation({
+    mutationFn: read_message,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
 
 
   useEffect(() => {
@@ -123,14 +131,26 @@ const SocketEvents = () => {
     socket.on(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, (payload: ConversationMessages) => {
       if (payload?.sender_id !== user?.id) {
         queryClient.setQueryData(['get_conversation_messages'], (oldData: QueryOldDataPayloadConversation) => {
+          if (selectedConversation && selectedConversation?.conversationId === payload.conversation_id) {
+            readMessageFun({
+              conversationId: payload.conversation_id,
+              messageId: payload.id,
+            })
+          }
+          socket.emit(SocketEventEnum.MESSAGE_RECEIVED, payload.id.toString());
           return addMessageConversation(oldData, payload, payload.conversation_id)
+        })
+        queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+          const shouldIncrementUnread = selectedConversation?.conversationId !== payload.conversation_id;
+          if (shouldIncrementUnread) return addUnReadCount(oldData, payload.conversation_id)
+          else return oldData
         })
       }
     });
     return () => {
       socket.off(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION);
     };
-  }, [socket, user]);
+  }, [socket, user, selectedConversation]);
 
   useEffect(() => {
     if (!socket) return;

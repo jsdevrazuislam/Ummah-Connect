@@ -16,11 +16,14 @@ const SocketEventEnum = Object.freeze({
   DELETE_COMMENT:"deleteComment",
   SEND_MESSAGE_TO_CONVERSATION:"sendMessageToConversation",
   SEND_CONVERSATION_REQUEST:"sendMessageToConversation",
+  MESSAGE_RECEIVED:"messageReceived",
+  TYPING:"typing:start",
+  DISPLAY_TYPING:"displayTyping",
 });
 
 const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio', 'privacy_settings'];
 const REACT_ATTRIBUTE = ['userId', 'react_type', 'icon', 'commentId', 'postId'];
 const POST_ATTRIBUTE = ['id', 'media', 'content', 'location', 'privacy', 'createdAt']
-const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username']
+const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username', 'status']
 
 export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER };

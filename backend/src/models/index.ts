@@ -10,6 +10,7 @@ import Conversation from '@/models/conversation.models'
 import ConversationParticipant from '@/models/conversation-participant.modes'
 import Message from '@/models/messages.models'
 import MessageReaction from '@/models/message-reaction.models'
+import MessageStatus from '@/models/message-status.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -74,9 +75,13 @@ Message.hasMany(MessageReaction, { foreignKey: 'message_id', as: 'reactions' });
 MessageReaction.belongsTo(Message, { foreignKey: 'message_id' });
 MessageReaction.belongsTo(User, { foreignKey: 'user_id', as: 'reactedUser' });
 
+Message.hasMany(MessageStatus, { foreignKey: 'message_id', as: 'statuses' });
+MessageStatus.belongsTo(Message, { foreignKey: 'message_id' });
+
+User.hasMany(MessageStatus, { foreignKey: 'user_id', as: 'messageStatuses' });
+MessageStatus.belongsTo(User, { foreignKey: 'user_id', as:'user' });
 
 
 
-
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction };
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction };
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };

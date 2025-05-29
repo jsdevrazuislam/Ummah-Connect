@@ -47,4 +47,5 @@ export interface User {
   full_name: string;
   avatar?: null;
   username: string;
+  status?:string
 }

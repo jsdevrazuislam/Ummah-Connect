@@ -1,9 +1,10 @@
 import { Socket, Server } from "socket.io";
 import { Request } from "express";
-import { User } from "@/models";
+import { MessageStatus, User } from "@/models";
 import { decode_token } from '@/utils/auth-helper';
 import { JwtResponse } from "@/types/auth";
 import { SocketEventEnum } from '@/constants'
+import { Op } from "sequelize";
 
 declare module "socket.io" {
   interface Socket {
@@ -84,8 +85,24 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      setupSocketListeners(socket);
+      socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
+        await MessageStatus.update(
+          { status: 'delivered' },
+          {
+            where: {
+              message_id: messageId,
+              user_id: socket?.user?.id,
+              status: { [Op.ne]: 'seen' } 
+            }
+          }
+        );
+    });
 
+    socket.on(SocketEventEnum.TYPING, ({ conversationId, userId }) => {
+      socket.to(`conversation_${conversationId}`).emit(SocketEventEnum.TYPING, { userId });
+    });
+
+      setupSocketListeners(socket);
       socket.on(SocketEventEnum.SOCKET_DISCONNECTED, () => {
         console.log(`User has disconnected userId: ${socket.user?.id || 'unknown'}`);
         if (socket.user?.id) {

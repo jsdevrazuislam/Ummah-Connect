@@ -36,6 +36,7 @@ const ApiStrings = {
   GET_CONVERSATION_MESSAGE: (id:number) => `/conversation/${id}`,
   SEND_MESSAGE: `/conversation/send-message`,
   CREATE_CONVERSATION: `/conversation/create`,
+  READ_MESSAGE: `/conversation/read-message`,
 };
 
 export default ApiStrings;

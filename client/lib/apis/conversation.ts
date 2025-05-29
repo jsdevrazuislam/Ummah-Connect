@@ -20,3 +20,8 @@ export const create_conversation = async(payload:CreateConversationPayload) =>{
     const response = await api.post(ApiStrings.CREATE_CONVERSATION, payload);
     return response.data;
 }
+
+export const read_message = async(payload:ReadMessagePayload) =>{
+    const response = await api.post(ApiStrings.READ_MESSAGE, payload);
+    return response.data;
+}

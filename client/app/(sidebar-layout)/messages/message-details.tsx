@@ -11,15 +11,18 @@ import { CallModal } from "@/components/call-modal"
 import Link from "next/link"
 import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_conversation_messages, get_conversations, send_message } from "@/lib/apis/conversation"
+import { get_conversation_messages, get_conversations, read_message, send_message } from "@/lib/apis/conversation"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { addMessageConversation } from "@/lib/update-conversation"
+import { addMessageConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
+import { useSocketStore } from "@/hooks/use-socket"
+import SocketEventEnum from "@/constants/socket-event"
+import TypingIndicator from "@/components/type-indicator"
 
 
 export default function ConversationPage() {
@@ -27,9 +30,11 @@ export default function ConversationPage() {
   const [activeCall, setActiveCall] = useState<{ type: "audio" | "video" } | null>(null)
   const [incomingCall, setIncomingCall] = useState<{ type: "audio" | "video" } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [selectedConversation, setSelectedConversation] = useState<MessageSender | null>(null)
-  const { user } = useAuthStore()
+  const { user, selectedConversation, setSelectedConversation } = useAuthStore()
   const queryClient = useQueryClient()
+  const { socket } = useSocketStore()
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout>();
 
   const {
     data,
@@ -70,7 +75,7 @@ export default function ConversationPage() {
     error: messageError,
   } = useInfiniteQuery<ConversationMessagesResponse>({
     queryKey: ['get_conversation_messages'],
-    queryFn: ({ pageParam = 1 }) => get_conversation_messages({ page: Number(pageParam), id: selectedConversation?.id }),
+    queryFn: ({ pageParam = 1 }) => get_conversation_messages({ page: Number(pageParam), id: selectedConversation?.conversationId }),
     getNextPageParam: (lastPage) => {
       const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
       return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
@@ -78,10 +83,22 @@ export default function ConversationPage() {
     initialPageParam: 1,
     staleTime: 1000 * 60,
     gcTime: 1000 * 60 * 5,
-    enabled: !!selectedConversation?.id
+    enabled: !!selectedConversation?.conversationId
   });
 
   const messages = messagesData?.pages.flatMap(page => page?.data?.messages) ?? [];
+
+  const { mutate: readMessageFun } = useMutation({
+    mutationFn: read_message,
+    onSuccess: (_, variable) => {
+      queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+        return updatedUnReadCount(oldData, variable.conversationId)
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
 
   const { isPending, mutate } = useMutation({
     mutationFn: send_message,
@@ -97,35 +114,42 @@ export default function ConversationPage() {
   })
 
 
+
   const loadMoreMessage = () => {
     if (messageHasNextPage && !isMessageFetchNextPage) {
       messageNextPage();
     }
   };
 
+  const handleSelectionMessage = (conv: Conversation) => {
+
+    setSelectedConversation({
+      full_name: conv.name ?? '',
+      avatar: conv.avatar,
+      username: conv.username ?? '',
+      id: conv.userId ?? 0,
+      conversationId: conv.id
+    });
+
+    readMessageFun({
+      conversationId: conv.id,
+      messageId: conv?.lastMessage?.id ?? 0,
+    });
+  };
 
 
-  useEffect(() => {
-    // Scroll to bottom of messages
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  const handleTyping = () => {
+    setIsTyping(true);
+    if (typingTimeout) clearTimeout(typingTimeout);
+    setTypingTimeout(setTimeout(() => setIsTyping(false), 3000));
+  };
 
-  useEffect(() => {
-    // Simulate incoming call after a delay
-    const callTimer = setTimeout(() => {
-      if (Math.random() > 0.7 && !activeCall && !incomingCall) {
-        setIncomingCall({ type: Math.random() > 0.5 ? "audio" : "video" })
-      }
-    }, 30000) // 30 seconds
-
-    return () => clearTimeout(callTimer)
-  }, [activeCall, incomingCall])
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim()) {
       mutate({
-        conversationId: selectedConversation?.id ?? 0,
+        conversationId: selectedConversation?.conversationId ?? 0,
         type: 'text',
         content: message
       })
@@ -148,8 +172,35 @@ export default function ConversationPage() {
     }
   }
 
-  if (isError) {
-    return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message}</div>;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  useEffect(() => {
+    const callTimer = setTimeout(() => {
+      if (Math.random() > 0.7 && !activeCall && !incomingCall) {
+        setIncomingCall({ type: Math.random() > 0.5 ? "audio" : "video" })
+      }
+    }, 30000) 
+
+    return () => clearTimeout(callTimer)
+  }, [activeCall, incomingCall])
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.TYPING, (userId) => {
+        handleTyping();
+    });
+
+    return () => {
+      socket.off(SocketEventEnum.TYPING);
+    };
+  }, [socket, selectedConversation]);
+
+
+  if (isError || isMessageError) {
+    return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message || messageError?.message}</div>;
   }
 
 
@@ -177,12 +228,7 @@ export default function ConversationPage() {
                   ))
                 ) : (
                   conversations?.length > 0 ? conversations.map((conv) => (
-                    <ConversationItem key={conv.id} conv={conv} onClick={() => setSelectedConversation({
-                      full_name: conv.name ?? '',
-                      avatar: conv.avatar,
-                      username: '',
-                      id: 1
-                    })} />
+                    <ConversationItem key={conv.id} conv={conv} onClick={() => handleSelectionMessage(conv)} />
                   )) : <div className="text-center py-16 flex flex-col justify-center items-center rounded-lg">
                     <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h4 className="font-medium mb-2">No conversation yet</h4>
@@ -213,7 +259,7 @@ export default function ConversationPage() {
                 </Avatar>
                 <div>
                   <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
-                  <div className="text-xs text-muted-foreground">{true ? "Online" : "Offline"}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{selectedConversation?.status}</div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -258,7 +304,7 @@ export default function ConversationPage() {
                           </span>
                           {message?.sender_id === user?.id && (
                             <span className="text-xs text-primary-foreground/70">
-                              {message?.status === "sent" ? "✓" : message?.status === "delivered" ? "✓✓" : "✓✓"}
+                              {message?.statuses?.[0]?.status === 'sent' ? "✓" : message?.statuses?.[0]?.status === 'delivered' ? "✓✓" : "👀"}
                             </span>
                           )}
                         </div>
@@ -271,6 +317,7 @@ export default function ConversationPage() {
                       Send a message to start the conversation
                     </p>
                   </div>}
+                  <TypingIndicator isTyping={isTyping} />
                   <div ref={messagesEndRef} />
                 </div>
               </InfiniteScroll>
@@ -290,7 +337,12 @@ export default function ConversationPage() {
                 <Input
                   placeholder="Type a message..."
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={(e) => {
+                    setMessage(e.target.value)
+                    if(selectedConversation.conversationId){
+                      socket?.emit(SocketEventEnum.TYPING, { conversationId: selectedConversation?.conversationId, userId: user?.id });
+                    }
+                  }}
                   className="flex-1"
                 />
                 {message.trim() ? (

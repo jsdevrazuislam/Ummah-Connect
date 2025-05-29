@@ -59,3 +59,77 @@ export const addedConversation = (
         pages: updatedPages,
     };
 }
+
+export const updatedUnReadCount = (
+    oldData: QueryOldDataPayloadConversations | undefined,
+    conversationId: number
+) =>{
+
+    if (!oldData) return oldData;
+
+    const updatedPages = oldData.pages.map((page) => {
+        const existingConversation = page?.data?.conversations ?? [];
+        const shouldUpdateUnreadCount = existingConversation.some((c) => c.id === conversationId);
+
+        if (shouldUpdateUnreadCount) {
+            const updateConversation = existingConversation?.map((conversation) => {
+                return {
+                    ...conversation,
+                    unreadCount: 0
+                }
+            })
+            return {
+                ...page,
+                data: {
+                    ...page.data,
+                    conversations: updateConversation,
+                },
+            };
+        }
+
+        return page;
+    });
+
+    return {
+        ...oldData,
+        pages: updatedPages,
+    };
+
+}
+
+export const addUnReadCount = (
+    oldData: QueryOldDataPayloadConversations | undefined,
+    conversationId: number
+) =>{
+
+    if (!oldData) return oldData;
+
+    const updatedPages = oldData.pages.map((page) => {
+        const existingConversation = page?.data?.conversations ?? [];
+        const shouldUpdateUnreadCount = existingConversation.some((c) => c.id === conversationId);
+
+        if (shouldUpdateUnreadCount) {
+            const updateConversation = existingConversation?.map((conversation) => {
+                return {
+                    ...conversation,
+                    unreadCount: conversation.unreadCount + 1
+                }
+            })
+            return {
+                ...page,
+                data: {
+                    ...page.data,
+                    conversations: updateConversation,
+                },
+            };
+        }
+
+        return page;
+    });
+
+    return {
+        ...oldData,
+        pages: updatedPages,
+    };
+
+}

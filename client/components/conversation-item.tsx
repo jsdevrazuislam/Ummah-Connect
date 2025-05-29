@@ -33,8 +33,10 @@ const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
                         <AvatarImage src={conv?.avatar} alt={conv?.name} />
                         <AvatarFallback>{conv?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    {true && (
+                    {conv?.status === 'online' ? (
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-background"></span>
+                    ) : (
+                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-gray-300 border-2 border-background"></span>
                     )}
                 </div>
                 <div className="flex-1 min-w-0">

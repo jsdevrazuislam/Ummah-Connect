@@ -1,5 +1,5 @@
 import { MESSAGE_USER, SocketEventEnum } from "@/constants";
-import { Conversation, ConversationParticipant, Message, MessageReaction, User } from "@/models";
+import { Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, User } from "@/models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
@@ -33,7 +33,7 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
     })
 
     await ConversationParticipant.bulkCreate([
-        { conversation_id: newConversation.id, user_id: creatorId },
+        { conversation_id: newConversation.id, user_id: creatorId, unread_count: 0 },
         { conversation_id: newConversation.id, user_id: receiverIdNum, unread_count: 1 },
     ])
 
@@ -45,6 +45,12 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
         content,
         type: messageType,
         sent_at: Date.now()
+    })
+
+    await MessageStatus.create({
+        message_id: newMessage.id,
+        user_id: receiverIdNum,
+        status:'sent'
     })
 
     newConversation.last_message_id = newMessage.id
@@ -69,11 +75,11 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
             type: newMessage.type,
             sent_at: newMessage.sent_at,
         },
-        unreadCount: 1,
+        unreadCount: 0,
         isMuted: false,
     }
 
-    emitSocketEvent({ req, roomId: `${receiverId}`, event: SocketEventEnum.SEND_CONVERSATION_REQUEST, payload: responseData })
+    emitSocketEvent({ req, roomId: `${receiverId}`, event: SocketEventEnum.SEND_CONVERSATION_REQUEST, payload: { ...responseData, name: req.user.full_name, unreadCount: 1} })
 
     return res.json(
         new ApiResponse(200, responseData, 'Conversation Created')
@@ -190,6 +196,13 @@ export const get_conversation_message = asyncHandler(async (req: Request, res: R
             {
                 model: MessageReaction,
                 as: 'reactions'
+            },
+            {
+                model: MessageStatus,
+                as: 'statuses',
+                where: { user_id: req.user.id  },
+                required: false,
+                attributes: ['status']
             }
         ],
         order: [['sent_at', 'ASC']],
@@ -210,6 +223,7 @@ export const get_conversation_message = asyncHandler(async (req: Request, res: R
 export const send_message = asyncHandler(async (req: Request, res: Response) => {
 
     const { conversationId, content, type } = req.body
+    const senderId = req.user.id
 
     const conversation = await Conversation.findOne({ where: { id: conversationId } })
     if (!conversation) throw new ApiError(404, 'Conversation not found')
@@ -225,26 +239,55 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
         throw new ApiError(403, 'You are not a participant in this conversation');
     }
 
+    const allParticipants = await ConversationParticipant.findAll({
+        where: { conversation_id: conversationId },
+        include: [{
+            model: User,
+            as: 'user',
+            attributes: MESSAGE_USER
+        }]
+    });
+
+    const receiverParticipants = allParticipants.filter(p => p.user_id !== senderId);
+
+    if (receiverParticipants.length === 0 && conversation.type === 'direct') {
+        throw new ApiError(400, 'Direct message conversation must have another participant.');
+    }
 
     const newMessage = await Message.create({
         conversation_id: conversationId,
-        sender_id: req.user.id,
+        sender_id: senderId,
         content,
         type,
         sent_at: new Date()
     })
 
-    participant.unread_count = participant.unread_count + 1
-    conversation.last_message_id = newMessage.id
+    const messageStatuses = receiverParticipants.map(participant => ({
+        message_id: newMessage.id,
+        user_id: participant.user_id,
+        status: 'sent'
+    }));
 
-    await participant.save()
-    await conversation.save()
+    if (messageStatuses.length > 0) {
+        await MessageStatus.bulkCreate(messageStatuses);
+    }
+
+
+    await Promise.all(receiverParticipants.map(async (participant) => {
+        participant.unread_count = (participant.unread_count || 0) + 1; 
+        await participant.save();
+    }));
+
+    conversation.last_message_id = newMessage.id;
+    await conversation.save();
 
     const responseData = {
         ...newMessage.toJSON(),
         sender: {
             full_name: req.user.full_name,
-            avatar: req.user.avatar
+            avatar: req.user.avatar,
+            id: req.user.id,
+            username: req.user.username
         }
     }
 
@@ -256,10 +299,51 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
     )
 })
 
+export const read_message = asyncHandler(async(req:Request, res:Response) =>{
+
+    const { messageId, conversationId } = req.body
+
+    const conversation = await Conversation.findOne({ 
+        where: {id: conversationId}
+    })
+
+    if(!conversation) throw new ApiError(404, 'Conversation not found')
+
+    const participant = await ConversationParticipant.findOne({
+        where:{
+            user_id: req.user.id,
+            conversation_id: conversationId
+        }
+    })
+
+    if(!participant) throw new ApiError(403, 'You are not participant of this conversation')
+
+        await MessageStatus.update(
+        { status: 'seen' },
+        {
+            where: {
+            user_id: req.user.id,
+            status: { [Op.ne]: 'seen' }
+            }
+        }
+        );
+
+
+    participant.unread_count = 0
+    participant.last_read_message_id = messageId
+
+    await participant.save()
+
+    return res.json(
+        new ApiResponse(200, null, 'Success')
+    )
+})
+
 export const send_attachment = asyncHandler(async (req: Request, res: Response) => {
 
     const mediaPath = req?.file?.path
     const { conversationId, type } = req.body
+    const senderId = req.user.id
 
     const conversation = await Conversation.findOne({ where: { id: conversationId } })
     if (!conversation) throw new ApiError(404, 'Conversation not found')
@@ -272,6 +356,21 @@ export const send_attachment = asyncHandler(async (req: Request, res: Response) 
     });
     if (!participant) {
         throw new ApiError(403, 'You are not a participant in this conversation');
+    }
+
+    const allParticipants = await ConversationParticipant.findAll({
+        where: { conversation_id: conversationId },
+        include: [{
+            model: User,
+            as: 'user',
+            attributes: MESSAGE_USER
+        }]
+    });
+
+    const receiverParticipants = allParticipants.filter(p => p.user_id !== senderId);
+
+    if (receiverParticipants.length === 0 && conversation.type === 'direct') {
+        throw new ApiError(400, 'Direct message conversation must have another participant.');
     }
 
     let media_url = null
@@ -287,18 +386,43 @@ export const send_attachment = asyncHandler(async (req: Request, res: Response) 
         conversation_id: conversationId,
         content: media_url,
         type,
-        sender_id: req.user.id,
+        sender_id: senderId,
         sent_at: new Date()
     })
 
-    participant.unread_count = participant.unread_count + 1
-    conversation.last_message_id = newMessage.id
+    const messageStatuses = receiverParticipants.map(participant => ({
+        message_id: newMessage.id,
+        user_id: participant.id,
+        status: 'sent'
+    }));
 
-    await participant.save()
-    await conversation.save()
+    if (messageStatuses.length > 0) {
+        await MessageStatus.bulkCreate(messageStatuses);
+    }
+
+    await Promise.all(receiverParticipants.map(async (participant) => {
+        participant.unread_count = (participant.unread_count || 0) + 1; 
+        await participant.save();
+    }));
+
+    conversation.last_message_id = newMessage.id;
+    await conversation.save();
+
+
+    const responseData = {
+        ...newMessage.toJSON(),
+        sender: {
+            full_name: req.user.full_name,
+            avatar: req.user.avatar,
+            id: req.user.id,
+            username: req.user.username
+        }
+    }
+
+    emitSocketEvent({ req, roomId: `conversation_${conversationId}`, event: SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, payload: responseData })
 
 
     return res.json(
-        new ApiResponse(200, newMessage, 'success')
+        new ApiResponse(200, responseData, 'success')
     )
 })

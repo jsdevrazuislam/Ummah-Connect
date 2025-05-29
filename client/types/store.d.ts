@@ -7,4 +7,6 @@ interface AuthState {
   logout: () => void;
   user: User | null;
   initialLoading: () => void
+  selectedConversation: MessageSender | null
+  setSelectedConversation: (data:MessageSender) => void
 }

@@ -8,9 +8,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     accessToken: Cookies.get(ACCESS_TOKEN) || null,
     refreshToken: Cookies.get(REFRESH_TOKEN) || null,
     isAuthenticated: !!Cookies.get(ACCESS_TOKEN),
+    selectedConversation: null,
     user: null,
     isLoading: false,
     setUser: (user) => set({ user }),
+    setSelectedConversation: (data) => {
+        set({
+            selectedConversation: data
+        })
+    },
     setLogin: (accessToken, refreshToken, user) => {
         Cookies.set(ACCESS_TOKEN, accessToken);
         Cookies.set(REFRESH_TOKEN, refreshToken);

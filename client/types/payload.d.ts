@@ -95,6 +95,11 @@ interface CreateConversationPayload{
   messageType: string
   type: string
 }
+
+interface ReadMessagePayload{
+  conversationId:number
+  messageId:number
+}
 interface QueryOldDataCommentsPayload{
   pageParams: number[]
   pages: CommentsResponse[]

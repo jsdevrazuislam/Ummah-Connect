@@ -15,6 +15,9 @@ interface Conversation{
     type: string;
     name: string | undefined;
     avatar:string;
+    status?:string;
+    userId?:number
+    username?:string
     time: string;
     lastMessage: {
         id: number;
@@ -56,11 +59,20 @@ interface Conversation{
   createdAt: string;
   updatedAt: string;
   sender: MessageSender;
+  status:string
   reactions?: (null)[] | null;
+  statuses: MessageStatus[]
+}
+
+interface MessageStatus {
+  status: 'sent' | 'delivered' | 'seen'
+
 }
  interface MessageSender {
   id: number;
   full_name: string;
   avatar: string;
   username: string;
+  status?: string
+  conversationId?:number
 }
