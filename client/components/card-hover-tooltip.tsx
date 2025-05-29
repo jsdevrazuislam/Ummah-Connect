@@ -1,10 +1,8 @@
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
     MapPin,
-    MessageSquare,
     User,
     Users,
 } from "lucide-react"
@@ -15,6 +13,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import FollowButton from "@/components/follow-button"
+import MessageButton from "@/components/message-button"
 
 
 interface CardHoverTooltipProps {
@@ -71,10 +70,7 @@ const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 p-4 border-t">
-                                <Button variant="outline" size="sm">
-                                    <MessageSquare className="h-4 w-4 mr-2" />
-                                    Message
-                                </Button>
+                                <MessageButton user={user} />
                                 <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
                             </div>
                         </div>

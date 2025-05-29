@@ -12,6 +12,10 @@ interface EmailVerifyPayload{
   email?:string
   otpCode?:string
 }
+interface UserOnlineStatusPayload{
+  userId?:number
+  status?:string
+}
 interface ChangePasswordPayload {
   oldPassword: string;
   newPassword: string;
@@ -80,7 +84,26 @@ interface QueryOldDataPayload{
   pageParams: number[]
   pages: PostsResponse[]
 }
+interface QueryOldDataPayloadConversation{
+  pageParams: number[]
+  pages: ConversationMessagesResponse[]
+}
+interface QueryOldDataPayloadConversations{
+  pageParams: number[]
+  pages: ConversationResponse[]
+}
 
+interface CreateConversationPayload{
+  receiverId: string
+  content: string
+  messageType: string
+  type: string
+}
+
+interface ReadMessagePayload{
+  conversationId:number
+  messageId:number
+}
 interface QueryOldDataCommentsPayload{
   pageParams: number[]
   pages: CommentsResponse[]

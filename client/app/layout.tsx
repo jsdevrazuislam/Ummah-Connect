@@ -27,7 +27,7 @@ export default function RootLayout({
           <ReactQueryProvider>
             <SocketEvents />
             {children}
-            <AIAssistant />
+            {/* <AIAssistant /> */}
             <Toaster />
           </ReactQueryProvider>
         </ThemeProvider>

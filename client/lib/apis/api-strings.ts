@@ -12,6 +12,7 @@ const ApiStrings = {
   DISABLE_2FA: "/auth/2fa/disable",
   RECOVER_LOGIN: "/auth/recover-login",
   REQUEST_OTP: "/auth/request-otp",
+  ONLINE_STATUS: "/auth/status",
   EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts
   ALL_POSTS: '/post/',
@@ -31,6 +32,12 @@ const ApiStrings = {
   GET_COMMENTS:(id:number) =>  `/comment/${id}/comments`,
   // Follow
   FOLLOW_UNFOLLOW:(id:number) =>  `/follow/${id}`,
+  // Conversation
+  GET_CONVERSATION: `/conversation/`,
+  GET_CONVERSATION_MESSAGE: (id:number) => `/conversation/${id}`,
+  SEND_MESSAGE: `/conversation/send-message`,
+  CREATE_CONVERSATION: `/conversation/create`,
+  READ_MESSAGE: `/conversation/read-message`,
 };
 
 export default ApiStrings;

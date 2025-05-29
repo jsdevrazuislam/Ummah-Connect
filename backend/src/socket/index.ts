@@ -1,9 +1,10 @@
 import { Socket, Server } from "socket.io";
 import { Request } from "express";
-import { User } from "@/models";
+import { MessageStatus, User } from "@/models";
 import { decode_token } from '@/utils/auth-helper';
 import { JwtResponse } from "@/types/auth";
 import { SocketEventEnum } from '@/constants'
+import { Op } from "sequelize";
 
 declare module "socket.io" {
   interface Socket {
@@ -35,6 +36,7 @@ const joinRoom = (socket:Socket, eventEnum:string, roomPrefix:string) => {
 
 const setupSocketListeners = (socket:Socket) => {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
+  joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
 };
 
 const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
@@ -83,9 +85,36 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      setupSocketListeners(socket);
+      socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
+        await MessageStatus.update(
+          { status: 'delivered' },
+          {
+            where: {
+              message_id: messageId,
+              user_id: socket?.user?.id,
+              status: { [Op.ne]: 'seen' } 
+            }
+          }
+        );
+    });
 
-      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, () => {
+    socket.on(SocketEventEnum.TYPING, ({ conversationId, userId }) => {
+      socket.to(`conversation_${conversationId}`).emit(SocketEventEnum.TYPING, { userId });
+    });
+
+    socket.emit(SocketEventEnum.ONLINE, { user:socket.user })
+
+      setupSocketListeners(socket);
+      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
+        socket.emit(SocketEventEnum.OFFLINE, { user: socket.user })
+        if(socket?.user?.id){
+          await User.update(
+            { status: 'offline'},
+            {
+              where: { id: user?.id}
+            }
+          )
+        }
         console.log(`User has disconnected userId: ${socket.user?.id || 'unknown'}`);
         if (socket.user?.id) {
           socket.leave(socket.user.id.toString());
