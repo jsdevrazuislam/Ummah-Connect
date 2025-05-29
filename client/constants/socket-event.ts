@@ -11,10 +11,12 @@ const SocketEventEnum = Object.freeze({
   DELETE_COMMENT:"deleteComment",
   JOIN_CONVERSATION: "joinConversation",
   SEND_MESSAGE_TO_CONVERSATION:"sendMessageToConversation",
-  SEND_CONVERSATION_REQUEST:"sendMessageToConversation",
+  SEND_CONVERSATION_REQUEST:"addConversation",
   MESSAGE_RECEIVED:"messageReceived",
   TYPING:"typing:start",
   DISPLAY_TYPING:"displayTyping",
+  ONLINE:"user:online",
+  OFFLINE:"user:offline",
 
 });
 

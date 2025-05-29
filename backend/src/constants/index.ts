@@ -15,10 +15,13 @@ const SocketEventEnum = Object.freeze({
   EDITED_COMMENT:"edited_comment",
   DELETE_COMMENT:"deleteComment",
   SEND_MESSAGE_TO_CONVERSATION:"sendMessageToConversation",
-  SEND_CONVERSATION_REQUEST:"sendMessageToConversation",
+  SEND_CONVERSATION_REQUEST:"addConversation",
   MESSAGE_RECEIVED:"messageReceived",
   TYPING:"typing:start",
   DISPLAY_TYPING:"displayTyping",
+  ONLINE:"user:online",
+  OFFLINE:"user:offline",
+
 });
 
 const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio', 'privacy_settings'];

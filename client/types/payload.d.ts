@@ -12,6 +12,10 @@ interface EmailVerifyPayload{
   email?:string
   otpCode?:string
 }
+interface UserOnlineStatusPayload{
+  userId?:number
+  status?:string
+}
 interface ChangePasswordPayload {
   oldPassword: string;
   newPassword: string;

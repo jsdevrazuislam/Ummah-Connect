@@ -21,15 +21,18 @@ import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/store"
+import { useQueryClient } from "@tanstack/react-query"
 
 export function SideNav() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const { logout } = useAuthStore()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const handleLogout = () =>{
     logout()
+    queryClient.clear()
     router.push("/login")
   }
 

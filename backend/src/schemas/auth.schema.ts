@@ -26,6 +26,11 @@ export const email2FALoginSchema = z.object({
   otpCode: z.string().min(6, "code must be at least 6 characters "),
 });
 
+export const userStatusSchema = z.object({
+  userId: z.number().min(1, 'User Id Required'),
+  status: z.string().min(1, "Status is required"),
+});
+
 export const tokenSchema = z.object({
   token: z.string().min(6, "token must be at least 6 digit ")
 })

@@ -74,7 +74,7 @@ export default function ConversationPage() {
     isError: isMessageError,
     error: messageError,
   } = useInfiniteQuery<ConversationMessagesResponse>({
-    queryKey: ['get_conversation_messages'],
+    queryKey: ['get_conversation_messages', selectedConversation?.conversationId],
     queryFn: ({ pageParam = 1 }) => get_conversation_messages({ page: Number(pageParam), id: selectedConversation?.conversationId }),
     getNextPageParam: (lastPage) => {
       const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
@@ -104,7 +104,7 @@ export default function ConversationPage() {
     mutationFn: send_message,
     onSuccess: (newMessage, variable) => {
       setMessage("")
-      queryClient.setQueryData(['get_conversation_messages'], (oldData: QueryOldDataPayloadConversation) => {
+      queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return addMessageConversation(oldData, newMessage.data, variable.conversationId)
       })
     },
@@ -182,17 +182,18 @@ export default function ConversationPage() {
       if (Math.random() > 0.7 && !activeCall && !incomingCall) {
         setIncomingCall({ type: Math.random() > 0.5 ? "audio" : "video" })
       }
-    }, 30000) 
+    }, 30000)
 
     return () => clearTimeout(callTimer)
   }, [activeCall, incomingCall])
 
   useEffect(() => {
     if (!socket) return;
-    socket.on(SocketEventEnum.TYPING, (userId) => {
+    socket.on(SocketEventEnum.TYPING, ({ userId }) => {
+      if (userId === selectedConversation?.id) {
         handleTyping();
+      }
     });
-
     return () => {
       socket.off(SocketEventEnum.TYPING);
     };
@@ -202,7 +203,6 @@ export default function ConversationPage() {
   if (isError || isMessageError) {
     return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message || messageError?.message}</div>;
   }
-
 
   return (
     <div className="flex flex-1 h-screen bg-background">
@@ -339,7 +339,7 @@ export default function ConversationPage() {
                   value={message}
                   onChange={(e) => {
                     setMessage(e.target.value)
-                    if(selectedConversation.conversationId){
+                    if (selectedConversation.conversationId) {
                       socket?.emit(SocketEventEnum.TYPING, { conversationId: selectedConversation?.conversationId, userId: user?.id });
                     }
                   }}
@@ -363,7 +363,6 @@ export default function ConversationPage() {
             </div>}
           </div>
         }
-
       </div>
       {/* Call modals */}
       {/* {activeCall && <CallModal user={conversation.user} callType={activeCall.type} onClose={handleCloseCall} />} */}

@@ -288,7 +288,12 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
             avatar: req.user.avatar,
             id: req.user.id,
             username: req.user.username
-        }
+        },
+        statuses: [
+            {
+                "status": "sent"
+            }
+        ]
     }
 
     emitSocketEvent({ req, roomId: `conversation_${conversationId}`, event: SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, payload: responseData })

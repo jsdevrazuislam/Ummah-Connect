@@ -2,12 +2,13 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useSocketStore } from "@/hooks/use-socket";
+import { userStatus } from "@/lib/apis/auth";
 import { read_message } from "@/lib/apis/conversation";
 import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 const SocketEvents = () => {
@@ -15,8 +16,18 @@ const SocketEvents = () => {
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation } = useAuthStore()
+  const userRef = useRef<User | null>(null);
+
+
   const { mutate: readMessageFun } = useMutation({
     mutationFn: read_message,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
+  const { mutate } = useMutation({
+    mutationFn: userStatus,
     onError: (error) => {
       toast.error(error.message)
     }
@@ -130,7 +141,7 @@ const SocketEvents = () => {
     if (!socket) return;
     socket.on(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, (payload: ConversationMessages) => {
       if (payload?.sender_id !== user?.id) {
-        queryClient.setQueryData(['get_conversation_messages'], (oldData: QueryOldDataPayloadConversation) => {
+        queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
           if (selectedConversation && selectedConversation?.conversationId === payload.conversation_id) {
             readMessageFun({
               conversationId: payload.conversation_id,
@@ -142,7 +153,7 @@ const SocketEvents = () => {
         })
         queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
           const shouldIncrementUnread = selectedConversation?.conversationId !== payload.conversation_id;
-          if (shouldIncrementUnread) return addUnReadCount(oldData, payload.conversation_id)
+          if (shouldIncrementUnread) return addUnReadCount(oldData, payload.conversation_id, payload)
           else return oldData
         })
       }
@@ -163,6 +174,21 @@ const SocketEvents = () => {
       socket.off(SocketEventEnum.SEND_CONVERSATION_REQUEST);
     };
   }, [socket, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.ONLINE, (payload: { user: User}) => {
+         if(payload.user){
+          mutate({
+            userId: payload.user.id,
+            status:'online'
+          })
+        }
+      });
+    return () => {
+      socket.off(SocketEventEnum.ONLINE);
+    };
+  }, [socket]);
 
   return null
 }

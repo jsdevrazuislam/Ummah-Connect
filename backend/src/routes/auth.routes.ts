@@ -1,8 +1,8 @@
-import { change_password, disable_2FA, enable_2FA, get_me, get_user_details, get_user_profile, login_with_2FA, logout, recover_2FA, register, request_email_otp, update_current_user_info, update_notification_preferences, update_privacy_settings, verify_2FA, verify_2FA_otp, verify_email } from '@/controllers/auth.controller'
+import { change_password, disable_2FA, enable_2FA, get_me, get_user_details, get_user_profile, login_with_2FA, logout, mark_online_offline, recover_2FA, register, request_email_otp, update_current_user_info, update_notification_preferences, update_privacy_settings, verify_2FA, verify_2FA_otp, verify_email } from '@/controllers/auth.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
-import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema } from '@/schemas/auth.schema'
+import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema, userStatusSchema } from '@/schemas/auth.schema'
 import { Router } from 'express'
 
 
@@ -27,6 +27,7 @@ router.post("/2fa/verify", validateData(tokenSchema), verify_auth, verify_2FA)
 router.post("/2fa/disable", verify_auth, disable_2FA)
 router.post("/request-otp", validateData(emailSchema), request_email_otp)
 router.post("/2fa/email-verify", validateData(email2FALoginSchema), verify_2FA_otp)
+router.post("/status", validateData(userStatusSchema), verify_auth, mark_online_offline)
 
 
 export default router

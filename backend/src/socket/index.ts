@@ -102,8 +102,19 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
       socket.to(`conversation_${conversationId}`).emit(SocketEventEnum.TYPING, { userId });
     });
 
+    socket.emit(SocketEventEnum.ONLINE, { user:socket.user })
+
       setupSocketListeners(socket);
-      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, () => {
+      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
+        socket.emit(SocketEventEnum.OFFLINE, { user: socket.user })
+        if(socket?.user?.id){
+          await User.update(
+            { status: 'offline'},
+            {
+              where: { id: user?.id}
+            }
+          )
+        }
         console.log(`User has disconnected userId: ${socket.user?.id || 'unknown'}`);
         if (socket.user?.id) {
           socket.leave(socket.user.id.toString());
