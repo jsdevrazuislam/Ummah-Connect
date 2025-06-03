@@ -65,6 +65,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
 
           socket.user = user;
           const userId = user.id;
+          setupSocketListeners(socket);
           socket.join(user.id.toString());
           await redis.set(`online_users:${user.id}`, Date.now(), 'EX', 60);
           const peerIds = await getConversationUserIds(userId);
@@ -123,7 +124,6 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
           .emit(SocketEventEnum.TYPING, { userId });
       });
 
-      setupSocketListeners(socket);
       socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
         console.log(
           `User has disconnected userId: ${socket.user?.id || "unknown"}`
