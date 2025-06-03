@@ -69,7 +69,3 @@ export const requestOtp = async (email:string) => {
   const response = await api.post(ApiStrings.REQUEST_OTP, { email });
   return response.data;
 }
-export const userStatus = async (payload:UserOnlineStatusPayload) => {
-  const response = await api.post(ApiStrings.ONLINE_STATUS, payload);
-  return response.data;
-}

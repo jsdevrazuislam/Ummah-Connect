@@ -13,6 +13,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     selectedConversation: null,
     user: null,
     isLoading: false,
+    onlineUsers: new Map(),
+    lastSeen: new Map(),
     setUser: (user) => set({ user }),
     setSelectedConversation: (data) => {
         set({
@@ -46,6 +48,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 user: data?.data?.user
             })
         }
-    }
+    },
+
+    setOnline: (userId, isOnline) =>
+        set(state => ({
+            onlineUsers: new Map(state.onlineUsers).set(userId, isOnline),
+        })),
+
+    setLastSeen: (userId, timestamp) =>
+        set(state => ({
+            lastSeen: new Map(state.lastSeen).set(userId, timestamp),
+        })),
+
+    markUserOnline: (userId: number) => {
+        set(state => {
+            const newOnlineUsers = new Map(state.onlineUsers);
+            newOnlineUsers.set(userId, true);
+            return { onlineUsers: newOnlineUsers };
+        });
+    },
+
+    markUserOffline: (userId: number) => {
+        set(state => {
+            const newOnlineUsers = new Map(state.onlineUsers);
+            newOnlineUsers.set(userId, false); 
+            return { onlineUsers: newOnlineUsers };
+        });
+    },
+
+    updateLastSeen: (userId: number, date: number) => {
+        set(state => {
+            const newLastSeen = new Map(state.lastSeen);
+            newLastSeen.set(userId, date); 
+            return { lastSeen: newLastSeen };
+        });
+    },
+
+    getIsUserOnline: (userId: number) => {
+        return get().onlineUsers.get(userId) || false;
+    },
+
+    getUserLastSeen: (userId: number) => {
+        return get().lastSeen.get(userId) ?? 0;
+    },
+
 
 }));

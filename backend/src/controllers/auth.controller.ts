@@ -670,20 +670,3 @@ export const verify_2FA_otp = asyncHandler(async (req: Request, res: Response) =
       )
     );
 })
-
-export const mark_online_offline = asyncHandler(async(req:Request, res:Response) =>{
-
-  const { userId, status } = req.body
-
-  const user = await User.findOne({ where: { id: userId}})
-  if(!user) throw new ApiError(404, 'User not found')
-
-  user.status = status
-
-  await user.save()
-
-  return res.json(
-    new ApiResponse(200, null, `User not ${status} status`)
-  )
-
-})

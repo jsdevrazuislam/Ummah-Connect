@@ -24,8 +24,6 @@ class User extends Model {
     public two_factor_secret!: string
     public is_saved_backup_codes!:boolean
     public recoveryCodes!: RecoveryCodes[]
-    public status!: string
-    public last_seen_at!: Date
 }
 
 User.init(
@@ -102,14 +100,6 @@ User.init(
         },
         two_factor_secret: {
             type: DataTypes.STRING,
-            allowNull: true
-        },
-        status:{
-            type: DataTypes.ENUM('online', 'offline', 'away', 'busy'),
-            defaultValue: 'offline'
-        },
-        last_seen_at:{
-            type:DataTypes.DATE,
             allowNull: true
         }
     },

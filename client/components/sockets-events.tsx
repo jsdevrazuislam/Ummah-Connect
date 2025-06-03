@@ -2,7 +2,6 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useSocketStore } from "@/hooks/use-socket";
-import { userStatus } from "@/lib/apis/auth";
 import { read_message } from "@/lib/apis/conversation";
 import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
@@ -15,19 +14,12 @@ const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
-  const { user, selectedConversation } = useAuthStore()
+  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
   const userRef = useRef<User | null>(null);
 
 
   const { mutate: readMessageFun } = useMutation({
     mutationFn: read_message,
-    onError: (error) => {
-      toast.error(error.message)
-    }
-  })
-
-  const { mutate } = useMutation({
-    mutationFn: userStatus,
     onError: (error) => {
       toast.error(error.message)
     }
@@ -177,16 +169,22 @@ const SocketEvents = () => {
 
   useEffect(() => {
     if (!socket) return;
-      socket.on(SocketEventEnum.ONLINE, (payload: { user: User}) => {
-         if(payload.user){
-          mutate({
-            userId: payload.user.id,
-            status:'online'
-          })
-        }
-      });
+    socket.on(SocketEventEnum.ONLINE, ({ userId }: { userId: number }) => {
+      markUserOnline(userId)
+    });
     return () => {
       socket.off(SocketEventEnum.ONLINE);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.OFFLINE, ({ userId, lastSeen }: { userId: number, lastSeen: number }) => {
+      markUserOffline(userId)
+      updateLastSeen(userId, lastSeen)
+    });
+    return () => {
+      socket.off(SocketEventEnum.OFFLINE);
     };
   }, [socket]);
 

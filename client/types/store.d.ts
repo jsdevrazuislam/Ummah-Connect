@@ -9,4 +9,13 @@ interface AuthState {
   initialLoading: () => void
   selectedConversation: MessageSender | null
   setSelectedConversation: (data:MessageSender) => void
+  onlineUsers: Map<number, boolean>;
+  lastSeen: Map<number, number>; 
+  setOnline: (userId: number, isOnline: boolean) => void;
+  setLastSeen: (userId: number, timestamp: number) => void;
+  markUserOnline: (userId: number) => void;
+  markUserOffline: (userId: number) => void;
+  updateLastSeen: (userId: number, date:number) => void;
+  getIsUserOnline: (userId: number) => boolean;
+  getUserLastSeen: (userId: number) => number;
 }

@@ -2,6 +2,7 @@ import React, { FC, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSocketStore } from '@/hooks/use-socket'
 import SocketEventEnum from '@/constants/socket-event'
+import { useAuthStore } from '@/store/store'
 
 
 interface ConversationItemProps {
@@ -12,6 +13,7 @@ interface ConversationItemProps {
 const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
 
     const { socket } = useSocketStore()
+    const { getIsUserOnline} = useAuthStore()
 
     useEffect(() => {
         if (!socket) return;
@@ -33,7 +35,7 @@ const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
                         <AvatarImage src={conv?.avatar} alt={conv?.name} />
                         <AvatarFallback>{conv?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    {conv?.status === 'online' ? (
+                    {getIsUserOnline(conv.userId ?? 0) ? (
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-background"></span>
                     ) : (
                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-gray-300 border-2 border-background"></span>

@@ -16,7 +16,7 @@ import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
 import { toast } from "sonner"
-import { format } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import { addMessageConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
@@ -30,7 +30,7 @@ export default function ConversationPage() {
   const [activeCall, setActiveCall] = useState<{ type: "audio" | "video" } | null>(null)
   const [incomingCall, setIncomingCall] = useState<{ type: "audio" | "video" } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { user, selectedConversation, setSelectedConversation } = useAuthStore()
+  const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useAuthStore()
   const queryClient = useQueryClient()
   const { socket } = useSocketStore()
   const [isTyping, setIsTyping] = useState(false);
@@ -259,7 +259,9 @@ export default function ConversationPage() {
                 </Avatar>
                 <div>
                   <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{selectedConversation?.status}</div>
+                  <div className="text-xs text-muted-foreground capitalize">
+                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true})}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
