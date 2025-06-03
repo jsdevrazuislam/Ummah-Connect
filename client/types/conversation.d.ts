@@ -18,6 +18,7 @@ interface Conversation{
     status?:string;
     userId?:number
     username?:string
+    last_seen_at?:string
     time: string;
     lastMessage: {
         id: number;
@@ -75,4 +76,5 @@ interface MessageStatus {
   username: string;
   status?: string
   conversationId?:number
+  last_seen_at?:string
 }

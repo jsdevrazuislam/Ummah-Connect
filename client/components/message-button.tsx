@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,8 @@ import { create_conversation } from '@/lib/apis/conversation'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { addedConversation } from '@/lib/update-conversation'
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+
 
 type Message = {
   id: string
@@ -31,30 +33,50 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
   const [messageInput, setMessageInput] = useState('')
   const router = useRouter()
   const queryClient = useQueryClient()
+  const getDisabledState = () => {
+    switch (user.privacy_settings?.message) {
+      case 'nobody':
+        return { disabled: true, reason: "This user doesn't accept messages" }
+      case 'followers':
+        return {
+          disabled: !user?.isFollowing,
+          reason: user?.isFollowing
+            ? "Message this user"
+            : "You need to follow this user to message them"
+        }
+      case 'everyone':
+      default:
+        return { disabled: false, reason: "Message this user" }
+    }
+  }
+
+  const { disabled, reason } = getDisabledState()
+
 
   const { mutate, isPending } = useMutation({
     mutationFn: create_conversation,
-    onSuccess: (data)=>{
-      queryClient.setQueryData(['get_conversations'], (oldData:QueryOldDataPayloadConversations) =>{
+    onSuccess: (data) => {
+      queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
         return addedConversation(oldData, data?.data, data?.data?.id)
       })
       setChatWindows(prev =>
-      prev.map(w =>
-        w.userId === user?.id
-          ? { ...w, messages: [...w.messages, data] }
-          : w
+        prev.map(w =>
+          w.userId === user?.id
+            ? { ...w, messages: [...w.messages, data] }
+            : w
+        )
       )
-    )
-    setMessageInput('')
+      setMessageInput('')
     },
-    onError: (error) =>{
+    onError: (error) => {
       toast.error(error.message)
     }
   })
 
- 
+
 
   const openChatWindow = () => {
+    if(disabled) return
     setChatWindows(prev => {
       const existingIndex = prev.findIndex(w => w.userId === user.id)
       if (existingIndex >= 0) {
@@ -62,7 +84,7 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
         updated[existingIndex] = { ...updated[existingIndex], minimized: false }
         return updated
       }
-      
+
       return [
         ...prev,
         {
@@ -82,8 +104,8 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
   }
 
   const toggleMinimize = (userId: number) => {
-    setChatWindows(prev => 
-      prev.map(w => 
+    setChatWindows(prev =>
+      prev.map(w =>
         w.userId === userId ? { ...w, minimized: !w.minimized } : w
       )
     )
@@ -98,33 +120,41 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
       content: messageInput
     })
 
-   
   }
 
   return (
     <>
-      <Button 
-        size="sm" 
-        onClick={openChatWindow}
-        className="flex items-center gap-2"
-      >
-        <MessageSquare className="h-4 w-4" />
-        Message
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+             <Button
+            size="sm"
+            onClick={openChatWindow}
+            className="flex items-center gap-2"
+            disabled={disabled}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Message
+          </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{reason}</p>
+        </TooltipContent>
+      </Tooltip>
 
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
         {chatWindows.map((window, index) => (
-          <div 
+          <div
             key={window.userId}
-            className={`bg-background border rounded-lg shadow-lg overflow-hidden flex flex-col ${
-              window.minimized ? 'w-64 h-12' : 'w-80 h-96'
-            }`}
+            className={`bg-background border rounded-lg shadow-lg overflow-hidden flex flex-col ${window.minimized ? 'w-64 h-12' : 'w-80 h-96'
+              }`}
             style={{
               zIndex: 50 + index,
               transform: window.minimized ? `translateY(${index * 50}px)` : 'none'
             }}
           >
-            <div 
+            <div
               className="p-3 border-b flex items-center justify-between bg-muted/50 cursor-pointer"
               onClick={() => toggleMinimize(window?.userId)}
             >
@@ -139,9 +169,9 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
                 )}
               </div>
               <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-6 w-6"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -154,9 +184,9 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
                     <Minimize2 className="h-3 w-3" />
                   )}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-6 w-6"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -171,14 +201,14 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
             {!window.minimized && (
               <>
                 <div className="flex flex-col justify-center items-center gap-2 py-4">
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={window?.avatar} alt={window?.name} />
-                  <AvatarFallback>{window?.name?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span className="font-medium">{window?.name}</span>
-                {!user?.isFollowing && <p className='text-sm'>You aren't following on ummah connect</p>}
-                
-              </div>
+                  <Avatar className="h-14 w-14">
+                    <AvatarImage src={window?.avatar} alt={window?.name} />
+                    <AvatarFallback>{window?.name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{window?.name}</span>
+                  {!user?.isFollowing && <p className='text-sm'>You aren't following on ummah connect</p>}
+
+                </div>
                 <ScrollArea className="flex-1 p-3">
                   <div className="space-y-3 flex justify-center items-center">
                     {window?.messages?.length > 0 && <Button onClick={() => router.push('/messages')}>View Conversation</Button>}
@@ -191,16 +221,16 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       placeholder="Type a message..."
-                      onKeyPress={(e) => 
+                      onKeyPress={(e) =>
                         e.key === 'Enter' && sendMessage()
                       }
                       disabled={isPending}
                     />
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => sendMessage()}
                     >
-                      {isPending ? 'Creating...' :  'Send'}
+                      {isPending ? 'Creating...' : 'Send'}
                     </Button>
                   </div>
                 </div>}

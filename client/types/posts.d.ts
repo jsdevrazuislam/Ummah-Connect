@@ -32,9 +32,9 @@ interface PostAuthor {
   full_name: string;
   username: string;
   avatar?: string;
-  location:string
-  following_count:string
-  followers_count:string
+  location?:string
+  following_count?:string | number
+  followers_count?:string | number
   bio:string
   isFollowing?: boolean;
   privacy_settings?:PrivacySettings

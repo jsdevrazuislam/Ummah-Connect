@@ -1,5 +1,5 @@
 import { MESSAGE_USER, SocketEventEnum } from "@/constants";
-import { Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, User } from "@/models";
+import { Conversation, ConversationParticipant, Follow, Message, MessageReaction, MessageStatus, User } from "@/models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
@@ -19,6 +19,33 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
 
     if (creatorId === receiverIdNum) throw new ApiError(400, "You can't create conversation your self")
 
+    const receiverUser = await User.findOne({ where: { id: receiverIdNum}})
+    if(!receiverUser) throw new ApiError(404, 'Conversation User not found')
+
+    switch (receiverUser.privacy_settings.message) {
+        case 'nobody':
+            throw new ApiError(403, `This user does not accept direct messages.`);
+
+        case 'followers':
+            const isFollowing = await Follow.findOne({
+                where: {
+                    followerId: creatorId, 
+                    followingId: receiverIdNum, 
+                },
+            });
+
+            if (!isFollowing) {
+                throw new ApiError(403, `This user only accepts direct messages from followers.`);
+            }
+            break;
+
+        case 'everyone':
+            break;
+
+        default:
+            throw new ApiError(500, "An unexpected privacy setting was encountered.");
+    }
+
     const minId = Math.min(creatorId, receiverIdNum)
     const maxId = Math.max(creatorId, receiverIdNum)
     const canonicalKey = `${minId}_${maxId}`
@@ -37,7 +64,7 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
         { conversation_id: newConversation.id, user_id: receiverIdNum, unread_count: 1 },
     ])
 
-    const receiverUser = await User.findByPk(receiverIdNum)
+    
 
     const newMessage = await Message.create({
         conversation_id: newConversation.id,

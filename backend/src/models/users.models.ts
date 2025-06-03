@@ -18,7 +18,9 @@ class User extends Model {
     public gender!: string;
     public bio!: string;
     public is_verified!: boolean;
-    public privacy_settings!: object
+    public privacy_settings!: {
+        message:string
+    }
     public notification_preferences!: object
     public is_two_factor_enabled!: boolean
     public two_factor_secret!: string
@@ -100,6 +102,11 @@ User.init(
         },
         two_factor_secret: {
             type: DataTypes.STRING,
+            allowNull: true
+        },
+        last_seen_at:{
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW,
             allowNull: true
         }
     },

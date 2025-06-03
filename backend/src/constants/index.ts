@@ -27,6 +27,6 @@ const SocketEventEnum = Object.freeze({
 const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio', 'privacy_settings'];
 const REACT_ATTRIBUTE = ['userId', 'react_type', 'icon', 'commentId', 'postId'];
 const POST_ATTRIBUTE = ['id', 'media', 'content', 'location', 'privacy', 'createdAt']
-const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username']
+const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username', 'last_seen_at']
 
 export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER };

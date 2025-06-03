@@ -12,8 +12,8 @@ import { SideNav } from "@/components/side-nav"
 import { format } from 'date-fns';
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
-import { ImageWithSkeleton } from "@/components/image"
 import MessageButton from "@/components/message-button"
+import Image from "next/image"
 
 
 
@@ -62,10 +62,12 @@ export default function ProfilePage({ username, user }: { username: string, user
             <main className="flex-1 border-x border-border">
                 <div className="relative">
                     <div className="h-48 bg-muted w-full">
-                        <ImageWithSkeleton
+                        <Image
                             src={user?.cover}
                             alt="Cover"
                             className="w-full h-full object-cover"
+                            width={200}
+                            height={192}
                         />
                     </div>
 
@@ -73,7 +75,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                         <div className="flex justify-between items-start">
                             <div className="flex items-end gap-4">
                                 <Avatar className="h-24 w-24 border-4 border-background -mt-12">
-                                    <ImageWithSkeleton src={user?.avatar ?? ''} alt={user?.full_name} />
+                                    <Image width={96} height={96} src={user?.avatar ?? ''} alt={user?.full_name} />
                                 </Avatar>
 
                                 {user?.privacy_settings?.private_account && (
@@ -85,8 +87,19 @@ export default function ProfilePage({ username, user }: { username: string, user
                             </div>
 
                             <div className="flex gap-2">
-                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
-                                <MessageButton user={user} />
+                                <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
+                                <MessageButton user={{
+                                    id: user?.id,
+                                    full_name: user?.full_name,
+                                    username: user?.username,
+                                    avatar: user?.avatar ?? '',
+                                    location: user?.location ?? '',
+                                    following_count: user?.following_count ?? '',
+                                    followers_count: user?.followers_count ?? '',
+                                    bio: user?.bio,
+                                    isFollowing: user?.isFollowing,
+                                    privacy_settings: user?.privacy_settings
+                                }} />
                             </div>
                         </div>
 
@@ -140,7 +153,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 <p className="text-muted-foreground mb-4">
                                     Follow @{user?.username} to see their posts and stories.
                                 </p>
-                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
+                                <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
                             </div>
                         </div>
                     ) : (

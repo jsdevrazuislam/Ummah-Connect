@@ -128,7 +128,8 @@ export default function ConversationPage() {
       avatar: conv.avatar,
       username: conv.username ?? '',
       id: conv.userId ?? 0,
-      conversationId: conv.id
+      conversationId: conv.id,
+      last_seen_at: conv?.last_seen_at
     });
 
     readMessageFun({
@@ -260,7 +261,7 @@ export default function ConversationPage() {
                 <div>
                   <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
                   <div className="text-xs text-muted-foreground capitalize">
-                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true})}
+                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : getUserLastSeen(selectedConversation?.id) === 0 ? formatDistanceToNow(new Date(selectedConversation?.last_seen_at ?? '')): formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true})}
                   </div>
                 </div>
               </div>

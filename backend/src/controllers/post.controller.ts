@@ -16,6 +16,7 @@ import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { Op } from "sequelize";
 import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import { getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import redis from "@/config/redis";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -73,6 +74,12 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       currentUserReaction: null,
     },
   };
+
+  await redis.keys('posts:public:*').then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
 
   return res.json(new ApiResponse(200, postData, "Post Created Successfully"));
 });

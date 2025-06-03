@@ -17,8 +17,8 @@ router.put("/me", verify_auth, upload.fields([
     {name:"cover", maxCount:1},
     {name:"avatar", maxCount:1},
 ]), update_current_user_info)
-router.get("/:username/profile", get_user_profile)
-router.get("/:username/details", get_user_details)
+router.get("/:username/profile", verify_auth, get_user_profile)
+router.get("/:username/details", verify_auth, get_user_details)
 router.post("/change-password", validateData(changePasswordSchema), verify_auth, change_password)
 router.post("/privacy-settings", verify_auth, update_privacy_settings)
 router.post("/notification-preference", verify_auth, update_notification_preferences)

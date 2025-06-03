@@ -130,6 +130,10 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         );
         const userId = socket.user?.id;
         if (userId) {
+           await User.update(
+            { last_seen_at: new Date()},
+            { where: { id: socket?.user?.id}}
+          )
           await redis.set(`last_seen:${userId}`, Date.now());
           const peerIds = await getConversationUserIds(userId);
           for (const peerId of peerIds) {

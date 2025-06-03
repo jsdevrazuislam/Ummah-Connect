@@ -7,6 +7,7 @@ import { Toaster } from "sonner"
 import { AIAssistant } from "@/components/ai-assistant"
 import ReactQueryProvider from "@/components/query-provider"
 import SocketEvents from "@/components/sockets-events"
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,12 +25,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <TooltipProvider>
           <ReactQueryProvider>
             <SocketEvents />
             {children}
             {/* <AIAssistant /> */}
             <Toaster />
           </ReactQueryProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

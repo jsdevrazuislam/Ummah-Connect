@@ -36,6 +36,7 @@ export interface Sender {
   full_name: string;
   avatar: string;
   username: string;
+  last_seen_at?:string
 }
 export interface ParticipantsEntity {
   user_id: number;
@@ -48,4 +49,5 @@ export interface User {
   avatar?: null;
   username: string;
   status?:string
+  last_seen_at?:string
 }
