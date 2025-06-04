@@ -44,6 +44,7 @@ interface User {
   notification_preferences: NotificationPreference
   is_saved_backup_codes:boolean
   isFollowing: boolean
+  status?: string
 }
 
 interface JwtResponsePayload {
