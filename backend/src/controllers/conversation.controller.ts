@@ -1,12 +1,13 @@
 import { MESSAGE_USER, SocketEventEnum } from "@/constants";
 import { Conversation, ConversationParticipant, Follow, Message, MessageReaction, MessageStatus, User } from "@/models";
+import MessageAttachment from "@/models/message-attachment.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import uploadFileOnCloudinary from "@/utils/cloudinary";
 import { formatConversations } from "@/utils/formater";
-import { formatTimeAgo } from "@/utils/helper";
+import { formatTimeAgo, getFileType } from "@/utils/helper";
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 
@@ -14,13 +15,13 @@ import { Op } from "sequelize";
 export const create_conversation_for_dm = asyncHandler(async (req: Request, res: Response) => {
 
     const creatorId = Number(req.user.id)
-    const { receiverId, type, content, messageType } = req.body
+    const { receiverId, type, content } = req.body
     const receiverIdNum = Number(receiverId)
 
     if (creatorId === receiverIdNum) throw new ApiError(400, "You can't create conversation your self")
 
-    const receiverUser = await User.findOne({ where: { id: receiverIdNum}})
-    if(!receiverUser) throw new ApiError(404, 'Conversation User not found')
+    const receiverUser = await User.findOne({ where: { id: receiverIdNum } })
+    if (!receiverUser) throw new ApiError(404, 'Conversation User not found')
 
     switch (receiverUser.privacy_settings.message) {
         case 'nobody':
@@ -29,8 +30,8 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
         case 'followers':
             const isFollowing = await Follow.findOne({
                 where: {
-                    followerId: creatorId, 
-                    followingId: receiverIdNum, 
+                    followerId: creatorId,
+                    followingId: receiverIdNum,
                 },
             });
 
@@ -64,20 +65,19 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
         { conversation_id: newConversation.id, user_id: receiverIdNum, unread_count: 1 },
     ])
 
-    
+
 
     const newMessage = await Message.create({
         conversation_id: newConversation.id,
         sender_id: creatorId,
         content,
-        type: messageType,
         sent_at: Date.now()
     })
 
     await MessageStatus.create({
         message_id: newMessage.id,
         user_id: receiverIdNum,
-        status:'sent'
+        status: 'sent'
     })
 
     newConversation.last_message_id = newMessage.id
@@ -99,14 +99,13 @@ export const create_conversation_for_dm = asyncHandler(async (req: Request, res:
                 avatar: req.user.avatar,
             },
             content: newMessage.content,
-            type: newMessage.type,
             sent_at: newMessage.sent_at,
         },
         unreadCount: 0,
         isMuted: false,
     }
 
-    emitSocketEvent({ req, roomId: `${receiverId}`, event: SocketEventEnum.SEND_CONVERSATION_REQUEST, payload: { ...responseData, name: req.user.full_name, unreadCount: 1} })
+    emitSocketEvent({ req, roomId: `${receiverId}`, event: SocketEventEnum.SEND_CONVERSATION_REQUEST, payload: { ...responseData, name: req.user.full_name, unreadCount: 1 } })
 
     return res.json(
         new ApiResponse(200, responseData, 'Conversation Created')
@@ -137,13 +136,13 @@ export const get_all_conversations = asyncHandler(async (req: Request, res: Resp
                     {
                         model: Message,
                         as: 'lastMessage',
-                        attributes: ['id', 'sender_id', 'content', 'sent_at', 'type'],
+                        attributes: ['id', 'sender_id', 'content', 'sent_at'],
                         include: [
                             {
                                 model: User,
                                 as: 'sender',
                                 attributes: MESSAGE_USER
-                            }
+                            },
                         ],
                         required: false
                     },
@@ -227,9 +226,14 @@ export const get_conversation_message = asyncHandler(async (req: Request, res: R
             {
                 model: MessageStatus,
                 as: 'statuses',
-                where: { user_id: req.user.id  },
+                where: { user_id: req.user.id },
                 required: false,
                 attributes: ['status']
+            },
+            {
+                model: MessageAttachment,
+                as: "attachments",
+                required: false
             }
         ],
         order: [['sent_at', 'ASC']],
@@ -301,7 +305,7 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
 
 
     await Promise.all(receiverParticipants.map(async (participant) => {
-        participant.unread_count = (participant.unread_count || 0) + 1; 
+        participant.unread_count = (participant.unread_count || 0) + 1;
         await participant.save();
     }));
 
@@ -331,34 +335,34 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
     )
 })
 
-export const read_message = asyncHandler(async(req:Request, res:Response) =>{
+export const read_message = asyncHandler(async (req: Request, res: Response) => {
 
     const { messageId, conversationId } = req.body
 
-    const conversation = await Conversation.findOne({ 
-        where: {id: conversationId}
+    const conversation = await Conversation.findOne({
+        where: { id: conversationId }
     })
 
-    if(!conversation) throw new ApiError(404, 'Conversation not found')
+    if (!conversation) throw new ApiError(404, 'Conversation not found')
 
     const participant = await ConversationParticipant.findOne({
-        where:{
+        where: {
             user_id: req.user.id,
             conversation_id: conversationId
         }
     })
 
-    if(!participant) throw new ApiError(403, 'You are not participant of this conversation')
+    if (!participant) throw new ApiError(403, 'You are not participant of this conversation')
 
-        await MessageStatus.update(
+    await MessageStatus.update(
         { status: 'seen' },
         {
             where: {
-            user_id: req.user.id,
-            status: { [Op.ne]: 'seen' }
+                user_id: req.user.id,
+                status: { [Op.ne]: 'seen' }
             }
         }
-        );
+    );
 
 
     participant.unread_count = 0
@@ -372,60 +376,52 @@ export const read_message = asyncHandler(async(req:Request, res:Response) =>{
 })
 
 export const send_attachment = asyncHandler(async (req: Request, res: Response) => {
+    const senderId = req.user.id;
+    const { conversationId, content } = req.body;
+    const files = req.files as Express.Multer.File[];
 
-    const mediaPath = req?.file?.path
-    const { conversationId, type, duration } = req.body
-    const senderId = req.user.id
-
-    const conversation = await Conversation.findOne({ where: { id: conversationId } })
-    if (!conversation) throw new ApiError(404, 'Conversation not found')
+    const conversation = await Conversation.findOne({ where: { id: conversationId } });
+    if (!conversation) throw new ApiError(404, 'Conversation not found');
 
     const participant = await ConversationParticipant.findOne({
-        where: {
-            conversation_id: conversationId,
-            user_id: req.user.id
-        }
+        where: { conversation_id: conversationId, user_id: senderId }
     });
-    if (!participant) {
-        throw new ApiError(403, 'You are not a participant in this conversation');
-    }
+    if (!participant) throw new ApiError(403, 'You are not a participant in this conversation');
 
-    const allParticipants = await ConversationParticipant.findAll({
-        where: { conversation_id: conversationId },
-        include: [{
-            model: User,
-            as: 'user',
-            attributes: MESSAGE_USER
-        }]
-    });
-
+    const allParticipants = await ConversationParticipant.findAll({ where: { conversation_id: conversationId } });
     const receiverParticipants = allParticipants.filter(p => p.user_id !== senderId);
 
     if (receiverParticipants.length === 0 && conversation.type === 'direct') {
-        throw new ApiError(400, 'Direct message conversation must have another participant.');
-    }
-
-    let media_url = null
-    if (mediaPath) {
-        const media = await uploadFileOnCloudinary(
-            mediaPath,
-            "ummah_connect/message_attachment"
-        );
-        media_url = media
+        throw new ApiError(400, 'Direct message must have a receiver');
     }
 
     const newMessage = await Message.create({
         conversation_id: conversationId,
-        content: media_url,
-        type,
         sender_id: senderId,
-        sent_at: new Date(),
-        duration
-    })
+        content: content || 'Attachment',
+        sent_at: new Date()
+    });
 
-    const messageStatuses = receiverParticipants.map(participant => ({
+    if (files && files.length > 0) {
+        const uploadedAttachments = await Promise.all(
+            files.map(async (file) => {
+                const media = await uploadFileOnCloudinary(file.path, "ummah_connect/message_attachment");
+                
+                return {
+                    message_id: newMessage.id,
+                    file_url: media?.url,
+                    file_type: getFileType(file.mimetype),
+                    size_in_bytes: file.size,
+                    duration: media?.duration
+                };
+            })
+        );
+        await MessageAttachment.bulkCreate(uploadedAttachments);
+    }
+
+    const messageStatuses = receiverParticipants.map(p => ({
         message_id: newMessage.id,
-        user_id: participant.user_id,
+        user_id: p.user_id,
         status: 'sent'
     }));
 
@@ -434,28 +430,36 @@ export const send_attachment = asyncHandler(async (req: Request, res: Response) 
     }
 
     await Promise.all(receiverParticipants.map(async (participant) => {
-        participant.unread_count = (participant.unread_count || 0) + 1; 
+        participant.unread_count = (participant.unread_count || 0) + 1;
         await participant.save();
     }));
 
     conversation.last_message_id = newMessage.id;
     await conversation.save();
 
+    const fullMessage = await Message.findOne({
+        where: { id: newMessage.id },
+        include: [
+            { model: MessageAttachment, as: 'attachments' }
+        ]
+    });
 
     const responseData = {
-        ...newMessage.toJSON(),
+        ...fullMessage?.toJSON(),
         sender: {
-            full_name: req.user.full_name,
-            avatar: req.user.avatar,
             id: req.user.id,
-            username: req.user.username
+            full_name: req.user.full_name,
+            username: req.user.username,
+            avatar: req.user.avatar
         }
-    }
+    };
 
-    emitSocketEvent({ req, roomId: `conversation_${conversationId}`, event: SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, payload: responseData })
+    emitSocketEvent({
+        req,
+        roomId: `conversation_${conversationId}`,
+        event: SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION,
+        payload: responseData
+    });
 
-
-    return res.json(
-        new ApiResponse(200, responseData, 'success')
-    )
-})
+    return res.json(new ApiResponse(200, responseData, 'Message with attachments sent'));
+});

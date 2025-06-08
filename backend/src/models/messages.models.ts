@@ -6,13 +6,11 @@ class Message extends Model{
     public id!:number
     public conversation_id!:number
     public sender_id!:number
-    public content!: number
-    public type!: string
+    public content!: string
     public parent_message_id!:number
     public sent_at!: Date
     public is_deleted!: boolean
     public deleted_by_id!: number
-    public duration!: string
     public deleted_at!: Date
     public createdAt!: Date
     public updatedAt!: Date
@@ -44,11 +42,7 @@ Message.init(
         },
         content:{
             type: DataTypes.STRING,
-            allowNull: false
-        },
-        type:{
-            type:DataTypes.ENUM("text", "image", "video", "audio", "file"),
-            defaultValue:"text"
+            allowNull: true
         },
         parent_message_id:{
             type: DataTypes.INTEGER,
@@ -75,11 +69,6 @@ Message.init(
             type: DataTypes.DATE,
             allowNull: true
         },
-        duration:{
-            type:DataTypes.STRING,
-            allowNull: true,
-            defaultValue: ''
-        }
     },
     {
         sequelize,

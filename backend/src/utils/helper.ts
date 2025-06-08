@@ -112,3 +112,29 @@ export const getOrSetCache = async <T>(
   await redis.set(key, JSON.stringify(result), 'EX', ttl);
   return result;
 };
+
+/**
+ * Determines the general file type based on its MIME type.
+ *
+ * This function checks the provided MIME type string and categorizes it
+ * into one of the following broader types: 'image', 'video', 'audio', 'pdf', or 'other'.
+ *
+ * @param {string} mimetype - The MIME type string of the file (e.g., 'image/jpeg', 'video/mp4', 'application/pdf').
+ * @returns {'image' | 'video' | 'audio' | 'pdf' | 'other'} A string representing the determined file type.
+ *
+ * @example
+ * // Example usage:
+ * getFileType('image/png');      // Returns: 'image'
+ * getFileType('video/quicktime'); // Returns: 'video'
+ * getFileType('audio/mpeg');    // Returns: 'audio'
+ * getFileType('application/pdf'); // Returns: 'pdf'
+ * getFileType('text/plain');    // Returns: 'other'
+ * getFileType('application/json'); // Returns: 'other'
+ */
+export function getFileType(mimetype: string): 'image' | 'video' | 'audio' | 'pdf' | 'other' {
+  if (mimetype.startsWith('image/')) return 'image';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  if (mimetype === 'application/pdf') return 'pdf';
+  return 'other';
+}

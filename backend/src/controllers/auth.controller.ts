@@ -223,14 +223,14 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
       avatarPath,
       "ummah_connect/profiles_pictures"
     );
-    avatar_url = media;
+    avatar_url = media?.url;
   }
   if (coverPath) {
     const media = await uploadFileOnCloudinary(
       coverPath,
       "ummah_connect/cover_photos"
     );
-    cover_url = media;
+    cover_url = media?.url;
   }
 
   const payload = {

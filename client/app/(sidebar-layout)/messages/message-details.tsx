@@ -2,13 +2,10 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, Send, Phone, Video, Info, ImageIcon, Paperclip, Smile, Mic, Users, MessageSquare, MicOff, Circle } from "lucide-react"
+import { Search, Users, MessageSquare } from "lucide-react"
 import { CallModal } from "@/components/call-modal"
-import Link from "next/link"
 import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { get_conversation_messages, get_conversations, read_message, send_attachment, send_message } from "@/lib/apis/conversation"
@@ -16,7 +13,7 @@ import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
 import { toast } from "sonner"
-import { format, formatDistanceToNow } from "date-fns"
+import { format } from "date-fns"
 import { addMessageConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
@@ -25,6 +22,10 @@ import SocketEventEnum from "@/constants/socket-event"
 import TypingIndicator from "@/components/type-indicator"
 import { AudioPlayer } from "@/components/audio-player"
 import { formatTime } from "@/lib/utils"
+import ConversationHeader from "@/components/conversation-header"
+import MessageForm from "@/components/message-form"
+import MessageItem from "@/components/message-item"
+
 
 
 export default function ConversationPage() {
@@ -41,6 +42,9 @@ export default function ConversationPage() {
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
   const [recording, setRecording] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
 
 
   const {
@@ -185,6 +189,8 @@ export default function ConversationPage() {
 
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
     mediaRecorder.onstop = () => {
+      setRecording(false)
+      stream?.getTracks().forEach((track) => track.stop());
       const blob = new Blob(chunks, { type: 'audio/webm' });
       if (!blob) return;
 
@@ -193,35 +199,11 @@ export default function ConversationPage() {
         return;
       }
 
-      const audio = new Audio();
-      audio.src = URL.createObjectURL(blob);
-
-      audio.addEventListener('loadedmetadata', () => {
-        const finalizeFormData = (durationStr: string) => {
-          const formData = new FormData();
-          formData.append("media", blob);
-          formData.append("type", "audio");
-          formData.append("conversationId", String(selectedConversation?.conversationId));
-          formData.append("duration", durationStr);
-          sendAudioFun(formData)
-        };
-
-        if (audio.duration === Infinity) {
-          audio.currentTime = 1e101;
-          audio.ontimeupdate = () => {
-            audio.ontimeupdate = null;
-            audio.currentTime = 0;
-            const durationStr = formatTime(audio.duration);
-            finalizeFormData(durationStr);
-          };
-        } else {
-          const durationStr = formatTime(audio.duration);
-          finalizeFormData(durationStr);
-        }
-      });
+      const formData = new FormData();
+      formData.append("media", blob);
+      formData.append("conversationId", String(selectedConversation?.conversationId));
+      sendAudioFun(formData)
     };
-
-
     mediaRecorder.start();
     setRecorder(mediaRecorder);
   }
@@ -230,7 +212,6 @@ export default function ConversationPage() {
 
   const stopRecording = () => {
     recorder?.stop()
-    setRecording(false)
   };
 
 
@@ -292,6 +273,19 @@ export default function ConversationPage() {
     };
   }, [socket, selectedConversation]);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
 
   if (isError || isMessageError) {
     return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message || messageError?.message}</div>;
@@ -344,31 +338,12 @@ export default function ConversationPage() {
 
         {
           selectedConversation && !messageLoading ? <div className="flex flex-col flex-1">
-            <div className="p-4 border-b border-border flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={selectedConversation?.avatar} alt={selectedConversation?.full_name} />
-                  <AvatarFallback>{selectedConversation?.full_name?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">
-                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : getUserLastSeen(selectedConversation?.id) === 0 ? formatDistanceToNow(new Date(selectedConversation?.last_seen_at ?? '')) : formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true })}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => startCall("audio")}>
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => startCall("video")}>
-                  <Video className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <Info className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <ConversationHeader
+              selectedConversation={selectedConversation}
+              startCall={startCall}
+              getIsUserOnline={getIsUserOnline}
+              getUserLastSeen={getUserLastSeen}
+            />
 
             <ScrollArea className="flex-1 p-4">
               <InfiniteScroll
@@ -378,33 +353,7 @@ export default function ConversationPage() {
               >
                 <div>
                   {messages?.length > 0 ? messages.map((message) => (
-                    <div key={message?.id} className={`flex ${message?.sender_id === user?.id ? "justify-end" : "justify-start"} mt-4 mb-4`}>
-                      {message?.sender_id !== user?.id && (
-                        <Avatar className="h-8 w-8 mr-2 mt-1">
-                          <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.full_name} />
-                          <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={`max-w-[70%] rounded-lg px-3 py-2 ${message?.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
-                          }`}
-                      >
-                        {message?.type === 'text' ? <p>{message?.content}</p> : <AudioPlayer audioUrl={message?.content ?? ''} duration={message?.duration ?? ''} />}
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          <span
-                            className={`text-xs ${message?.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                              }`}
-                          >
-                            {format(new Date(message?.sent_at ?? ''), "hh:mmaaaaa'm'")}
-                          </span>
-                          {message?.sender_id === user?.id && (
-                            <span className="text-xs text-primary-foreground/70">
-                              {message?.statuses?.[0]?.status === 'sent' ? "✓" : message?.statuses?.[0]?.status === 'delivered' ? "✓✓" : "👀"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <MessageItem key={message?.id} message={message} user={user} />
                   )) : <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                     <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No messages yet</h3>
@@ -418,53 +367,22 @@ export default function ConversationPage() {
               </InfiniteScroll>
             </ScrollArea>
 
-            <div className="p-4 border-t border-border">
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                  <Smile className="h-5 w-5" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                  <Paperclip className="h-5 w-5" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                  <ImageIcon className="h-5 w-5" />
-                </Button>
-                {recording ? (
-                  <div className="flex items-center gap-2 flex-1 px-4 py-2 bg-red-50 rounded-full">
-                    <Circle className="h-3 w-3 fill-red-500 animate-pulse" />
-                    <span className="text-sm font-medium text-red-500">
-                      Recording: {formatTime(recordingTime)}
-                    </span>
-                  </div>
-                ) : (
-                  <Input
-                    placeholder="Type a message..."
-                    value={message}
-                    onChange={(e) => {
-                      setMessage(e.target.value);
-                      if (selectedConversation?.conversationId) {
-                        socket?.emit(SocketEventEnum.TYPING, {
-                          conversationId: selectedConversation.conversationId,
-                          userId: user?.id
-                        });
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                )}
-                {message.trim() ? (
-                  <Button onClick={handleSendMessage} disabled={isPending || sendLoading} type="submit" size="icon" className="shrink-0">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  recording ? <Button onClick={stopRecording} type="button" variant="ghost" size="icon" className="shrink-0">
-                    <MicOff className="h-5 w-5" />
-                  </Button> : <Button onClick={startRecording} type="button" variant="ghost" size="icon" className="shrink-0">
-                    <Mic className="h-5 w-5" />
-                  </Button>
-                )}
-              </form>
-            </div>
+            <MessageForm
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              sendLoading={sendLoading}
+              isPending={isPending}
+              selectedConversation={selectedConversation}
+              message={message}
+              recordingTime={recordingTime}
+              recording={recording}
+              setShowEmojiPicker={setShowEmojiPicker}
+              setMessage={setMessage}
+              emojiPickerRef={emojiPickerRef}
+              handleSendMessage={handleSendMessage}
+              showEmojiPicker={showEmojiPicker}
+              sendAudioFun={sendAudioFun}
+            />
           </div> : <div className="flex flex-1 items-center justify-center">
             {messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">
               <h3 className="font-medium">Select a conversation</h3>

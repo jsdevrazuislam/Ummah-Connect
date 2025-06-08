@@ -51,7 +51,6 @@ interface Conversation{
   conversation_id: number;
   sender_id: number;
   content: string;
-  type: string;
   parent_message_id?: null;
   sent_at: string;
   is_deleted?: null;
@@ -61,10 +60,26 @@ interface Conversation{
   updatedAt: string;
   sender: MessageSender;
   status:string
-  duration?:string
   reactions?: (null)[] | null;
   statuses: MessageStatus[]
+  attachments: MessageAttachment[]
 }
+
+ interface MessageAttachment {
+  id: number;
+  message_id: number;
+  file_url: string;
+  file_type: string;
+  thumbnail_url?: null;
+  duration: number;
+  size_in_bytes: number;
+  metadata: Metadata;
+  createdAt: string;
+  updatedAt: string;
+}
+ interface Metadata {
+}
+
 
 interface MessageStatus {
   status: 'sent' | 'delivered' | 'seen'

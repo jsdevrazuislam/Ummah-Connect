@@ -18,12 +18,16 @@ const uploadFileOnCloudinary = async (localFilePath: string, folderName:string) 
       };
     const res = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
-      folder: folderName
+      folder: folderName,
+      media_metadata: true
     });
 
     console.log(`File is uploaded on cloudinary ${res.url}`);
     fs.unlinkSync(localFilePath);
-    return res.url;
+    return {
+      url: res.url,
+      duration: res?.duration
+    };
   } catch (error) {
     console.log(`File Upload Error`, error);
     fs.unlinkSync(localFilePath); 
@@ -37,7 +41,7 @@ export const removeOldImageOnCloudinary = async (url: string) => {
         message: "PublicId not found",
       };
       await cloudinary.uploader.destroy(extractPublicId(url), {
-        resource_type: "image",
+        resource_type: "auto",
       });
     console.log(
       `Image with publicId ${extractPublicId(url)} deleted successfully`
@@ -47,26 +51,6 @@ export const removeOldImageOnCloudinary = async (url: string) => {
     throw new ApiError(
       500,
       "Something went wrong while delete cloudinary file"
-    );
-  }
-};
-export const removeOldVideoOnCloudinary = async (url: string) => {
-  try {
-    if (!url)
-      return {
-        message: "PublicId not found",
-      };
-    await cloudinary.uploader.destroy(extractPublicId(url), {
-      resource_type: "video",
-    });
-    console.log(
-      `Video with publicId ${extractPublicId(url)} deleted successfully`
-    );
-  } catch (error) {
-    console.error("Error deleting old video:", error);
-    throw new ApiError(
-      500,
-      "Something went wrong while delete cloudinary video file"
     );
   }
 };

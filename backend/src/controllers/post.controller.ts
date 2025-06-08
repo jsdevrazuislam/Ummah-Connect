@@ -29,7 +29,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       mediaPath,
       "ummah_connect/posts"
     );
-    media_url = media;
+    media_url = media?.url;
   }
 
   const payload = {
@@ -333,7 +333,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
       mediaPath,
       "ummah_connect/posts"
     );
-    media_url = media;
+    media_url = media?.url;
   }
 
   const [_, updatePost] = await Post.update(

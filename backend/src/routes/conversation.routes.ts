@@ -10,7 +10,7 @@ const router = Router()
 router.post("/create", validateData(conversationSchema), verify_auth, create_conversation_for_dm)
 router.get("/", verify_auth, get_all_conversations)
 router.post("/send-message", validateData(sendMessageSchema), verify_auth, send_message)
-router.post("/send-attachment", verify_auth, upload.single("media"), send_attachment)
+router.post("/send-attachment", verify_auth, upload.array("media", 10), send_attachment)
 router.get("/:id", verify_auth, get_conversation_message)
 router.post("/read-message", validateData(readMessageSchema), verify_auth, read_message)
 

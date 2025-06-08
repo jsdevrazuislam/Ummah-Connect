@@ -11,6 +11,7 @@ import ConversationParticipant from '@/models/conversation-participant.modes'
 import Message from '@/models/messages.models'
 import MessageReaction from '@/models/message-reaction.models'
 import MessageStatus from '@/models/message-status.models'
+import MessageAttachment from '@/models/message-attachment.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -80,6 +81,16 @@ MessageStatus.belongsTo(Message, { foreignKey: 'message_id' });
 
 User.hasMany(MessageStatus, { foreignKey: 'user_id', as: 'messageStatuses' });
 MessageStatus.belongsTo(User, { foreignKey: 'user_id', as:'user' });
+
+Message.hasMany(MessageAttachment, {
+  foreignKey: 'message_id',
+  as: 'attachments'
+});
+
+MessageAttachment.belongsTo(Message, {
+  foreignKey: 'message_id'
+});
+
 
 
 
