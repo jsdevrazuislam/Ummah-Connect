@@ -37,6 +37,7 @@ const ApiStrings = {
   SEND_MESSAGE: `/conversation/send-message`,
   CREATE_CONVERSATION: `/conversation/create`,
   READ_MESSAGE: `/conversation/read-message`,
+  SEND_ATTACHMENT: `/conversation/send-attachment`,
 };
 
 export default ApiStrings;

@@ -25,3 +25,14 @@ export const read_message = async(payload:ReadMessagePayload) =>{
     const response = await api.post(ApiStrings.READ_MESSAGE, payload);
     return response.data;
 }
+
+export const send_attachment = async(payload:FormData) =>{
+     const response = await api.post(ApiStrings.SEND_ATTACHMENT, payload, {
+    headers: {
+      ...(payload instanceof FormData
+        ? { "Content-Type": "multipart/form-data" }
+        : {}),
+    },
+  });
+  return response.data;
+}

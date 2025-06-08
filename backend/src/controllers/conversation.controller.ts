@@ -374,7 +374,7 @@ export const read_message = asyncHandler(async(req:Request, res:Response) =>{
 export const send_attachment = asyncHandler(async (req: Request, res: Response) => {
 
     const mediaPath = req?.file?.path
-    const { conversationId, type } = req.body
+    const { conversationId, type, duration } = req.body
     const senderId = req.user.id
 
     const conversation = await Conversation.findOne({ where: { id: conversationId } })
@@ -419,12 +419,13 @@ export const send_attachment = asyncHandler(async (req: Request, res: Response) 
         content: media_url,
         type,
         sender_id: senderId,
-        sent_at: new Date()
+        sent_at: new Date(),
+        duration
     })
 
     const messageStatuses = receiverParticipants.map(participant => ({
         message_id: newMessage.id,
-        user_id: participant.id,
+        user_id: participant.user_id,
         status: 'sent'
     }));
 

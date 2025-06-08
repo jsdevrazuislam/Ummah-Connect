@@ -6,12 +6,12 @@ import { SideNav } from "@/components/side-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Send, Phone, Video, Info, ImageIcon, Paperclip, Smile, Mic, Users, MessageSquare } from "lucide-react"
+import { Search, Send, Phone, Video, Info, ImageIcon, Paperclip, Smile, Mic, Users, MessageSquare, MicOff, Circle } from "lucide-react"
 import { CallModal } from "@/components/call-modal"
 import Link from "next/link"
 import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_conversation_messages, get_conversations, read_message, send_message } from "@/lib/apis/conversation"
+import { get_conversation_messages, get_conversations, read_message, send_attachment, send_message } from "@/lib/apis/conversation"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
@@ -23,6 +23,8 @@ import ConversationItem from "@/components/conversation-item"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import TypingIndicator from "@/components/type-indicator"
+import { AudioPlayer } from "@/components/audio-player"
+import { formatTime } from "@/lib/utils"
 
 
 export default function ConversationPage() {
@@ -35,6 +37,11 @@ export default function ConversationPage() {
   const { socket } = useSocketStore()
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout>();
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [recording, setRecording] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const {
     data,
@@ -100,6 +107,18 @@ export default function ConversationPage() {
     }
   })
 
+  const { mutate: sendAudioFun, isPending: sendLoading } = useMutation({
+    mutationFn: send_attachment,
+    onSuccess: (newMessage, variable) => {
+      queryClient.setQueryData(['get_conversation_messages', Number(variable?.get("conversationId"))], (oldData: QueryOldDataPayloadConversation) => {
+        return addMessageConversation(oldData, newMessage.data, Number(variable?.get("conversationId")))
+      })
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
   const { isPending, mutate } = useMutation({
     mutationFn: send_message,
     onSuccess: (newMessage, variable) => {
@@ -157,6 +176,64 @@ export default function ConversationPage() {
     }
   }
 
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const mediaRecorder = new MediaRecorder(stream)
+    const chunks: Blob[] = [];
+
+    setRecording(true)
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      if (!blob) return;
+
+      if (blob.size > 5 * 1024 * 1024) {
+        toast.error("Audio is too large (max 5MB)");
+        return;
+      }
+
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(blob);
+
+      audio.addEventListener('loadedmetadata', () => {
+        const finalizeFormData = (durationStr: string) => {
+          const formData = new FormData();
+          formData.append("media", blob);
+          formData.append("type", "audio");
+          formData.append("conversationId", String(selectedConversation?.conversationId));
+          formData.append("duration", durationStr);
+          sendAudioFun(formData)
+        };
+
+        if (audio.duration === Infinity) {
+          audio.currentTime = 1e101;
+          audio.ontimeupdate = () => {
+            audio.ontimeupdate = null;
+            audio.currentTime = 0;
+            const durationStr = formatTime(audio.duration);
+            finalizeFormData(durationStr);
+          };
+        } else {
+          const durationStr = formatTime(audio.duration);
+          finalizeFormData(durationStr);
+        }
+      });
+    };
+
+
+    mediaRecorder.start();
+    setRecorder(mediaRecorder);
+  }
+
+
+
+  const stopRecording = () => {
+    recorder?.stop()
+    setRecording(false)
+  };
+
+
   const startCall = (type: "audio" | "video") => {
     setActiveCall({ type })
   }
@@ -173,10 +250,25 @@ export default function ConversationPage() {
     }
   }
 
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  useEffect(() => {
+    if (recording) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setRecordingTime(0);
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [recording]);
+
 
   useEffect(() => {
     const callTimer = setTimeout(() => {
@@ -261,7 +353,7 @@ export default function ConversationPage() {
                 <div>
                   <div className="font-medium capitalize">{selectedConversation?.full_name}</div>
                   <div className="text-xs text-muted-foreground capitalize">
-                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : getUserLastSeen(selectedConversation?.id) === 0 ? formatDistanceToNow(new Date(selectedConversation?.last_seen_at ?? '')): formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true})}
+                    {getIsUserOnline(selectedConversation?.id) ? 'Online' : getUserLastSeen(selectedConversation?.id) === 0 ? formatDistanceToNow(new Date(selectedConversation?.last_seen_at ?? '')) : formatDistanceToNow(new Date(getUserLastSeen(selectedConversation?.id)), { addSuffix: true })}
                   </div>
                 </div>
               </div>
@@ -297,7 +389,7 @@ export default function ConversationPage() {
                         className={`max-w-[70%] rounded-lg px-3 py-2 ${message?.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
                           }`}
                       >
-                        <p>{message?.content}</p>
+                        {message?.type === 'text' ? <p>{message?.content}</p> : <AudioPlayer audioUrl={message?.content ?? ''} duration={message?.duration ?? ''} />}
                         <div className="flex items-center justify-end gap-1 mt-1">
                           <span
                             className={`text-xs ${message?.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
@@ -337,23 +429,37 @@ export default function ConversationPage() {
                 <Button type="button" variant="ghost" size="icon" className="shrink-0">
                   <ImageIcon className="h-5 w-5" />
                 </Button>
-                <Input
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => {
-                    setMessage(e.target.value)
-                    if (selectedConversation.conversationId) {
-                      socket?.emit(SocketEventEnum.TYPING, { conversationId: selectedConversation?.conversationId, userId: user?.id });
-                    }
-                  }}
-                  className="flex-1"
-                />
+                {recording ? (
+                  <div className="flex items-center gap-2 flex-1 px-4 py-2 bg-red-50 rounded-full">
+                    <Circle className="h-3 w-3 fill-red-500 animate-pulse" />
+                    <span className="text-sm font-medium text-red-500">
+                      Recording: {formatTime(recordingTime)}
+                    </span>
+                  </div>
+                ) : (
+                  <Input
+                    placeholder="Type a message..."
+                    value={message}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      if (selectedConversation?.conversationId) {
+                        socket?.emit(SocketEventEnum.TYPING, {
+                          conversationId: selectedConversation.conversationId,
+                          userId: user?.id
+                        });
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                )}
                 {message.trim() ? (
-                  <Button onClick={handleSendMessage} disabled={isPending} type="submit" size="icon" className="shrink-0">
+                  <Button onClick={handleSendMessage} disabled={isPending || sendLoading} type="submit" size="icon" className="shrink-0">
                     <Send className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0">
+                  recording ? <Button onClick={stopRecording} type="button" variant="ghost" size="icon" className="shrink-0">
+                    <MicOff className="h-5 w-5" />
+                  </Button> : <Button onClick={startRecording} type="button" variant="ghost" size="icon" className="shrink-0">
                     <Mic className="h-5 w-5" />
                   </Button>
                 )}

@@ -47,6 +47,14 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     full_name,
     role: "user",
     is_verified: false,
+    privacy_settings: {
+        active_status: true,
+        private_account: false,
+        read_receipts: true,
+        location_share: true,
+        post_see:'everyone',
+        message: 'everyone'
+      }
   };
 
   const newUser = await User.create(payload);

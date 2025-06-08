@@ -61,6 +61,7 @@ interface Conversation{
   updatedAt: string;
   sender: MessageSender;
   status:string
+  duration?:string
   reactions?: (null)[] | null;
   statuses: MessageStatus[]
 }

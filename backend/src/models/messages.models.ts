@@ -12,6 +12,7 @@ class Message extends Model{
     public sent_at!: Date
     public is_deleted!: boolean
     public deleted_by_id!: number
+    public duration!: string
     public deleted_at!: Date
     public createdAt!: Date
     public updatedAt!: Date
@@ -73,6 +74,11 @@ Message.init(
         deleted_at:  {
             type: DataTypes.DATE,
             allowNull: true
+        },
+        duration:{
+            type:DataTypes.STRING,
+            allowNull: true,
+            defaultValue: ''
         }
     },
     {
