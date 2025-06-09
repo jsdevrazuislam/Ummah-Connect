@@ -5,7 +5,7 @@ import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
-import uploadFileOnCloudinary from "@/utils/cloudinary";
+import uploadFileOnCloudinary, { getThumbnailFromVideo } from "@/utils/cloudinary";
 import { formatConversations } from "@/utils/formater";
 import { formatTimeAgo, getFileType } from "@/utils/helper";
 import { Request, Response } from "express";
@@ -413,7 +413,8 @@ export const send_attachment = asyncHandler(async (req: Request, res: Response) 
                     file_url: media?.url,
                     file_type: getFileType(file.mimetype),
                     size_in_bytes: file.size,
-                    duration: media?.duration
+                    duration: media?.duration,
+                    thumbnail_url: getThumbnailFromVideo(media?.url ?? '', file.mimetype)
                 };
             })
         );

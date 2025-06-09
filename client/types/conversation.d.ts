@@ -70,7 +70,7 @@ interface Conversation{
   message_id: number;
   file_url: string;
   file_type: string;
-  thumbnail_url?: null;
+  thumbnail_url?: string;
   duration: number;
   size_in_bytes: number;
   metadata: Metadata;

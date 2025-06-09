@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import ApiError from "@/utils/ApiError";
 import { extractPublicId } from 'cloudinary-build-url'
+import { getFileType } from "@/utils/helper";
 
 
 cloudinary.config({
@@ -10,7 +11,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadFileOnCloudinary = async (localFilePath: string, folderName:string) => {
+const uploadFileOnCloudinary = async (localFilePath: string, folderName: string) => {
   try {
     if (!localFilePath)
       return {
@@ -30,9 +31,21 @@ const uploadFileOnCloudinary = async (localFilePath: string, folderName:string) 
     };
   } catch (error) {
     console.log(`File Upload Error`, error);
-    fs.unlinkSync(localFilePath); 
+    fs.unlinkSync(localFilePath);
   }
 };
+
+export const getThumbnailFromVideo = (videoUrl: string, type: string) => {
+
+  if (!videoUrl) return null;
+  if (!getFileType(type).includes('video')) return null;
+
+  const urlParts = videoUrl.split('/');
+  const publicIdWithExtension = urlParts.slice(urlParts.indexOf('upload') + 1).join('/');
+  const publicId = publicIdWithExtension.split('.')[0];
+
+  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/w_300,h_200,c_thumb,q_auto,f_jpg/${publicId}.png`
+}
 
 export const removeOldImageOnCloudinary = async (url: string) => {
   try {
@@ -40,9 +53,9 @@ export const removeOldImageOnCloudinary = async (url: string) => {
       return {
         message: "PublicId not found",
       };
-      await cloudinary.uploader.destroy(extractPublicId(url), {
-        resource_type: "auto",
-      });
+    await cloudinary.uploader.destroy(extractPublicId(url), {
+      resource_type: "auto",
+    });
     console.log(
       `Image with publicId ${extractPublicId(url)} deleted successfully`
     );

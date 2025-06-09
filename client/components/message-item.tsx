@@ -17,12 +17,12 @@ const MessageItem: FC<MessageItemProps> = ({
     user
 }) => {
 
-    const renderMessageType = (type: string, url?: string, duration?: number) => {
+    const renderMessageType = (type: string, thumbnail_url?:string, url?: string, duration?: number) => {
         switch (type) {
             case 'video':
                 return <MessageVideoPlayer
                     src={url ?? ''}
-                    poster="https://sample-videos.com/img/Sample-jpg-image-500kb.jpg"
+                    poster={thumbnail_url}
                 />
             case 'audio':
                 return <AudioPlayer audioUrl={url ?? ''} duration={String(duration)} />
@@ -49,7 +49,7 @@ const MessageItem: FC<MessageItemProps> = ({
                     {
                         message?.attachments?.length === 0 ? renderMessageType('text') : message?.attachments?.map((attachment) => (
                             <React.Fragment key={attachment.id}>
-                                {renderMessageType(attachment?.file_type, attachment?.file_url, attachment?.duration)}
+                                {renderMessageType(attachment?.file_type, attachment?.thumbnail_url, attachment?.file_url, attachment?.duration)}
                             </React.Fragment>
                         ))
                     }
