@@ -10,7 +10,9 @@ import { useTheme } from "next-themes"
 import { useSocketStore } from '@/hooks/use-socket'
 import { useAuthStore } from '@/store/store'
 import { ALLOWED_TYPES, MAX_FILE_SIZE } from '@/constants'
-import { UseMutateFunction, useMutation } from '@tanstack/react-query'
+import { UseMutateFunction, useMutation, useQueryClient } from '@tanstack/react-query'
+import { loadTempDataForMessage } from '@/lib/temp-load-data'
+import { addMessageConversation } from '@/lib/update-conversation'
 
 interface MessageFormProps {
     handleSendMessage: (e: React.FormEvent) => void
@@ -26,7 +28,7 @@ interface MessageFormProps {
     sendLoading: boolean
     stopRecording: () => void
     startRecording: () => Promise<void>
-    sendAudioFun: UseMutateFunction<any, Error, FormData, unknown>
+    sendAttachmentFun: UseMutateFunction<any, Error, FormData, unknown>
 
 }
 
@@ -45,7 +47,7 @@ const MessageForm: FC<MessageFormProps> = ({
     sendLoading,
     stopRecording,
     startRecording,
-    sendAudioFun
+    sendAttachmentFun
 }) => {
 
     const { theme } = useTheme()
@@ -54,6 +56,7 @@ const MessageForm: FC<MessageFormProps> = ({
     const { isPending: isSending } = useMutation({})
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const queryClient = useQueryClient()
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -90,13 +93,24 @@ const MessageForm: FC<MessageFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isPending || sendLoading) return;
-         const formData = new FormData();
-        for (const file of selectedFiles) {
-            formData.append("media", file); 
+        if (selectedFiles?.length > 0) {
+            if (isPending || sendLoading) return;
+            const tempId = Date.now()
+            const formData = new FormData();
+            for (const file of selectedFiles) {
+                formData.append("media", file);
+            }
+            formData.append("id", String(tempId));
+            formData.append("content", message?.trim())
+            formData.append("conversationId", String(selectedConversation?.conversationId));
+            setSelectedFiles([])
+            const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id: tempId, attachments: selectedFiles })
+            queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+                return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
+            })
+            sendAttachmentFun(formData)
         }
-        formData.append("conversationId", String(selectedConversation?.conversationId));
-        sendAudioFun(formData)
+        handleSendMessage(e)
     };
 
 
@@ -130,7 +144,7 @@ const MessageForm: FC<MessageFormProps> = ({
                     ))}
                 </div>
             )}
-            <form onSubmit={handleSendMessage} className="flex relative items-center gap-2">
+            <form className="flex relative items-center gap-2">
                 {showEmojiPicker && (
                     <div ref={emojiPickerRef} className="absolute bottom-14 left-2 z-10">
                         <Picker

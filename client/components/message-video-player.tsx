@@ -26,7 +26,6 @@ export function MessageVideoPlayer({ src, poster, className }: MessageVideoPlaye
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
     const [volume, setVolume] = useState(1);
-    const [isFullscreen, setIsFullscreen] = useState(false);
     const [showControls, setShowControls] = useState(true);
     const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout>();
 
@@ -99,14 +98,7 @@ export function MessageVideoPlayer({ src, poster, className }: MessageVideoPlaye
         const video = videoRef.current;
         if (!video) return;
 
-        const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
-        };
-
-        document.addEventListener("fullscreenchange", handleFullscreenChange);
-
         return () => {
-            document.removeEventListener("fullscreenchange", handleFullscreenChange);
             if (controlsTimeout) clearTimeout(controlsTimeout);
         };
     }, [controlsTimeout]);

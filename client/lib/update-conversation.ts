@@ -54,12 +54,12 @@ export const addedConversation = (
         }
 
         return {
-                ...page,
-                data: {
-                    ...page.data,
-                    conversations: [data, ...existingConversation],
-                },
-            };
+            ...page,
+            data: {
+                ...page.data,
+                conversations: [data, ...existingConversation],
+            },
+        };
     });
 
     return {
@@ -71,7 +71,7 @@ export const addedConversation = (
 export const updatedUnReadCount = (
     oldData: QueryOldDataPayloadConversations | undefined,
     conversationId: number
-) =>{
+) => {
 
     if (!oldData) return oldData;
 
@@ -109,7 +109,7 @@ export const addUnReadCount = (
     oldData: QueryOldDataPayloadConversations | undefined,
     conversationId: number,
     data: ConversationMessages
-) =>{
+) => {
 
     if (!oldData) return oldData;
 
@@ -119,11 +119,11 @@ export const addUnReadCount = (
 
         if (shouldUpdateUnreadCount) {
             const updateConversation = existingConversation?.map((conversation) => {
-                if(conversation.id === conversationId){
-                        return {
+                if (conversation.id === conversationId) {
+                    return {
                         ...conversation,
-                        time: formatTimeAgo(new Date(data?.sent_at), true) ,
-                        lastMessage:{
+                        time: formatTimeAgo(new Date(data?.sent_at), true),
+                        lastMessage: {
                             ...conversation.lastMessage,
                             content: data.content,
                             sent_at: data.sent_at
@@ -151,4 +151,37 @@ export const addUnReadCount = (
         pages: updatedPages,
     };
 
+}
+
+export function replaceMessageInConversation(
+    oldData: QueryOldDataPayloadConversation,
+    id: number,
+    newMessage: ConversationMessages,
+    conversationId: number
+) {
+
+    if (!oldData || !conversationId) return oldData;
+
+    const updatedPages = oldData.pages.map((page) => {
+        const existingConversation = page?.data?.messages ?? [];
+        const shouldUpdateConversationMessage = existingConversation.some((c) => c.conversation_id === conversationId);
+        const updatedMessages = existingConversation.map((msg) => msg.id === id ? newMessage: msg)
+
+        if (shouldUpdateConversationMessage) {
+            return {
+                ...page,
+                data: {
+                    ...page.data,
+                    messages: updatedMessages,
+                },
+            };
+        }
+
+        return page;
+    });
+
+    return {
+        ...oldData,
+        pages: updatedPages,
+    };
 }

@@ -324,7 +324,8 @@ export const send_message = asyncHandler(async (req: Request, res: Response) => 
             {
                 "status": "sent"
             }
-        ]
+        ],
+        attachments: []
     }
 
     emitSocketEvent({ req, roomId: `conversation_${conversationId}`, event: SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, payload: responseData })

@@ -32,6 +32,7 @@ interface SendMessagePayload{
     conversationId:number,
     content:string
     type:string
+    id:number
 }
 interface ReplyCommentPayload{
     content:string, 

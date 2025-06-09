@@ -25,8 +25,8 @@ export function AudioPlayer({
   const [seekTime, setSeekTime] = useState<number | null>(null);
   const [playbackRate, setPlaybackRate] = useState(1);
   const maxDuration = parseFormattedTime(duration);
+  const displayedTime = !isNaN(seekTime ?? currentTime) ? (seekTime ?? currentTime) : 0;
 
-  const displayedTime = seekTime !== null ? seekTime : currentTime;
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
@@ -85,7 +85,7 @@ export function AudioPlayer({
   }, [audioUrl]);
 
   return (
-    <div className="flex items-center gap-4 rounded-lg w-full max-w-md">
+    <div className="flex items-center gap-4 rounded-lg w-[270px]">
       <audio
         key={audioUrl}
         ref={audioRef}
@@ -96,9 +96,9 @@ export function AudioPlayer({
 
       <button
         onClick={togglePlayPause}
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-colors"
+        className="flex items-center justify-center w-4 h-4 rounded-full transition-colors"
       >
-        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
       </button>
 
       <div className="flex-1 flex flex-col gap-1">
@@ -109,27 +109,27 @@ export function AudioPlayer({
           onValueChange={handleSeek}
           onValueCommit={handleSeekCommit}
         />
-        <div className="flex justify-between text-xs text-gray-600">
-          <span>{formatTime(displayedTime)}</span>
-          <span>{duration}</span>
-        </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800">
-            <Gauge className="h-4 w-4" />
-            {playbackRate}x
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-20">
-          {[1, 1.5, 2, 2.5].map((rate) => (
-            <DropdownMenuItem key={rate} onClick={() => changeSpeed(rate)}>
-              {rate}x
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div>
+        {isPlaying && <span className="text-xs text-gray-600">{formatTime(displayedTime)}</span>}
+        {!isPlaying && <span className="text-xs text-gray-600">{formatTime(Number(duration))}</span>}
+        {isPlaying && <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800">
+              <Gauge className="h-4 w-4" />
+              {playbackRate}x
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-20 text-xs">
+            {[1, 1.5, 2, 2.5].map((rate) => (
+              <DropdownMenuItem key={rate} onClick={() => changeSpeed(rate)}>
+                {rate}x
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>}
+      </div>
     </div>
   );
 }

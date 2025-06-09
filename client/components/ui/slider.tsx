@@ -42,14 +42,14 @@ const Slider = React.forwardRef<
       >
         <SliderPrimitive.Track
           className={cn(
-            "relative overflow-hidden bg-secondary rounded-full",
+            "relative cursor-pointer overflow-hidden bg-secondary rounded-full",
             isVertical ? "w-2 h-full" : "h-2 w-full",
             trackClassName
           )}
         >
           <SliderPrimitive.Range
             className={cn(
-              "absolute bg-primary dark:bg-white",
+              "absolute bg-black dark:bg-white",
               isVertical ? "w-full" : "h-full",
               rangeClassName
             )}

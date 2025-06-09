@@ -33,7 +33,22 @@ export const formatTime = (time: number) => {
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 };
 
-export const parseFormattedTime = (formatted: string): number => {
-  const [minutes, seconds] = formatted.split(":").map(Number);
-  return (minutes * 60) + seconds;
-};
+export function parseFormattedTime(timeStr: string): number {
+  const parts = timeStr.split(":").map(Number).reverse();
+  return parts.reduce((acc, val, i) => acc + val * Math.pow(60, i), 0);
+}
+
+
+/**
+ * Determines the general file type based on its MIME type.
+ *
+ * @param {string} mimetype - The MIME type string of the file (e.g., 'image/jpeg', 'video/mp4', 'application/pdf').
+ * @returns {'image' | 'video' | 'audio' | 'pdf' | 'other'} A string representing the determined file type.
+ */
+export function getFileType(mimetype: string): 'image' | 'video' | 'audio' | 'pdf' | 'other' {
+  if (mimetype.startsWith('image/')) return 'image';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  if (mimetype === 'application/pdf') return 'pdf';
+  return 'other';
+}

@@ -14,7 +14,7 @@ import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { addMessageConversation, updatedUnReadCount } from "@/lib/update-conversation"
+import { addMessageConversation, replaceMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
 import { useSocketStore } from "@/hooks/use-socket"
@@ -25,6 +25,7 @@ import { formatTime } from "@/lib/utils"
 import ConversationHeader from "@/components/conversation-header"
 import MessageForm from "@/components/message-form"
 import MessageItem from "@/components/message-item"
+import { loadTempDataForMessage } from "@/lib/temp-load-data"
 
 
 
@@ -111,14 +112,21 @@ export default function ConversationPage() {
     }
   })
 
-  const { mutate: sendAudioFun, isPending: sendLoading } = useMutation({
+  const { mutate: sendAttachmentFun, isPending: sendLoading } = useMutation({
     mutationFn: send_attachment,
     onSuccess: (newMessage, variable) => {
+      const id = Number(variable?.get('id'))
+
       queryClient.setQueryData(['get_conversation_messages', Number(variable?.get("conversationId"))], (oldData: QueryOldDataPayloadConversation) => {
-        return addMessageConversation(oldData, newMessage.data, Number(variable?.get("conversationId")))
+        return replaceMessageInConversation(oldData, id, { ...newMessage.data, status: 'sent' }, Number(variable?.get("conversationId")))
       })
     },
-    onError: (error) => {
+    onError: (error, variable) => {
+      const id = Number(variable?.get('id'))
+      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id })
+      queryClient.setQueryData(['get_conversation_messages', Number(variable?.get("conversationId"))], (oldData: QueryOldDataPayloadConversation) => {
+        return replaceMessageInConversation(oldData, id, tempMessage, Number(variable?.get("conversationId")))
+      })
       toast.error(error.message)
     }
   })
@@ -128,15 +136,18 @@ export default function ConversationPage() {
     onSuccess: (newMessage, variable) => {
       setMessage("")
       queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
-        return addMessageConversation(oldData, newMessage.data, variable.conversationId)
+        return replaceMessageInConversation(oldData, variable.id, { ...newMessage.data, status: 'sent' }, variable.conversationId)
       })
     },
-    onError: (error) => {
+    onError: (error, variable) => {
+      setMessage("")
+      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id: variable.id })
+      queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return replaceMessageInConversation(oldData, variable.id, tempMessage, variable.conversationId)
+      })
       toast.error(error.message)
     }
   })
-
-
 
   const loadMoreMessage = () => {
     if (messageHasNextPage && !isMessageFetchNextPage) {
@@ -172,10 +183,17 @@ export default function ConversationPage() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim()) {
+
+      const id = Date.now()
+      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id })
+      queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
+      })
       mutate({
         conversationId: selectedConversation?.conversationId ?? 0,
         type: 'text',
-        content: message
+        content: message,
+        id
       })
     }
   }
@@ -200,9 +218,15 @@ export default function ConversationPage() {
       }
 
       const formData = new FormData();
+      const tempId = Date.now()
       formData.append("media", blob);
+      formData.append("id", String(tempId));
       formData.append("conversationId", String(selectedConversation?.conversationId));
-      sendAudioFun(formData)
+      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id: tempId, attachments: [blob] })
+      queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
+      })
+      sendAttachmentFun(formData)
     };
     mediaRecorder.start();
     setRecorder(mediaRecorder);
@@ -381,7 +405,7 @@ export default function ConversationPage() {
               emojiPickerRef={emojiPickerRef}
               handleSendMessage={handleSendMessage}
               showEmojiPicker={showEmojiPicker}
-              sendAudioFun={sendAudioFun}
+              sendAttachmentFun={sendAttachmentFun}
             />
           </div> : <div className="flex flex-1 items-center justify-center">
             {messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">

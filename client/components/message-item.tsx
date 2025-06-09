@@ -36,7 +36,7 @@ const MessageItem: FC<MessageItemProps> = ({
 
     return (
         <>
-            <div key={message?.id} className={`flex ${message?.sender_id === user?.id ? "justify-end" : "justify-start"} mt-4 mb-4`}>
+            <div key={message?.id} className={cn(`flex ${message?.sender_id === user?.id ? "justify-end items-end flex-col" : "justify-start"} mt-4 mb-4`, { "opacity-70": message?.status === 'sending' || message?.status === 'failed' })}>
                 {message?.sender_id !== user?.id && (
                     <Avatar className="h-8 w-8 mr-2 mt-1">
                         <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.full_name} />
@@ -44,12 +44,12 @@ const MessageItem: FC<MessageItemProps> = ({
                     </Avatar>
                 )}
                 <div
-                    className={cn("max-w-[70%] flex flex-col rounded-lg px-3 py-2 bg-muted", { "bg-primary text-primary-foreground": message?.sender_id === user?.id, "bg-transparent gap-2": message?.attachments?.length !== 0 })}
+                    className={cn("max-w-[70%] flex flex-col rounded-lg px-3 py-2 bg-muted", { "bg-primary text-primary-foreground": message?.sender_id === user?.id })}
                 >
                     {
                         message?.attachments?.length === 0 ? renderMessageType('text') : message?.attachments?.map((attachment) => (
                             <React.Fragment key={attachment.id}>
-                                {renderMessageType(attachment.file_type, attachment?.file_url, attachment?.duration)}
+                                {renderMessageType(attachment?.file_type, attachment?.file_url, attachment?.duration)}
                             </React.Fragment>
                         ))
                     }
@@ -66,6 +66,12 @@ const MessageItem: FC<MessageItemProps> = ({
                         )}
                     </div>
                 </div>
+                {message?.status === 'failed' && (
+                    <span className="text-xs text-red-500">Failed to send</span>
+                )}
+                {message?.status === 'sending' && (
+                    <span className="text-xs text-gray-300">sending..</span>
+                )}
             </div>
         </>
     )
