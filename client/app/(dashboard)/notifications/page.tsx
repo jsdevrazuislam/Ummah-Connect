@@ -1,5 +1,3 @@
-import { SideNav } from "@/components/side-nav"
-import { RightSidebar } from "@/components/right-sidebar"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, MessageCircle, UserPlus, Bell } from "lucide-react"
@@ -58,7 +56,7 @@ const notifications = [
 
 export default function NotificationsPage() {
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
           <h1 className="text-xl font-bold mb-4 ml-12 lg:ml-0">Notifications</h1>
           <Tabs defaultValue="all" className="mt-4">
@@ -123,6 +121,6 @@ export default function NotificationsPage() {
             </div>
           ))}
         </div>
-      </main>
+      </>
   )
 }

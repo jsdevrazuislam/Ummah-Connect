@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Link2, MapPin, Grid3X3, List, Lock, Heart, MessageCircle } from "lucide-react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { getUserProfileDetails } from "@/lib/apis/auth"
-import { SideNav } from "@/components/side-nav"
 import { format } from 'date-fns';
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
@@ -58,7 +57,6 @@ export default function ProfilePage({ username, user }: { username: string, user
 
     return (
         <div className="flex min-h-screen bg-background">
-            <SideNav />
             <main className="flex-1 border-x border-border">
                 <div className="relative">
                     <div className="h-48 bg-muted w-full">

@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -155,7 +154,7 @@ export default function LiveStreamPage({ params }: { params: { id: string } }) {
   }
 
   return (
-      <main className="flex-1 flex flex-col md:flex-row">
+      <>
         {/* Video section */}
         <div className="flex-1 md:max-w-[70%]">
           <div className="relative bg-black">
@@ -277,6 +276,6 @@ export default function LiveStreamPage({ params }: { params: { id: string } }) {
             </form>
           </div>
         </div>
-      </main>
+      </>
   )
 }

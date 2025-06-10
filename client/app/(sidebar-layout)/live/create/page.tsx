@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -30,7 +29,7 @@ export default function CreateLiveStreamPage() {
   }
 
   return (
-      <main className="flex-1 p-4 md:p-6">
+      <>
           <div className="mb-6">
             <Link href="/live" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -174,6 +173,6 @@ export default function CreateLiveStreamPage() {
               </Card>
             </div>
           </div>
-      </main>
+      </>
   )
 }

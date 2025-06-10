@@ -33,7 +33,7 @@ export const loadTempDataForMessage = ({
         file_url: fileUrl,
         file_type: fileType,
         duration: duration,
-        thumbnail_url: null,
+        thumbnail_url: '',
         size_in_bytes: file.size,
         metadata: {},
         createdAt: now,

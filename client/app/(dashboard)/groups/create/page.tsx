@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -28,7 +27,7 @@ export default function CreateGroupPage() {
   }
 
   return (
-      <main className="flex-1 p-4 md:p-6">
+      <>
         <div className="max-w-2xl mx-auto">
           <div className="mb-6">
             <Link
@@ -186,6 +185,6 @@ export default function CreateGroupPage() {
             </div>
           </form>
         </div>
-      </main>
+      </>
   )
 }

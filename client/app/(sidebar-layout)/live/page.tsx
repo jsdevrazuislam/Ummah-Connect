@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -66,7 +65,7 @@ export default function LivePage() {
   const [activeTab, setActiveTab] = useState("browse")
 
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-xl font-bold ml-12 lg:ml-0">Live</h1>
@@ -138,6 +137,6 @@ export default function LivePage() {
             ))}
           </div>
         </div>
-      </main>
+      </>
   )
 }
