@@ -8,16 +8,17 @@ import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import IncomingCallNotification from "@/components/incoming-call-modal";
 
 const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
-  const { setIncomingCall } = useCallActions();
+  const { setIncomingCall, setRejectedCallInfo, stopRingtone } = useCallActions();
+  const router = useRouter()
 
 
   const { mutate: readMessageFun } = useMutation({
@@ -201,7 +202,30 @@ const SocketEvents = () => {
     };
   }, [socket]);
 
-  return <IncomingCallNotification />
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.CALL_ACCEPTED, () => {
+      stopRingtone()
+    });
+    return () => {
+      socket.off(SocketEventEnum.CALL_ACCEPTED);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.CALL_REJECTED, (payload) => {
+      setRejectedCallInfo(payload)
+      router.push('/')
+    });
+    return () => {
+      socket.off(SocketEventEnum.CALL_REJECTED);
+    };
+  }, [socket]);
+
+  return null
 }
 
 export default SocketEvents

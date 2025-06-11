@@ -9,6 +9,11 @@ import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/store/store"
+import { v4 as uuidv4 } from 'uuid';
+import { useMutation } from "@tanstack/react-query"
+import { initialize_call } from "@/lib/apis/stream"
+import { toast } from "sonner"
+
 
 interface ConversationHeaderProps {
     getIsUserOnline: (userId: number) => boolean
@@ -23,6 +28,12 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
     getUserLastSeen,
 }) => {
 
+    const { mutate } = useMutation({
+        mutationFn: initialize_call,
+        onError:(error)=>{
+            toast.error(error.message)
+        }
+    })
     const { startCall } = useCallActions();
     const { socket } = useSocketStore()
     const router = useRouter()
@@ -30,7 +41,7 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
 
     const handleStartCall = (callType: 'audio' | 'video') => {
         if (!selectedConversation || !selectedConversation?.id) return;
-
+        const authToken = uuidv4();
         const roomName = `call-${selectedConversation.id}-${Date.now()}`;
 
         socket?.emit(SocketEventEnum.OUTGOING_CALL, {
@@ -39,18 +50,24 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
             callType: callType,
             roomName: roomName,
             callerName: user?.full_name,
-            callerAvatar: user?.avatar
+            callerAvatar: user?.avatar,
+            authToken
         });
-
+        mutate({
+            roomName,
+            callType: callType,
+            authToken,
+            receiverId: String(selectedConversation?.id),
+        })
         startCall(callType, roomName);
-        router.push(`/call?room=${roomName}&type=${callType}`);
+        router.push(`/call?room=${roomName}&type=${callType}&authToken=${authToken}`);
     };
 
     if (!selectedConversation) return
 
     return (
         <>
-            <div className="p-4 border-b border-border flex justify-between items-center">
+            <div className="p-4 md:border-b md:border-border w-full flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <Avatar>
                         <AvatarImage src={selectedConversation?.avatar} alt={selectedConversation?.full_name} />

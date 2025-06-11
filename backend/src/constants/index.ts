@@ -24,6 +24,7 @@ const SocketEventEnum = Object.freeze({
   OUTGOING_CALL:"outgoing:call",
   INCOMING_CALL:"incoming:call",
   CALL_ACCEPTED:"call:accepted",
+  CALL_REJECTED:"call:rejected",
 });
 
 const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio', 'privacy_settings'];

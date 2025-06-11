@@ -67,7 +67,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
           const userId = user.id;
           setupSocketListeners(socket);
           socket.join(user.id.toString());
-          await redis.set(`online_users:${user.id}`, Date.now(), 'EX', 60);
+          await redis.set(`online_users:${user.id}`, Date.now(), "EX", 60);
           const peerIds = await getConversationUserIds(userId);
           // Notify all peers that I am online
           for (const peerId of peerIds) {
@@ -124,16 +124,52 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
           .emit(SocketEventEnum.TYPING, { userId });
       });
 
-      socket.on(SocketEventEnum.OUTGOING_CALL, (payload) =>{
-        socket
-        .to(`user:${payload.to}`).emit(SocketEventEnum.INCOMING_CALL, {
+      socket.on(SocketEventEnum.OUTGOING_CALL, (payload) => {
+        socket.to(`user:${payload.to}`).emit(SocketEventEnum.INCOMING_CALL, {
           from: payload.from,
+          authToken: payload.authToken,
           callType: payload.callType,
           roomName: payload.roomName,
           callerName: payload.callerName,
-          callerAvatar: payload.callerAvatar
+          callerAvatar: payload.callerAvatar,
         });
-      })
+      });
+
+      socket.on(
+        SocketEventEnum.CALL_REJECTED,
+        ({
+          roomName,
+          rejectedByUserId,
+          callerUserId,
+          callerName,
+          callerAvatar,
+        }) => {
+          console.log(
+            `Call to room ${roomName} rejected by ${rejectedByUserId}. Notifying ${callerUserId}`
+          );
+          io.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_REJECTED, {
+            roomName,
+            rejectedByName: rejectedByUserId,
+            message: "The user is currently busy or declined your call.",
+            callerName: callerName,
+            callerAvatar: callerAvatar,
+          });
+        }
+      );
+
+      socket.on(
+        SocketEventEnum.CALL_ACCEPTED,
+        ({ roomName, receiverId, callerUserId }) => {
+          console.log(
+            `Call to room ${roomName} accepted by ${receiverId}. Notifying ${callerUserId}`
+          );
+          io.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_ACCEPTED, {
+            roomName,
+            receiverId,
+            message: "Your call has been accepted.",
+          });
+        }
+      );
 
       socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
         console.log(
@@ -141,10 +177,10 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         );
         const userId = socket.user?.id;
         if (userId) {
-           await User.update(
-            { last_seen_at: new Date()},
-            { where: { id: socket?.user?.id}}
-          )
+          await User.update(
+            { last_seen_at: new Date() },
+            { where: { id: socket?.user?.id } }
+          );
           await redis.set(`last_seen:${userId}`, Date.now());
           const peerIds = await getConversationUserIds(userId);
           for (const peerId of peerIds) {

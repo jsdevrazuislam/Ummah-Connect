@@ -39,8 +39,8 @@ export function IslamicQuote() {
       </CardHeader>
       <CardContent>
         <p className="border-l-2 pl-4 italic text-sm">
-          {randomQuote.text}
-          <span className="text-xs text-muted-foreground mt-1">— {randomQuote.source}</span>
+          {randomQuote.text} <br />
+          <span className="text-xs text-muted-foreground mt-1">{randomQuote.source}</span>
         </p>
       </CardContent>
     </Card>

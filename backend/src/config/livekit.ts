@@ -6,7 +6,7 @@ const livekitUrl = process.env.LIVEKIT_URL;
 
 export const generateLiveKitToken = async (
   identity: string,
-  roomName: string
+  roomName: string,
 ) => {
   const at = new AccessToken(livekitApiKey, livekitApiSecret, {
     identity: identity,
@@ -18,7 +18,7 @@ export const generateLiveKitToken = async (
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
-    canPublishData: false,
+    canPublishData: false
   });
 
   const token = await at.toJwt();
