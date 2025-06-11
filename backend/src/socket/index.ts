@@ -124,6 +124,17 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
           .emit(SocketEventEnum.TYPING, { userId });
       });
 
+      socket.on(SocketEventEnum.OUTGOING_CALL, (payload) =>{
+        socket
+        .to(`user:${payload.to}`).emit(SocketEventEnum.INCOMING_CALL, {
+          from: payload.from,
+          callType: payload.callType,
+          roomName: payload.roomName,
+          callerName: payload.callerName,
+          callerAvatar: payload.callerAvatar
+        });
+      })
+
       socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
         console.log(
           `User has disconnected userId: ${socket.user?.id || "unknown"}`

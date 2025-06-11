@@ -1,21 +1,23 @@
 "use client"
 
 import SocketEventEnum from "@/constants/socket-event";
+import { useCallActions, useCallStore } from "@/hooks/use-call-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
 import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
+import IncomingCallNotification from "@/components/incoming-call-modal";
 
 const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
-  const userRef = useRef<User | null>(null);
+  const { setIncomingCall } = useCallActions();
 
 
   const { mutate: readMessageFun } = useMutation({
@@ -188,7 +190,18 @@ const SocketEvents = () => {
     };
   }, [socket]);
 
-  return null
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.INCOMING_CALL, (payload) => {
+      setIncomingCall(payload)
+    });
+    return () => {
+      socket.off(SocketEventEnum.INCOMING_CALL);
+    };
+  }, [socket]);
+
+  return <IncomingCallNotification />
 }
 
 export default SocketEvents

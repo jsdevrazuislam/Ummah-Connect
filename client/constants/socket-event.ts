@@ -17,7 +17,10 @@ const SocketEventEnum = Object.freeze({
   DISPLAY_TYPING:"displayTyping",
   ONLINE:"user:online",
   OFFLINE:"user:offline",
-
+  OUTGOING_CALL:"outgoing:call",
+  INCOMING_CALL:"incoming:call",
+  CALL_REJECTED:"call:rejected",
+  CALL_ACCEPTED:"call:accepted",
 });
 
 export default SocketEventEnum

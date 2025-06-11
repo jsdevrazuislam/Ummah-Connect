@@ -21,6 +21,7 @@ import postRoutes from '@/routes/posts.routes'
 import commentRoutes from '@/routes/comments.routes'
 import followRoutes from '@/routes/follows.routes'
 import conversationRoutes from '@/routes/conversation.routes'
+import streamRoutes from '@/routes/stream.routes'
 import { initializeSocketIO } from "@/socket";
 import { connectRedis } from "@/config/redis";
 
@@ -83,6 +84,7 @@ app.use(`${API_VERSION}/post`, postRoutes);
 app.use(`${API_VERSION}/comment`, commentRoutes);
 app.use(`${API_VERSION}/follow`, followRoutes);
 app.use(`${API_VERSION}/conversation`, conversationRoutes);
+app.use(`${API_VERSION}/stream`, streamRoutes);
 
 
 swagger(app)

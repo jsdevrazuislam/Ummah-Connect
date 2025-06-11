@@ -38,10 +38,10 @@ export function IslamicQuote() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <blockquote className="border-l-2 pl-4 italic text-sm">
+        <p className="border-l-2 pl-4 italic text-sm">
           {randomQuote.text}
-          <footer className="text-xs text-muted-foreground mt-1">— {randomQuote.source}</footer>
-        </blockquote>
+          <span className="text-xs text-muted-foreground mt-1">— {randomQuote.source}</span>
+        </p>
       </CardContent>
     </Card>
   )

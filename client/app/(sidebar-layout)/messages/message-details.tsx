@@ -2,10 +2,8 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { Search, Users, MessageSquare } from "lucide-react"
-import { CallModal } from "@/components/call-modal"
+import { Search, Users, MessageSquare, Plus, ChevronLeft } from "lucide-react"
 import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { get_conversation_messages, get_conversations, read_message, send_attachment, send_message } from "@/lib/apis/conversation"
@@ -13,26 +11,27 @@ import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useAuthStore } from "@/store/store"
 import { toast } from "sonner"
-import { format } from "date-fns"
 import { addMessageConversation, replaceMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import TypingIndicator from "@/components/type-indicator"
-import { AudioPlayer } from "@/components/audio-player"
-import { formatTime } from "@/lib/utils"
 import ConversationHeader from "@/components/conversation-header"
 import MessageForm from "@/components/message-form"
 import MessageItem from "@/components/message-item"
 import { loadTempDataForMessage } from "@/lib/temp-load-data"
+import { CreateGroupDialog } from "@/components/create-group-dialog"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { ErrorMessage } from "@/components/api-error"
 
 
 
 export default function ConversationPage() {
   const [message, setMessage] = useState("")
-  const [activeCall, setActiveCall] = useState<{ type: "audio" | "video" } | null>(null)
-  const [incomingCall, setIncomingCall] = useState<{ type: "audio" | "video" } | null>(null)
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [isMobileView, setIsMobileView] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useAuthStore()
   const queryClient = useQueryClient()
@@ -232,28 +231,10 @@ export default function ConversationPage() {
     setRecorder(mediaRecorder);
   }
 
-
-
   const stopRecording = () => {
     recorder?.stop()
   };
 
-
-  const startCall = (type: "audio" | "video") => {
-    setActiveCall({ type })
-  }
-
-  const handleCloseCall = () => {
-    setActiveCall(null)
-    setIncomingCall(null)
-  }
-
-  const handleAcceptIncomingCall = () => {
-    if (incomingCall) {
-      setActiveCall(incomingCall)
-      setIncomingCall(null)
-    }
-  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -274,16 +255,6 @@ export default function ConversationPage() {
     };
   }, [recording]);
 
-
-  useEffect(() => {
-    const callTimer = setTimeout(() => {
-      if (Math.random() > 0.7 && !activeCall && !incomingCall) {
-        setIncomingCall({ type: Math.random() > 0.5 ? "audio" : "video" })
-      }
-    }, 30000)
-
-    return () => clearTimeout(callTimer)
-  }, [activeCall, incomingCall])
 
   useEffect(() => {
     if (!socket) return;
@@ -312,21 +283,34 @@ export default function ConversationPage() {
 
 
   if (isError || isMessageError) {
-    return <div className="text-red-500 text-center py-4">Error loading conversation: {error?.message || messageError?.message}</div>;
+    return <div className="flex justify-center items-center h-[90vh] ">
+      <ErrorMessage type='network' />
+    </div>
   }
 
   return (
     <div className="flex flex-1 h-screen bg-background">
-      <div className="flex-1 flex">
-        <div className="w-full md:w-80 border-r border-border">
+      <div className="flex-1 flex flex-col md:flex-row">
+        <div className={cn(
+          "w-full border-r border-border",
+          "md:w-80 md:block",
+          selectedConversation ? "hidden" : "block"
+        )}>
           <div className="p-4 border-b border-border">
-            <h1 className="text-xl font-bold mb-4">Messages</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold mb-4">Messages</h1>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateGroup(true)} className="rounded-full">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search messages" className="pl-10" />
             </div>
           </div>
-          <div>
+          <div className="h-[calc(100vh-120px)] overflow-y-auto">
             <InfiniteScroll
               hasMore={hasNextPage}
               isLoading={isLoading}
@@ -360,16 +344,37 @@ export default function ConversationPage() {
           </div>
         </div>
 
-        {
-          selectedConversation && !messageLoading ? <div className="flex flex-col flex-1">
-            <ConversationHeader
-              selectedConversation={selectedConversation}
-              startCall={startCall}
-              getIsUserOnline={getIsUserOnline}
-              getUserLastSeen={getUserLastSeen}
-            />
+        {selectedConversation && !messageLoading ? (
+          <div className={cn(
+            "flex flex-col flex-1",
+            "w-full",
+            "md:w-[calc(100%-20rem)]"
+          )}>
+            <div className="md:hidden flex items-center p-2 border-b border-border">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedConversation(null)}
+                className="mr-2"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <ConversationHeader
+                selectedConversation={selectedConversation}
+                getIsUserOnline={getIsUserOnline}
+                getUserLastSeen={getUserLastSeen}
+              />
+            </div>
 
-            <ScrollArea className="flex-1 p-4">
+            <div className="hidden md:block">
+              <ConversationHeader
+                selectedConversation={selectedConversation}
+                getIsUserOnline={getIsUserOnline}
+                getUserLastSeen={getUserLastSeen}
+              />
+            </div>
+
+            <ScrollArea className="flex-1 p-4 h-[calc(100vh-180px)] md:h-[calc(100vh-140px)]">
               <InfiniteScroll
                 hasMore={messageHasNextPage}
                 isLoading={messageLoading}
@@ -407,19 +412,20 @@ export default function ConversationPage() {
               showEmojiPicker={showEmojiPicker}
               sendAttachmentFun={sendAttachmentFun}
             />
-          </div> : <div className="flex flex-1 items-center justify-center">
-            {messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">
-              <h3 className="font-medium">Select a conversation</h3>
-              <p className="text-sm text-muted-foreground mt-1">Choose from your existing conversations</p>
-            </div>}
           </div>
-        }
+        ) : (
+          <div className="flex flex-1 items-center justify-center w-full">
+            {
+              messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">
+                <h3 className="font-medium">Select a conversation</h3>
+                <p className="text-sm text-muted-foreground mt-1">Choose from your existing conversations</p>
+              </div>
+            }
+          </div>
+        )}
       </div>
-      {/* Call modals */}
-      {/* {activeCall && <CallModal user={conversation.user} callType={activeCall.type} onClose={handleCloseCall} />} */}
-      {/* {incomingCall && (
-        <CallModal user={conversation.user} callType={incomingCall.type} onClose={handleCloseCall} incoming={true} />
-      )} */}
+      <CreateGroupDialog open={showCreateGroup} onOpenChange={setShowCreateGroup} />
     </div>
+
   )
 }

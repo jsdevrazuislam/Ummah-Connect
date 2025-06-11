@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Phone, Video, Info } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { FC } from "react"
+import { useCallActions } from "@/hooks/use-call-store"
+import { useSocketStore } from "@/hooks/use-socket"
+import SocketEventEnum from "@/constants/socket-event"
+import { useRouter } from "next/navigation"
+import { useAuthStore } from "@/store/store"
 
 interface ConversationHeaderProps {
     getIsUserOnline: (userId: number) => boolean
     getUserLastSeen: (userId: number) => number
     selectedConversation: MessageSender | null
-    startCall: (type: "audio" | "video") => void
 }
 
 
@@ -17,8 +21,30 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
     getIsUserOnline,
     selectedConversation,
     getUserLastSeen,
-    startCall,
 }) => {
+
+    const { startCall } = useCallActions();
+    const { socket } = useSocketStore()
+    const router = useRouter()
+    const { user } = useAuthStore()
+
+    const handleStartCall = (callType: 'audio' | 'video') => {
+        if (!selectedConversation || !selectedConversation?.id) return;
+
+        const roomName = `call-${selectedConversation.id}-${Date.now()}`;
+
+        socket?.emit(SocketEventEnum.OUTGOING_CALL, {
+            from: user?.id,
+            to: selectedConversation?.id,
+            callType: callType,
+            roomName: roomName,
+            callerName: user?.full_name,
+            callerAvatar: user?.avatar
+        });
+
+        startCall(callType, roomName);
+        router.push(`/call?room=${roomName}&type=${callType}`);
+    };
 
     if (!selectedConversation) return
 
@@ -38,10 +64,10 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => startCall("audio")}>
+                    <Button variant="ghost" size="icon" onClick={() => handleStartCall("audio")}>
                         <Phone className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => startCall("video")}>
+                    <Button variant="ghost" size="icon" onClick={() => handleStartCall("video")}>
                         <Video className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon">

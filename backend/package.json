@@ -23,6 +23,7 @@
     "express-rate-limit": "^7.5.0",
     "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.13.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.0",
     "pg": "^8.16.0",
