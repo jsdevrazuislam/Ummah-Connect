@@ -6,6 +6,12 @@ import Comment from '@/models/comment.models'
 import BookmarkPost from '@/models/bookmark.models'
 import RecoveryCodes from '@/models/recoverycodes.models'
 import Otp from '@/models/otp.models'
+import Conversation from '@/models/conversation.models'
+import ConversationParticipant from '@/models/conversation-participant.modes'
+import Message from '@/models/messages.models'
+import MessageReaction from '@/models/message-reaction.models'
+import MessageStatus from '@/models/message-status.models'
+import MessageAttachment from '@/models/message-attachment.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -46,7 +52,7 @@ Reaction.belongsTo(Comment);
 
 // Bookmark associations
 Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
-BookmarkPost.belongsTo(Post, {foreignKey:'postId' })
+BookmarkPost.belongsTo(Post, {foreignKey:'postId', as:'post' })
 User.hasMany(BookmarkPost, { foreignKey: 'userId' });
 BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 
@@ -54,6 +60,39 @@ BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(RecoveryCodes, { foreignKey: 'user_id', as: 'recoveryCodes' });
 RecoveryCodes.belongsTo(User, { foreignKey: 'user_id' });
 
+// Conversation Associations
+User.hasMany(Conversation, { foreignKey: 'created_by', as: 'createdConversations'})
+Conversation.hasMany(ConversationParticipant, { foreignKey: 'conversation_id', as: 'participants' });
+ConversationParticipant.belongsTo(Conversation, { foreignKey: 'conversation_id', as:'conversation' });
+User.hasMany(ConversationParticipant, { foreignKey: 'user_id', as: 'conversationParticipants' });
+ConversationParticipant.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Conversation.belongsTo(Message, { foreignKey: 'last_message_id', as: 'lastMessage' });
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp };
+
+// Message Association
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+Message.hasMany(MessageReaction, { foreignKey: 'message_id', as: 'reactions' });
+MessageReaction.belongsTo(Message, { foreignKey: 'message_id' });
+MessageReaction.belongsTo(User, { foreignKey: 'user_id', as: 'reactedUser' });
+
+Message.hasMany(MessageStatus, { foreignKey: 'message_id', as: 'statuses' });
+MessageStatus.belongsTo(Message, { foreignKey: 'message_id' });
+
+User.hasMany(MessageStatus, { foreignKey: 'user_id', as: 'messageStatuses' });
+MessageStatus.belongsTo(User, { foreignKey: 'user_id', as:'user' });
+
+Message.hasMany(MessageAttachment, {
+  foreignKey: 'message_id',
+  as: 'attachments'
+});
+
+MessageAttachment.belongsTo(Message, {
+  foreignKey: 'message_id'
+});
+
+
+
+
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };

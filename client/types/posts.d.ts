@@ -4,6 +4,28 @@ interface PostsResponse {
   message: string;
   success: boolean;
 }
+interface BookmarkPostsResponse {
+  statusCode: number;
+  data?: BookmarkPostsData;
+  message: string;
+  success: boolean;
+}
+
+interface BookmarkPostsData{
+  posts?: BookmarkPostEntity[];
+  totalPages: number;
+  currentPage: number;
+  user?:User
+}
+
+interface BookmarkPostEntity{
+  createdAt:string
+  updatedAt:string
+  id:number
+  userId:number
+  postId:number
+  post:PostsEntity
+}
 interface PostsData {
   posts?: PostsEntity[];
   totalPages: number;
@@ -32,11 +54,12 @@ interface PostAuthor {
   full_name: string;
   username: string;
   avatar?: string;
-  location:string
-  following_count:string
-  followers_count:string
+  location?:string
+  following_count?:string | number
+  followers_count?:string | number
   bio:string
   isFollowing?: boolean;
+  privacy_settings?:PrivacySettings
 }
 interface Comments {
   total: number;

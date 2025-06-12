@@ -17,7 +17,7 @@ const trendingTopics = [
 
 export default function ExplorePage() {
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
           <h1 className="text-xl font-bold mb-4 ml-12 lg:ml-0">Explore</h1>
           <div className="relative mb-4">
@@ -54,6 +54,6 @@ export default function ExplorePage() {
             ))}
           </div>
         </div>
-      </main>
+      </>
   )
 }

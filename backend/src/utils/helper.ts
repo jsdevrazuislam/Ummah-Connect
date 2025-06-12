@@ -1,3 +1,4 @@
+import redis from '@/config/redis';
 import bcrypt from 'bcryptjs';
 
 
@@ -7,6 +8,7 @@ import bcrypt from 'bcryptjs';
  * and returns a string like "X seconds ago", "Y minutes ago", "Z hours ago", etc.
  *
  * @param {Date} date - The Date object to format.
+ * @param {Boolean} isShort - The Boolean to format.
  * @returns {string} A string representing how long ago the date occurred.
  *
  * @example
@@ -16,16 +18,16 @@ import bcrypt from 'bcryptjs';
  * const anotherPastDate = new Date(2023, 0, 1); // January 1, 2023
  * console.log(formatTimeAgo(anotherPastDate)); // Output: "1 year ago" (or similar, depending on current date)
  */
-export function formatTimeAgo(date: Date): string {
+export function formatTimeAgo(date: Date, isShort = false): string {
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds} seconds ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} weeks ago`;
-  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} months ago`;
-  return `${Math.floor(seconds / 31536000)} years ago`;
+  if (seconds < 60) return `${seconds} ${isShort ? 's' : 'seconds ago'}`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${isShort ? 'm' : 'minutes ago'}`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} ${isShort ? 'h' : 'hours ago'}`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ${isShort ? 'd' : 'days ago'}`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} ${isShort ? 'w' : 'weeks ago'}`;
+  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} ${isShort ? 'mon' : 'months ago'}`;
+  return `${Math.floor(seconds / 31536000)} ${isShort ? 'y' : 'years ago'}`;
 }
 
 /**
@@ -79,4 +81,60 @@ export async function generateRecoveryCodes(): Promise<{ plainCodes: string[]; h
  */
 export async function compareRecoveryCode(plainCode: string, hashedCode: string): Promise<boolean> {
   return bcrypt.compare(plainCode, hashedCode);
+}
+
+/**
+ * Asynchronously retrieves data from cache or computes it if not found, then caches the result.
+ * This function acts as a "cache-aside" pattern, checking Redis first before executing a callback
+ * to fetch or compute the data.
+ *
+ * @template T - The type of the value being cached.
+ * @param {string} key - The unique key used to store and retrieve the data from the cache.
+ * @param {function(): Promise<T>} cb - An asynchronous callback function that will be executed
+ * to fetch or compute the data if it's not found in the cache. This function must return a Promise
+ * that resolves to the data of type `T`.
+ * @param {number} [ttl=60] - The time-to-live (TTL) for the cached data in seconds.
+ * After this duration, the cached item will expire and be re-computed on the next request.
+ * Defaults to 60 seconds.
+ * @returns {Promise<T>} A Promise that resolves to the cached or newly computed data of type `T`.
+ */
+export const getOrSetCache = async <T>(
+  key: string,
+  cb: () => Promise<T>,
+  ttl: number = 60 
+): Promise<T> => {
+  const cached = await redis.get(key);
+  if (cached) {
+    return JSON.parse(cached) as T;
+  }
+
+  const result = await cb();
+  await redis.set(key, JSON.stringify(result), 'EX', ttl);
+  return result;
+};
+
+/**
+ * Determines the general file type based on its MIME type.
+ *
+ * This function checks the provided MIME type string and categorizes it
+ * into one of the following broader types: 'image', 'video', 'audio', 'pdf', or 'other'.
+ *
+ * @param {string} mimetype - The MIME type string of the file (e.g., 'image/jpeg', 'video/mp4', 'application/pdf').
+ * @returns {'image' | 'video' | 'audio' | 'pdf' | 'other'} A string representing the determined file type.
+ *
+ * @example
+ * // Example usage:
+ * getFileType('image/png');      // Returns: 'image'
+ * getFileType('video/quicktime'); // Returns: 'video'
+ * getFileType('audio/mpeg');    // Returns: 'audio'
+ * getFileType('application/pdf'); // Returns: 'pdf'
+ * getFileType('text/plain');    // Returns: 'other'
+ * getFileType('application/json'); // Returns: 'other'
+ */
+export function getFileType(mimetype: string): 'image' | 'video' | 'audio' | 'pdf' | 'other' {
+  if (mimetype.startsWith('image/')) return 'image';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  if (mimetype === 'application/pdf') return 'pdf';
+  return 'other';
 }

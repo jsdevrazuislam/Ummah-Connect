@@ -10,7 +10,7 @@ interface RightSidebarProps {
 
 export function RightSidebar({ children }: RightSidebarProps) {
   return (
-    <div className="hidden lg:block w-[320px] p-4 space-y-6 sticky top-0 h-screen overflow-y-auto">
+    <div className="hidden lg:block space-y-6 sticky top-0 h-screen overflow-y-auto">
       {children}
       <PrayerTimesWidget />
       <IslamicQuote />

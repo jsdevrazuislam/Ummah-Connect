@@ -1,33 +1,64 @@
+"use client" 
+
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Quote } from "lucide-react"
 
 // Array of Islamic quotes
 const quotes = [
   {
-    text: "The best among you are those who have the best manners and character.",
+    text: "The best among you are those who have the best manners and character",
     source: "Prophet Muhammad ﷺ (Bukhari)",
   },
   {
-    text: "Verily, with hardship comes ease.",
+    text: "Verily with hardship comes ease",
     source: "Quran 94:6",
   },
   {
-    text: "Speak good or remain silent.",
+    text: "Speak good or remain silent",
     source: "Prophet Muhammad ﷺ (Tirmidhi)",
   },
   {
-    text: "The strongest among you is the one who controls his anger.",
+    text: "The strongest among you is the one who controls his anger",
     source: "Prophet Muhammad ﷺ (Bukhari)",
   },
   {
-    text: "Be in this world as if you were a stranger or a traveler.",
+    text: "Be in this world as if you were a stranger or a traveler",
     source: "Prophet Muhammad ﷺ (Bukhari)",
   },
 ]
 
 export function IslamicQuote() {
-  // Get a random quote
-  const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
+  // Use state to store the random quote, initialized to null
+  const [currentQuote, setCurrentQuote] = useState({
+    text: "The best among you are those who have the best manners and character",
+    source: "Prophet Muhammad ﷺ (Bukhari)",
+  });
+
+  useEffect(() => {
+    // This code runs ONLY on the client after the component has mounted
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    setCurrentQuote(randomQuote);
+  }, []); // The empty dependency array ensures this effect runs only once after the initial render
+
+  // Render a loading state or nothing until the client-side effect sets the quote
+  if (!currentQuote) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Quote className="h-4 w-4" />
+            Daily Reminder
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="border-l-2 pl-4 italic text-sm text-muted-foreground">
+            Loading daily reminder...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -38,11 +69,13 @@ export function IslamicQuote() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <blockquote className="border-l-2 pl-4 italic text-sm">
-          {randomQuote.text}
-          <footer className="text-xs text-muted-foreground mt-1">— {randomQuote.source}</footer>
-        </blockquote>
+        <p className="border-l-2 pl-4 italic text-sm">
+          {currentQuote.text}{" "}
+          <span className="text-xs text-muted-foreground mt-1 block">
+            {currentQuote.source}
+          </span>
+        </p>
       </CardContent>
     </Card>
-  )
+  );
 }

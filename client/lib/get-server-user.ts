@@ -10,7 +10,7 @@ export async function getServerUser() {
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}${ApiStrings.ME}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1${ApiStrings.ME}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -21,7 +21,7 @@ export async function getServerUser() {
 
     if (!res.ok) return null;
 
-    const data = await res.json();
+    const { data } = await res.json();
 
     return data.user;
   } catch (err) {

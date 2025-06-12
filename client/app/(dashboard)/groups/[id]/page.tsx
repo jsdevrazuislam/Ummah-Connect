@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -146,7 +145,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
   }
 
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         {/* Group header */}
         <div className="relative">
           <div className="h-48 bg-muted w-full">
@@ -365,6 +364,6 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             )}
           </Tabs>
         </div>
-      </main>
+      </>
   )
 }

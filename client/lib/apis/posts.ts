@@ -11,6 +11,16 @@ export const get_all_posts = async ({
     return response.data;
 };
 
+export const get_all_bookmark_posts = async ({
+    page = 1,
+    limit = 10,
+}): Promise<BookmarkPostsResponse> => {
+    const response = await api.get<BookmarkPostsResponse>(ApiStrings.BOOKMARK_POSTS, {
+        params: { page, limit },
+    });
+    return response.data;
+};
+
 export const get_all_following_posts = async ({
     page = 1,
     limit = 10,

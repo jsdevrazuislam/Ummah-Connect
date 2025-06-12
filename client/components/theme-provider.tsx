@@ -12,6 +12,8 @@ import { useSocketStore } from '@/hooks/use-socket';
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 
   const { initializeSocket, disconnectSocket } = useSocketStore();
+  const { initialLoading } = useAuthStore()
+
 
   React.useEffect(() => {
     initializeSocket();
@@ -20,7 +22,6 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     };
   }, []);;
 
-  const { initialLoading } = useAuthStore()
   React.useEffect(() => {
     initialLoading()
   }, [])

@@ -8,16 +8,19 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Link2, MapPin, Grid3X3, List, Lock, Heart, MessageCircle } from "lucide-react"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { getUserProfileDetails } from "@/lib/apis/auth"
-import { SideNav } from "@/components/side-nav"
 import { format } from 'date-fns';
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
-import { ImageWithSkeleton } from "@/components/image"
+import MessageButton from "@/components/message-button"
+import Image from "next/image"
+import { useAuthStore } from "@/store/store"
 
 
 
 
 export default function ProfilePage({ username, user }: { username: string, user: User }) {
+
+    const { user: currentUser } = useAuthStore()
 
     const {
         data,
@@ -37,7 +40,7 @@ export default function ProfilePage({ username, user }: { username: string, user
         initialPageParam: 1,
         staleTime: 1000 * 60,
         gcTime: 1000 * 60 * 5,
-        enabled: username && !user?.privacy_settings?.private_account ? true : false
+        enabled: currentUser?.id === user?.id ? true : username && !user?.privacy_settings?.private_account ? true : false
     });
 
     const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
@@ -49,7 +52,7 @@ export default function ProfilePage({ username, user }: { username: string, user
     };
 
     const [viewMode, setViewMode] = useState<"list" | "grid">("list")
-    const isViewingPrivateProfile = user?.privacy_settings?.private_account
+    const isViewingPrivateProfile = user?.id === currentUser?.id ? false : user?.privacy_settings?.private_account
 
     if (isError) {
         return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
@@ -57,14 +60,15 @@ export default function ProfilePage({ username, user }: { username: string, user
 
     return (
         <div className="flex min-h-screen bg-background">
-            <SideNav />
             <main className="flex-1 border-x border-border">
                 <div className="relative">
                     <div className="h-48 bg-muted w-full">
-                        <ImageWithSkeleton
+                        <Image
                             src={user?.cover}
                             alt="Cover"
                             className="w-full h-full object-cover"
+                            width={200}
+                            height={192}
                         />
                     </div>
 
@@ -72,7 +76,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                         <div className="flex justify-between items-start">
                             <div className="flex items-end gap-4">
                                 <Avatar className="h-24 w-24 border-4 border-background -mt-12">
-                                    <ImageWithSkeleton src={user?.avatar ?? ''} alt={user?.full_name} />
+                                    <Image width={96} height={96} src={user?.avatar ?? ''} alt={user?.full_name} />
                                 </Avatar>
 
                                 {user?.privacy_settings?.private_account && (
@@ -83,10 +87,21 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
-                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
-                                <Button variant='outline'>Message</Button>
-                            </div>
+                            {currentUser?.id !== user?.id && <div className="flex gap-2">
+                                <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
+                                <MessageButton user={{
+                                    id: user?.id,
+                                    full_name: user?.full_name,
+                                    username: user?.username,
+                                    avatar: user?.avatar ?? '',
+                                    location: user?.location ?? '',
+                                    following_count: user?.following_count ?? '',
+                                    followers_count: user?.followers_count ?? '',
+                                    bio: user?.bio,
+                                    isFollowing: user?.isFollowing,
+                                    privacy_settings: user?.privacy_settings
+                                }} />
+                            </div>}
                         </div>
 
                         <div className="mt-4">
@@ -139,7 +154,6 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 <p className="text-muted-foreground mb-4">
                                     Follow @{user?.username} to see their posts and stories.
                                 </p>
-                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
                             </div>
                         </div>
                     ) : (

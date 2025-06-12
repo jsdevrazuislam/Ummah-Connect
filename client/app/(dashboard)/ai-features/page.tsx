@@ -1,4 +1,3 @@
-import { SideNav } from "@/components/side-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { AIContentGenerator } from "@/components/ai-content-generator"
@@ -8,9 +7,6 @@ import { Bot, Sparkles, Globe, Shield } from "lucide-react"
 
 export default function AIFeaturesPage() {
   return (
-    <div className="flex min-h-screen bg-background">
-      <SideNav />
-      <main className="flex-1 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-2">AI Features</h1>
           <p className="text-muted-foreground mb-6">Discover how AI enhances your experience on Ummah Connect</p>
@@ -249,7 +245,5 @@ export default function AIFeaturesPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-    </div>
   )
 }

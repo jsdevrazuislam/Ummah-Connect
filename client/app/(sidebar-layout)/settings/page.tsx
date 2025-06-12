@@ -13,7 +13,7 @@ import { BackupCodes } from "@/components/recover-backcodes"
 
 export default function SettingsPage() {
   return (
-    <main className="flex-1 p-4 md:p-6">
+    <>
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       <Tabs defaultValue="account" className="space-y-6">
         <TabsList className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -124,6 +124,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </main>
+    </>
   )
 }

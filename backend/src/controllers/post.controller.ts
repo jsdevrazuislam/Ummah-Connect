@@ -7,7 +7,7 @@ import { postSchema } from "@/schemas/post.schema";
 import uploadFileOnCloudinary, {
   removeOldImageOnCloudinary,
 } from "@/utils/cloudinary";
-import { formatTimeAgo } from "@/utils/helper";
+import { formatTimeAgo, getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { ReactPostType } from "@/types/post";
@@ -15,7 +15,14 @@ import { formatPosts } from "@/utils/formater";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { Op } from "sequelize";
 import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
-import { getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import {
+  getFollowerCountLiteral,
+  getFollowingCountLiteral,
+  getIsFollowingLiteral,
+  getTotalCommentsCountLiteral,
+  getTotalReactionsCountLiteral,
+} from "@/utils/sequelize-sub-query";
+import redis from "@/config/redis";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -28,7 +35,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       mediaPath,
       "ummah_connect/posts"
     );
-    media_url = media;
+    media_url = media?.url;
   }
 
   const payload = {
@@ -40,10 +47,12 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
   };
 
   const newPost = await Post.create(payload);
-  const followerCount = await Follow.count({ where: { followingId: req.user.id } });
-  const followingCount = await Follow.count({ where: { followerId: req.user.id } });
-
-
+  const followerCount = await Follow.count({
+    where: { followingId: req.user.id },
+  });
+  const followingCount = await Follow.count({
+    where: { followerId: req.user.id },
+  });
 
   const postData = {
     ...newPost.toJSON(),
@@ -58,7 +67,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       bio: req.user?.bio,
       followers_count: followerCount,
       following_count: followingCount,
-      isFollowing: false
+      isFollowing: false,
     },
     replies: [],
     isBookmarked: false,
@@ -73,6 +82,12 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
       currentUserReaction: null,
     },
   };
+
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
 
   return res.json(new ApiResponse(200, postData, "Post Created Successfully"));
 });
@@ -94,8 +109,8 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
       reactions: {
         counts: reactionCounts,
         currentUserReaction: currentUserReaction?.react_type || null,
-      }
-    }
+      },
+    };
   }
 
   const oldReact = await Reaction.findOne({ where: { userId, postId } });
@@ -106,21 +121,24 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
         where: { userId, postId },
       }
     );
-    const posts = await Reaction.findAll({ where: { postId } })
-    const reactionCounts = reactions(posts)
+    const posts = await Reaction.findAll({ where: { postId } });
+    const reactionCounts = reactions(posts);
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData: reactionCounts, postId: Number(postId) } })
+    emitSocketEvent({
+      req,
+      roomId: `post_${postId}`,
+      event: SocketEventEnum.POST_REACT,
+      payload: { postData: reactionCounts, postId: Number(postId) },
+    });
 
+    await redis.keys("posts:public:*").then((keys) => {
+      if (keys.length > 0) {
+        redis.del(...keys);
+      }
+    });
 
-    return res.json(
-      new ApiResponse(
-        200,
-        reactionCounts,
-        "React Successfully"
-      )
-    );
+    return res.json(new ApiResponse(200, reactionCounts, "React Successfully"));
   } else {
-
     await Reaction.create({
       userId,
       postId,
@@ -128,14 +146,17 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
       icon,
     });
 
-    const posts = await Reaction.findAll({ where: { postId } })
-    const reactionCounts = reactions(posts)
+    const posts = await Reaction.findAll({ where: { postId } });
+    const reactionCounts = reactions(posts);
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.POST_REACT, payload: { postData: reactionCounts, postId: Number(postId) } })
+    emitSocketEvent({
+      req,
+      roomId: `post_${postId}`,
+      event: SocketEventEnum.POST_REACT,
+      payload: { postData: reactionCounts, postId: Number(postId) },
+    });
 
-    return res.json(
-      new ApiResponse(200, reactionCounts, "React Successfully")
-    );
+    return res.json(new ApiResponse(200, reactionCounts, "React Successfully"));
   }
 });
 
@@ -144,81 +165,86 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
   const currentUserId = req.user?.id;
+  const cacheKey = `posts:public:page=${page}:limit=${limit}:user=${currentUserId}`;
 
-
-  const { count, rows: posts } = await Post.findAndCountAll({
-    limit: limit,
-    offset: skip,
-    where: { privacy: 'public' },
-    include: [
-      {
-        model: Post,
-        as: 'originalPost',
-        attributes: POST_ATTRIBUTE,
+  const responseData = await getOrSetCache(
+    cacheKey,
+    async () => {
+      const { count, rows: posts } = await Post.findAndCountAll({
+        limit: limit,
+        offset: skip,
+        where: { privacy: "public" },
         include: [
           {
-            model: User,
-            as: 'user',
-            attributes: [
-                ...USER_ATTRIBUTE,
-                getFollowerCountLiteral('"originalPost->user"."id"'), 
-                getFollowingCountLiteral('"originalPost->user"."id"'), 
-                getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
-            ]
+            model: Post,
+            as: "originalPost",
+            attributes: POST_ATTRIBUTE,
+            include: [
+              {
+                model: User,
+                as: "user",
+                attributes: [
+                  ...USER_ATTRIBUTE,
+                  getFollowerCountLiteral('"originalPost->user"."id"'),
+                  getFollowingCountLiteral('"originalPost->user"."id"'),
+                  getIsFollowingLiteral(
+                    currentUserId,
+                    '"originalPost->user"."id"'
+                  ),
+                ],
+              },
+            ],
           },
-        ]
-      },
-      {
-        model: Reaction,
-        required: false,
-        attributes: REACT_ATTRIBUTE,
-        as: 'reactions'
-      },
-      {
-        model: BookmarkPost,
-        attributes: ['id', 'postId', 'userId'],
-        as: 'bookmarks'
-      },
-      {
-        model: User,
-        required: false,
-        as: 'user',
-        attributes: [
-          ...USER_ATTRIBUTE,
-           ...USER_ATTRIBUTE,
-            getFollowerCountLiteral('"Post"."authorId"'),
-            getFollowingCountLiteral('"Post"."authorId"'),
-            getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
-        ]
-      }
-    ],
-    attributes: {
-      include: [
-        getTotalCommentsCountLiteral('"Post"'),
-        getTotalReactionsCountLiteral('"Post"')
-      ],
-    }
-  });
+          {
+            model: Reaction,
+            required: false,
+            attributes: REACT_ATTRIBUTE,
+            as: "reactions",
+          },
+          {
+            model: BookmarkPost,
+            attributes: ["id", "postId", "userId"],
+            as: "bookmarks",
+          },
+          {
+            model: User,
+            required: false,
+            as: "user",
+            attributes: [
+              ...USER_ATTRIBUTE,
+              ...USER_ATTRIBUTE,
+              getFollowerCountLiteral('"Post"."authorId"'),
+              getFollowingCountLiteral('"Post"."authorId"'),
+              getIsFollowingLiteral(currentUserId, '"Post"."authorId"'),
+            ],
+          },
+        ],
+        attributes: {
+          include: [
+            getTotalCommentsCountLiteral('"Post"'),
+            getTotalReactionsCountLiteral('"Post"'),
+          ],
+        },
+      });
 
-  const formatPostData = formatPosts(posts, currentUserId);
-
-  return res.json(
-    new ApiResponse(
-      200,
-      {
+      const formatPostData = formatPosts(posts, currentUserId);
+      return {
         posts: formatPostData,
         totalPages: Math.ceil(count / limit),
-        currentPage: page
-      },
-      "Posts retrieved successfully"
-    )
+        currentPage: page,
+      };
+    },
+    60
+  );
+
+  return res.json(
+    new ApiResponse(200, responseData, "Posts retrieved successfully")
   );
 });
 
 export const share = asyncHandler(async (req: Request, res: Response) => {
   const postId = Number(req.params.postId);
   const currentUserId = req.user?.id;
-
 
   const originalPost = await Post.findOne({
     where: { id: postId },
@@ -227,9 +253,9 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
         model: User,
         required: false,
         attributes: USER_ATTRIBUTE,
-        as: 'user'
-      }
-    ]
+        as: "user",
+      },
+    ],
   });
 
   if (!originalPost) {
@@ -243,7 +269,7 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     authorId: currentUserId,
     sharedPostId: originalPost.id,
     content: req.body.message || null,
-    privacy: req.body.visibility || 'public'
+    privacy: req.body.visibility || "public",
   });
 
   const postData = {
@@ -270,11 +296,23 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     },
   };
 
-  return res.json(new ApiResponse(201, {
-    shares: originalPost.share,
-    sharedPostId: sharedPost.id,
-    postData
-  }, "Post shared successfully"));
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
+
+  return res.json(
+    new ApiResponse(
+      201,
+      {
+        shares: originalPost.share,
+        sharedPostId: sharedPost.id,
+        postData,
+      },
+      "Post shared successfully"
+    )
+  );
 });
 
 export const bookmarked_post = asyncHandler(
@@ -289,6 +327,20 @@ export const bookmarked_post = asyncHandler(
       where: { userId, postId },
     });
 
+    const removeRedisKey = async () => {
+      await redis.keys("posts:public:*").then((keys) => {
+        if (keys.length > 0) {
+          redis.del(...keys);
+        }
+      });
+
+      await redis.keys("posts:bookmark:*").then((keys) => {
+        if (keys.length > 0) {
+          redis.del(...keys);
+        }
+      });
+    }
+
     if (bookmarkPost) {
       await BookmarkPost.destroy({
         where: {
@@ -296,11 +348,11 @@ export const bookmarked_post = asyncHandler(
           postId,
         },
       });
-
+      await removeRedisKey()
       return res.json(new ApiResponse(200, null, "Bookmarked remove Post"));
     } else {
       await BookmarkPost.create({ userId, postId });
-
+      await removeRedisKey()
       return res.json(new ApiResponse(200, null, "Bookmarked Post"));
     }
   }
@@ -323,7 +375,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
       mediaPath,
       "ummah_connect/posts"
     );
-    media_url = media;
+    media_url = media?.url;
   }
 
   const [_, updatePost] = await Post.update(
@@ -331,29 +383,35 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     { where: { id: postId, authorId }, returning: true }
   );
 
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
+
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
 
-export const delete_post_image = asyncHandler(async (req: Request, res: Response) => {
+export const delete_post_image = asyncHandler(
+  async (req: Request, res: Response) => {
+    const postId = req.params.postId;
+    const authorId = req.user.id;
 
-  const postId = req.params.postId;
-  const authorId = req.user.id;
+    const post = await Post.findOne({ where: { id: postId, authorId } });
+    if (!post)
+      throw new ApiError(400, "You are not able to delete this post assets");
+    if (!post.media)
+      throw new ApiError(404, "Not found any asset related this post");
 
-  const post = await Post.findOne({ where: { id: postId, authorId } });
-  if (!post) throw new ApiError(400, "You are not able to delete this post assets");
-  if (!post.media) throw new ApiError(404, "Not found any asset related this post");
+    if (post.media) {
+      await removeOldImageOnCloudinary(post.media);
+    }
 
-  if (post.media) {
-    await removeOldImageOnCloudinary(post.media);
+    await Post.update({ media: null }, { where: { id: postId, authorId } });
+
+    return res.json(new ApiResponse(200, null, "Delete successfully"));
   }
-
-  await Post.update(
-    { media: null },
-    { where: { id: postId, authorId } }
-  );
-
-  return res.json(new ApiResponse(200, null, 'Delete successfully'))
-})
+);
 
 export const delete_post = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params.postId;
@@ -370,6 +428,12 @@ export const delete_post = asyncHandler(async (req: Request, res: Response) => {
     where: { id: postId, authorId },
   });
 
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
+
   res.json(new ApiResponse(200, null, "Post delete successfully"));
 });
 
@@ -380,71 +444,151 @@ export const get_following_posts = asyncHandler(
     const skip = (page - 1) * limit;
     const currentUserId = req.user?.id;
 
-    const { count, rows: posts } = await Post.findAndCountAll({
-      limit: limit,
-      offset: skip,
-      where: {
-        privacy: 'public',
-        authorId: {
-          [Op.in]: sequelize.literal(`(
+    const cacheKey = `posts:following:page=${page}:limit=${limit}:user=${currentUserId}`;
+
+    const responseData = await getOrSetCache(
+      cacheKey,
+      async () => {
+        const { count, rows: posts } = await Post.findAndCountAll({
+          limit: limit,
+          offset: skip,
+          where: {
+            privacy: "public",
+            authorId: {
+              [Op.in]: sequelize.literal(`(
           SELECT "followingId" FROM "follows" WHERE "followerId" = ${currentUserId}
-        )`)
-        }
-      },
-      include: [
-        {
-          model: Post,
-          as: 'originalPost',
-          attributes: POST_ATTRIBUTE,
+        )`),
+            },
+          },
           include: [
             {
+              model: Post,
+              as: "originalPost",
+              attributes: POST_ATTRIBUTE,
+              include: [
+                {
+                  model: User,
+                  as: "user",
+                  attributes: [
+                    ...USER_ATTRIBUTE,
+                    getFollowerCountLiteral('"originalPost->user"."id"'),
+                    getFollowingCountLiteral('"originalPost->user"."id"'),
+                    getIsFollowingLiteral(
+                      currentUserId,
+                      '"originalPost->user"."id"'
+                    ),
+                  ],
+                },
+              ],
+            },
+            {
+              model: Reaction,
+              required: false,
+              attributes: REACT_ATTRIBUTE,
+              as: "reactions",
+            },
+            {
+              model: BookmarkPost,
+              attributes: ["id", "postId", "userId"],
+              as: "bookmarks",
+            },
+            {
               model: User,
-              as: 'user',
+              required: false,
+              as: "user",
               attributes: [
                 ...USER_ATTRIBUTE,
-                getFollowerCountLiteral('"originalPost->user"."id"'), 
-                getFollowingCountLiteral('"originalPost->user"."id"'), 
-                getIsFollowingLiteral(currentUserId, '"originalPost->user"."id"') 
-              ]
+                getFollowerCountLiteral('"Post"."authorId"'),
+                getFollowingCountLiteral('"Post"."authorId"'),
+                getIsFollowingLiteral(currentUserId, '"Post"."authorId"'),
+              ],
             },
-          ]
-        },
-        {
-          model: Reaction,
-          required: false,
-          attributes: REACT_ATTRIBUTE,
-          as: 'reactions'
-        },
-        {
-          model: BookmarkPost,
-          attributes: ['id', 'postId', 'userId'],
-          as: 'bookmarks'
-        },
-        {
-          model: User,
-          required: false,
-          as: 'user',
-          attributes: [
-            ...USER_ATTRIBUTE,
-            getFollowerCountLiteral('"Post"."authorId"'),
-            getFollowingCountLiteral('"Post"."authorId"'),
-            getIsFollowingLiteral(currentUserId, '"Post"."authorId"')
-          ]
-        }
-      ],
-      attributes: {
-        include: [
-          getTotalCommentsCountLiteral('"Post"'),
-          getTotalReactionsCountLiteral('"Post"')
-        ],
-      }
-    });
+          ],
+          attributes: {
+            include: [
+              getTotalCommentsCountLiteral('"Post"'),
+              getTotalReactionsCountLiteral('"Post"'),
+            ],
+          },
+        });
+
+        return {
+          posts: formatPosts(posts, currentUserId),
+          totalPages: Math.ceil(count / limit),
+          currentPage: page,
+        };
+      },
+      60
+    );
 
     res.json(
-      new ApiResponse(200, {
-        posts: formatPosts(posts, currentUserId),
+      new ApiResponse(
+        200,
+        responseData,
+        "Following posts retrieved successfully"
+      )
+    );
+  }
+);
+
+export const get_bookmark_posts = asyncHandler(
+  async (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const currentUserId = req.user.id;
+
+    const cacheKey = `posts:bookmark:page=${page}:limit=${limit}:user=${currentUserId}`;
+
+
+    const responseData = await getOrSetCache(cacheKey, async () => {
+      const { count, rows } = await BookmarkPost.findAndCountAll({
+        limit,
+        offset: skip,
+        where: {
+          userId: req.user.id,
+        },
+        include: [
+          {
+            model: Post,
+            as: "post",
+            include: [
+              {
+                model: Reaction,
+                required: false,
+                attributes: REACT_ATTRIBUTE,
+                as: "reactions",
+              },
+              {
+                model: User,
+                required: false,
+                as: "user",
+                attributes: [
+                  ...USER_ATTRIBUTE,
+                  getFollowerCountLiteral('"post"."authorId"'),
+                  getFollowingCountLiteral('"post"."authorId"'),
+                  getIsFollowingLiteral(currentUserId, '"post"."authorId"'),
+                ],
+              },
+            ],
+            attributes: {
+              ...POST_ATTRIBUTE,
+              include: [
+                getTotalCommentsCountLiteral('"post"'),
+                getTotalReactionsCountLiteral('"post"'),
+              ],
+            },
+          },
+        ],
+      });
+
+      return {
+        posts: rows,
         totalPages: Math.ceil(count / limit),
-        currentPage: page
-      }, 'Following posts retrieved successfully')
-    )
-  })
+        currentPage: page,
+      }
+    }, 60)
+
+    return res.json(new ApiResponse(200, responseData, "Fetch bookmarked posts"));
+  }
+);

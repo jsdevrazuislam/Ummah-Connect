@@ -18,7 +18,7 @@ import BookmarkPost from "@/models/bookmark.models";
 import { formatPosts } from "@/utils/formater";
 import { UploadedFiles } from "@/types/global";
 import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
-import { getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import { getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
@@ -47,6 +47,14 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     full_name,
     role: "user",
     is_verified: false,
+    privacy_settings: {
+        active_status: true,
+        private_account: false,
+        read_receipts: true,
+        location_share: true,
+        post_see:'everyone',
+        message: 'everyone'
+      }
   };
 
   const newUser = await User.create(payload);
@@ -215,14 +223,14 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
       avatarPath,
       "ummah_connect/profiles_pictures"
     );
-    avatar_url = media;
+    avatar_url = media?.url;
   }
   if (coverPath) {
     const media = await uploadFileOnCloudinary(
       coverPath,
       "ummah_connect/cover_photos"
     );
-    cover_url = media;
+    cover_url = media?.url;
   }
 
   const payload = {
@@ -267,13 +275,15 @@ export const get_user_profile = asyncHandler(async (req: Request, res: Response)
 
   const followerCount = await Follow.count({ where: { followingId: user.id } });
   const followingCount = await Follow.count({ where: { followerId: user.id } });
+  const isFollow = await Follow.findOne({ where: { followingId: user.id, followerId: req.user.id } });
 
 
   return res.json(
     new ApiResponse(200, {
       ...user.toJSON(),
       following_count: followerCount,
-      followers_count: followingCount
+      followers_count: followingCount,
+      isFollowing: isFollow ? true : false
     }, 'Fetch success')
   )
 })

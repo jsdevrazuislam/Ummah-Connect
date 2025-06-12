@@ -1,9 +1,12 @@
 import { Socket, Server } from "socket.io";
 import { Request } from "express";
 import { User } from "@/models";
-import { decode_token } from '@/utils/auth-helper';
+import { decode_token } from "@/utils/auth-helper";
 import { JwtResponse } from "@/types/auth";
-import { SocketEventEnum } from '@/constants'
+import { SocketEventEnum } from "@/constants";
+import redis from "@/config/redis";
+import { getConversationUserIds } from "@/utils/query";
+import { runSocketEvents } from "@/socket/socket-events";
 
 declare module "socket.io" {
   interface Socket {
@@ -26,22 +29,23 @@ interface EmitSocketEventParams<T> {
   payload: T;
 }
 
-const joinRoom = (socket:Socket, eventEnum:string, roomPrefix:string) => {
+const joinRoom = (socket: Socket, eventEnum: string, roomPrefix: string) => {
   socket.on(eventEnum, (id) => {
     console.log(`User joined the ${roomPrefix} room. ${roomPrefix}Id: ${id}`);
     socket.join(`${roomPrefix}_${id}`);
   });
 };
 
-const setupSocketListeners = (socket:Socket) => {
+const setupSocketListeners = (socket: Socket) => {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
+  joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
 };
 
 const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
   io.on("connection", async (socket: Socket) => {
     try {
       const auth = socket.handshake.auth as SocketAuth;
-      
+
       let token: string | undefined = auth.token;
 
       let user: User | null = null;
@@ -60,7 +64,25 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
           }
 
           socket.user = user;
+          const userId = user.id;
+          setupSocketListeners(socket);
           socket.join(user.id.toString());
+          await redis.set(`online_users:${user.id}`, Date.now(), "EX", 60);
+          const peerIds = await getConversationUserIds(userId);
+          // Notify all peers that I am online
+          for (const peerId of peerIds) {
+            io.to(`user:${peerId}`).emit(SocketEventEnum.ONLINE, { userId });
+          }
+
+          // Notify me about online peers
+          for (const peerId of peerIds) {
+            const isPeerOnline = await redis.get(`online_users:${peerId}`);
+            if (isPeerOnline) {
+              socket.emit(SocketEventEnum.ONLINE, { userId: peerId });
+            }
+          }
+
+          socket.join(`user:${userId}`);
           console.log(
             `Authenticated user connected userId: ${user.id.toString()}`
           );
@@ -69,10 +91,10 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         }
       }
 
-      const connectionEvent = user 
+      const connectionEvent = user
         ? SocketEventEnum.SOCKET_CONNECTED
         : SocketEventEnum.SOCKET_ERROR;
-      
+
       const connectionMessage = user
         ? "Authenticated Socket Connected"
         : "Unauthenticated Socket Connected";
@@ -83,37 +105,29 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      setupSocketListeners(socket);
-
-      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, () => {
-        console.log(`User has disconnected userId: ${socket.user?.id || 'unknown'}`);
-        if (socket.user?.id) {
-          socket.leave(socket.user.id.toString());
-        }
-      });
-
+      runSocketEvents(socket)
     } catch (error) {
       console.error("Socket connection error:", error);
       socket.emit(
         SocketEventEnum.SOCKET_ERROR,
-        error instanceof Error ? error.message : "Something went wrong while connecting to the socket"
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while connecting to the socket"
       );
     }
   });
 };
 
-
-const emitSocketEvent = <T>({ 
-  req, 
-  roomId, 
-  event, 
-  payload 
+const emitSocketEvent = <T>({
+  req,
+  roomId,
+  event,
+  payload,
 }: EmitSocketEventParams<T>): void => {
   try {
     const io: Server = req.app.get("io");
     io.to(roomId).emit(event, payload);
     console.log(`Event sent roomId ${roomId} and event name is ${event}`);
-    
   } catch (error) {
     console.error("Failed to emit socket event:", error);
   }

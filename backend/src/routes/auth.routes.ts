@@ -2,7 +2,7 @@ import { change_password, disable_2FA, enable_2FA, get_me, get_user_details, get
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
-import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema } from '@/schemas/auth.schema'
+import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema, userStatusSchema } from '@/schemas/auth.schema'
 import { Router } from 'express'
 
 
@@ -17,8 +17,8 @@ router.put("/me", verify_auth, upload.fields([
     {name:"cover", maxCount:1},
     {name:"avatar", maxCount:1},
 ]), update_current_user_info)
-router.get("/:username/profile", get_user_profile)
-router.get("/:username/details", get_user_details)
+router.get("/:username/profile", verify_auth, get_user_profile)
+router.get("/:username/details", verify_auth, get_user_details)
 router.post("/change-password", validateData(changePasswordSchema), verify_auth, change_password)
 router.post("/privacy-settings", verify_auth, update_privacy_settings)
 router.post("/notification-preference", verify_auth, update_notification_preferences)

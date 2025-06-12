@@ -1,4 +1,3 @@
-import { SideNav } from "@/components/side-nav"
 import { RightSidebar } from "@/components/right-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -115,7 +114,7 @@ const nearbyMosques = [
 
 export default function PrayerTimesPage() {
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-bold">Prayer Times</h1>
@@ -228,6 +227,6 @@ export default function PrayerTimesPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </>
   )
 }

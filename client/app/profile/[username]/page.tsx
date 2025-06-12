@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import ProfilePage from '@/app/profile/[username]/user-details';
 import { notFound } from 'next/navigation'
+import { cookies } from "next/headers";
+import { ACCESS_TOKEN } from '@/constants';
 
 
 type Props = {
@@ -9,18 +11,27 @@ type Props = {
   };
 };
 
-async function fetchUser(username:string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/${username}/profile`)
+async function fetchUser(username: string) {
+  const cookie = await cookies();
+  const token = cookie.get(ACCESS_TOKEN)?.value;
+
+  if (!token) return null;
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/${username}/profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  })
   if (!res.ok) return undefined
   return res.json()
 }
- 
+
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
   const user = await fetchUser(username) as ProfileUser
   const userData = user?.data
- 
+
   if (!user) {
     notFound()
   }

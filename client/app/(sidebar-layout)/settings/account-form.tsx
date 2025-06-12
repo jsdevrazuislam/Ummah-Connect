@@ -24,7 +24,7 @@ import { Controller, useForm } from "react-hook-form"
 import { ImageUpload } from "@/components/image-upload"
 import { Camera, X } from "lucide-react"
 import ProfileLoading from "@/app/profile/[username]/loading"
-import { ImageWithSkeleton } from "@/components/image"
+import Image from "next/image"
 
 const AccountForm = () => {
 
@@ -142,10 +142,12 @@ const AccountForm = () => {
                                         className="hidden"
                                         aria-label="Upload image"
                                     />
-                                    <ImageWithSkeleton
+                                    <Image
                                             src={cover}
                                             alt="Cover photo"
                                             className="w-full h-full object-cover"
+                                            width={1024}
+                                            height={400}
                                         />
 
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
@@ -167,7 +169,7 @@ const AccountForm = () => {
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-2 mt-4">
                             <Avatar className="h-20 w-20">
-                                <ImageWithSkeleton src={selectAvatar} alt="Profile" />
+                                <Image width={80} height={80} src={selectAvatar} alt="Profile" />
                             </Avatar>
                             <div className="space-y-2">
                                 <ImageUpload

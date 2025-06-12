@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { SideNav } from "@/components/side-nav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Heart, MessageCircle, Share, VolumeX, Volume2, Play } from "lucide-react"
@@ -261,14 +260,14 @@ export default function ShortsPage() {
   }, [])
 
   return (
-      <main className="flex-1 relative">
-        <div ref={containerRef} className="h-[calc(100vh-0px)] overflow-y-scroll snap-y snap-mandatory scrollbar-hide">
-          {mockShorts.map((short, index) => (
-            <div key={short.id} className="h-full w-full snap-start">
-              <ShortVideo short={short} isActive={index === activeIndex} />
-            </div>
-          ))}
-        </div>
-      </main>
+    <main className="max-w-md mx-auto">
+      <div ref={containerRef} className="h-[calc(100vh-0px)] overflow-y-scroll snap-y snap-mandatory scrollbar-hide">
+        {mockShorts.map((short, index) => (
+          <div key={short.id} className="h-full w-full snap-start">
+            <ShortVideo short={short} isActive={index === activeIndex} />
+          </div>
+        ))}
+      </div>
+    </main>
   )
 }

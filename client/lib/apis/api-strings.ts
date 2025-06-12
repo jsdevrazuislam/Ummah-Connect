@@ -15,6 +15,7 @@ const ApiStrings = {
   EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts
   ALL_POSTS: '/post/',
+  BOOKMARK_POSTS: '/post/bookmark/posts',
   FOLLOWING_ALL_POSTS: '/post/following/posts',
   EDITPOST: (id:number) => `/post/edit/${id}`,
   DELETEPOST: (id:number) => `/post/delete/${id}`,
@@ -31,6 +32,15 @@ const ApiStrings = {
   GET_COMMENTS:(id:number) =>  `/comment/${id}/comments`,
   // Follow
   FOLLOW_UNFOLLOW:(id:number) =>  `/follow/${id}`,
+  // Conversation
+  GET_CONVERSATION: `/conversation/`,
+  GET_CONVERSATION_MESSAGE: (id:number) => `/conversation/${id}`,
+  SEND_MESSAGE: `/conversation/send-message`,
+  CREATE_CONVERSATION: `/conversation/create`,
+  READ_MESSAGE: `/conversation/read-message`,
+  SEND_ATTACHMENT: `/conversation/send-attachment`,
+  // stream
+  INITIAL_CALL: '/stream/initiate-call'
 };
 
 export default ApiStrings;

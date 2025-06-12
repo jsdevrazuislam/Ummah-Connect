@@ -1,14 +1,18 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Noto_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
 import { AIAssistant } from "@/components/ai-assistant"
 import ReactQueryProvider from "@/components/query-provider"
 import SocketEvents from "@/components/sockets-events"
+import { TooltipProvider } from '@/components/ui/tooltip'
+import IncomingCallNotification from "@/components/incoming-call-modal";
+import { RingtonePlayer } from "@/components/ringtone-player"
+import CallRejectedModal from "@/components/call-rejected-modal"
 
-const inter = Inter({ subsets: ["latin"] })
+const nato = Noto_Sans({ subsets: ["latin"], display:"swap" })
 
 export const metadata: Metadata = {
   title: "Ummah Connect",
@@ -21,15 +25,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={nato.className} suppressHydrationWarning={true} >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <ReactQueryProvider>
-            <SocketEvents />
-            {children}
-            <AIAssistant />
-            <Toaster />
-          </ReactQueryProvider>
+          <TooltipProvider>
+            <ReactQueryProvider>
+              <SocketEvents />
+              <IncomingCallNotification />
+              <RingtonePlayer />
+              <CallRejectedModal />
+              {children}
+              {/* <AIAssistant /> */}
+              <Toaster />
+            </ReactQueryProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

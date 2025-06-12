@@ -1,4 +1,3 @@
-import { SideNav } from "@/components/side-nav"
 import { RightSidebar } from "@/components/right-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,7 +66,7 @@ const yourGroups = [
 
 export default function GroupsPage() {
   return (
-      <main className="flex-1 border-x border-border">
+      <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-xl font-bold ml-12 lg:ml-0">Groups</h1>
@@ -165,6 +164,6 @@ export default function GroupsPage() {
               ))}
           </div>
         </div>
-      </main>
+      </>
   )
 }
