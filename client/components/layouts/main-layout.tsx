@@ -24,6 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { RightSidebar } from "@/components/right-sidebar"
 import { LeftSidebar } from "@/components/left-sidebar"
 import { useAuthStore } from "@/store/store"
+import { useQueryClient } from "@tanstack/react-query"
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -52,8 +53,10 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const pathname = usePathname()
   const { logout, user } = useAuthStore()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const handleLogout = () => {
+    queryClient.clear()
     logout()
     router.push("/login")
   }

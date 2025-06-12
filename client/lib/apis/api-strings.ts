@@ -15,6 +15,7 @@ const ApiStrings = {
   EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts
   ALL_POSTS: '/post/',
+  BOOKMARK_POSTS: '/post/bookmark/posts',
   FOLLOWING_ALL_POSTS: '/post/following/posts',
   EDITPOST: (id:number) => `/post/edit/${id}`,
   DELETEPOST: (id:number) => `/post/delete/${id}`,

@@ -164,9 +164,6 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
                   <AvatarFallback>{window?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <span className="font-medium">{window?.name}</span>
-                {window.online && (
-                  <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                )}
               </div>
               <div className="flex gap-1">
                 <Button

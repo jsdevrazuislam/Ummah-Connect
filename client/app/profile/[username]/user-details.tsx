@@ -13,11 +13,14 @@ import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
 import MessageButton from "@/components/message-button"
 import Image from "next/image"
+import { useAuthStore } from "@/store/store"
 
 
 
 
 export default function ProfilePage({ username, user }: { username: string, user: User }) {
+
+    const { user: currentUser } = useAuthStore()
 
     const {
         data,
@@ -37,7 +40,7 @@ export default function ProfilePage({ username, user }: { username: string, user
         initialPageParam: 1,
         staleTime: 1000 * 60,
         gcTime: 1000 * 60 * 5,
-        enabled: username && !user?.privacy_settings?.private_account ? true : false
+        enabled: currentUser?.id === user?.id ? true : username && !user?.privacy_settings?.private_account ? true : false
     });
 
     const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
@@ -49,7 +52,7 @@ export default function ProfilePage({ username, user }: { username: string, user
     };
 
     const [viewMode, setViewMode] = useState<"list" | "grid">("list")
-    const isViewingPrivateProfile = user?.privacy_settings?.private_account
+    const isViewingPrivateProfile = user?.id === currentUser?.id ? false : user?.privacy_settings?.private_account
 
     if (isError) {
         return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
@@ -84,7 +87,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
+                            {currentUser?.id !== user?.id && <div className="flex gap-2">
                                 <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
                                 <MessageButton user={{
                                     id: user?.id,
@@ -98,7 +101,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                                     isFollowing: user?.isFollowing,
                                     privacy_settings: user?.privacy_settings
                                 }} />
-                            </div>
+                            </div>}
                         </div>
 
                         <div className="mt-4">
@@ -151,7 +154,6 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 <p className="text-muted-foreground mb-4">
                                     Follow @{user?.username} to see their posts and stories.
                                 </p>
-                                <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
                             </div>
                         </div>
                     ) : (

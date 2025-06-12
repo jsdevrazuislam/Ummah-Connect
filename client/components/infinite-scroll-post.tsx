@@ -12,6 +12,8 @@ interface InfiniteScrollPostProps {
     onLoadMore: () => void
     loading: boolean
     posts: (PostsEntity | undefined)[]
+    message?:string
+    title?:string
 }
 
 const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
@@ -20,6 +22,8 @@ const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
     onLoadMore,
     loading,
     posts,
+    message = 'Posts from people you follow will appear here',
+    title = 'No posts yet'
 }) => {
     return (
         <div>
@@ -34,13 +38,13 @@ const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
                             <PostSkeleton key={index} />
                         ))
                     ) : (
-                        posts?.length > 0 ? posts.map((post) => (
+                        posts?.length > 0 ? posts?.map((post) => (
                             <Post key={post?.id} post={post as PostsEntity} />
                         )) : <div className="text-center py-16 border rounded-lg mt-4">
                             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                            <h4 className="font-medium mb-2">No posts yet</h4>
+                            <h4 className="font-medium mb-2">{title}</h4>
                             <p className="text-muted-foreground mb-4">
-                                Posts from people you follow will appear here
+                                {message}
                             </p>
                             <Button size="sm">Discover People</Button>
                         </div>
@@ -51,12 +55,6 @@ const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
                             <PostSkeleton />
                             <PostSkeleton />
                         </>
-                    )}
-
-                    {!hasMore && posts.length > 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <p>You've reached the end of posts</p>
-                        </div>
                     )}
                 </div>
             </InfiniteScroll>

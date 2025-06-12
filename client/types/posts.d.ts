@@ -4,6 +4,28 @@ interface PostsResponse {
   message: string;
   success: boolean;
 }
+interface BookmarkPostsResponse {
+  statusCode: number;
+  data?: BookmarkPostsData;
+  message: string;
+  success: boolean;
+}
+
+interface BookmarkPostsData{
+  posts?: BookmarkPostEntity[];
+  totalPages: number;
+  currentPage: number;
+  user?:User
+}
+
+interface BookmarkPostEntity{
+  createdAt:string
+  updatedAt:string
+  id:number
+  userId:number
+  postId:number
+  post:PostsEntity
+}
 interface PostsData {
   posts?: PostsEntity[];
   totalPages: number;

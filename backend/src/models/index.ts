@@ -52,7 +52,7 @@ Reaction.belongsTo(Comment);
 
 // Bookmark associations
 Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
-BookmarkPost.belongsTo(Post, {foreignKey:'postId' })
+BookmarkPost.belongsTo(Post, {foreignKey:'postId', as:'post' })
 User.hasMany(BookmarkPost, { foreignKey: 'userId' });
 BookmarkPost.belongsTo(User, { foreignKey: 'userId' });
 

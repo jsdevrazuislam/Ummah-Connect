@@ -37,22 +37,21 @@ import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { addCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { formatTimeAgo } from "@/lib/utils"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
+import { ConfirmationModal } from "@/components/confirmation-modal"
 
 
 
 interface PostProps {
-  post: PostsEntity
+  post: PostsEntity | undefined
 }
 
 export function Post({ post }: PostProps) {
+
+  if(!post) return
+
+  
   const { user } = useAuthStore()
   const { socket } = useSocketStore()
   const [showComments, setShowComments] = useState(false)
@@ -62,11 +61,12 @@ export function Post({ post }: PostProps) {
   const [isBookmarked, setIsBookmarked] = useState(post?.isBookmarked || false)
   const [isEditing, setIsEditing] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const isCurrentUserPost = user && post?.user?.username === user?.username
   const queryClient = useQueryClient()
   const router = useRouter()
 
-  const { mutate } = useMutation({
+  const { mutate, isPending: isDeleting } = useMutation({
     mutationFn: delete_post,
     onError: (error) => {
       toast.error(error.message)
@@ -193,7 +193,7 @@ export function Post({ post }: PostProps) {
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit post
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDeletePost} className="text-destructive">
+                    <DropdownMenuItem onClick={() => setIsModalOpen(true)} className="text-destructive">
                       <Trash className="h-4 w-4 mr-2" />
                       Delete post
                     </DropdownMenuItem>
@@ -339,6 +339,15 @@ export function Post({ post }: PostProps) {
         postUsername={post?.user?.username}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
+      />
+       <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDeletePost}
+        title="Delete this post?"
+        description="This will permanently delete the post"
+        type="delete"
+        isLoading={isDeleting}
       />
     </div>
   )

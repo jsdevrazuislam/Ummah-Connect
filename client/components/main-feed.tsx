@@ -9,6 +9,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from "react"
 import FollowingFeed from "@/components/following-feed"
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
+import { ErrorMessage } from "@/components/api-error"
 
 export function MainFeed() {
   const [showContentGenerator, setShowContentGenerator] = useState(false)
@@ -19,7 +20,6 @@ export function MainFeed() {
     isFetchingNextPage,
     isLoading,
     isError,
-    error,
     refetch
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ['get_all_posts'],
@@ -42,7 +42,9 @@ export function MainFeed() {
   };
 
   if (isError) {
-    return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
+    return <div className="flex justify-center items-center mt-10">
+      <ErrorMessage type='network' />
+    </div>
   }
 
 
@@ -74,7 +76,7 @@ export function MainFeed() {
                 </div>
               )}
             </div>
-             <InfiniteScrollPost loading={isLoading} hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={loadMorePosts} posts={posts} />
+            <InfiniteScrollPost loading={isLoading} hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={loadMorePosts} posts={posts} />
           </TabsContent>
           <TabsContent value="following">
             <FollowingFeed />

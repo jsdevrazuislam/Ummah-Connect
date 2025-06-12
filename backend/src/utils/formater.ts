@@ -28,8 +28,8 @@ export const formatPosts = (posts: any[], currentUserId: number) => {
 
     const currentPostReactions = post?.reactions?.filter((r) => r?.postId === post.id);
 
-    const bookmarkPostIds = new Set(post?.bookmarks?.map((b) => b.postId));
-    const isBookmarked = bookmarkPostIds.has(post.id);
+    const bookmarkPostIds = new Set(post?.bookmarks?.map((b) => b.userId));
+    const isBookmarked = bookmarkPostIds.has(currentUserId);
 
 
     return {
