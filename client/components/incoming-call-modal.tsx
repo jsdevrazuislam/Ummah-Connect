@@ -18,7 +18,7 @@ function IncomingCallNotification() {
     const { socket } = useSocketStore()
     const { user } = useAuthStore()
 
-     useEffect(() => {
+    useEffect(() => {
         if (incomingCall) {
             startRingtone();
         } else {
@@ -62,7 +62,9 @@ function IncomingCallNotification() {
                     <DialogTitle>Call Interface</DialogTitle>
                     <DialogDescription>Full-screen one-to-one call.</DialogDescription>
                 </DialogHeader>
-                <DialogContent className="max-w-xs rounded-xl bg-gray-800 text-white border-none">
+                <DialogContent onInteractOutside={(e) => {
+                    e.preventDefault();
+                }} className="max-w-xs rounded-xl bg-gray-800 text-white border-none">
                     <div className="flex flex-col items-center justify-center p-8 gap-4">
                         <p className="text-sm text-gray-400">Incoming call</p>
                         <Avatar className="w-24 h-24 mt-4">

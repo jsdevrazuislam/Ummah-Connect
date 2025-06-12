@@ -7,10 +7,17 @@ const livekitUrl = process.env.LIVEKIT_URL;
 export const generateLiveKitToken = async (
   identity: string,
   roomName: string,
+  avatar?: string | null, 
+  fullName?: string | null 
 ) => {
   const at = new AccessToken(livekitApiKey, livekitApiSecret, {
     identity: identity,
+    name: fullName || identity,
     ttl: "10m",
+    metadata: JSON.stringify({ 
+      avatar: avatar,
+      fullName: fullName,
+    }),
   });
 
   at.addGrant({

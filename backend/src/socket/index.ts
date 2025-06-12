@@ -1,12 +1,12 @@
 import { Socket, Server } from "socket.io";
 import { Request } from "express";
-import { MessageStatus, User } from "@/models";
+import { User } from "@/models";
 import { decode_token } from "@/utils/auth-helper";
 import { JwtResponse } from "@/types/auth";
 import { SocketEventEnum } from "@/constants";
-import { Op } from "sequelize";
 import redis from "@/config/redis";
 import { getConversationUserIds } from "@/utils/query";
+import { runSocketEvents } from "@/socket/socket-events";
 
 declare module "socket.io" {
   interface Socket {
@@ -105,93 +105,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
-        await MessageStatus.update(
-          { status: "delivered" },
-          {
-            where: {
-              message_id: messageId,
-              user_id: socket?.user?.id,
-              status: { [Op.ne]: "seen" },
-            },
-          }
-        );
-      });
-
-      socket.on(SocketEventEnum.TYPING, ({ conversationId, userId }) => {
-        socket
-          .to(`conversation_${conversationId}`)
-          .emit(SocketEventEnum.TYPING, { userId });
-      });
-
-      socket.on(SocketEventEnum.OUTGOING_CALL, (payload) => {
-        socket.to(`user:${payload.to}`).emit(SocketEventEnum.INCOMING_CALL, {
-          from: payload.from,
-          authToken: payload.authToken,
-          callType: payload.callType,
-          roomName: payload.roomName,
-          callerName: payload.callerName,
-          callerAvatar: payload.callerAvatar,
-        });
-      });
-
-      socket.on(
-        SocketEventEnum.CALL_REJECTED,
-        ({
-          roomName,
-          rejectedByUserId,
-          callerUserId,
-          callerName,
-          callerAvatar,
-        }) => {
-          console.log(
-            `Call to room ${roomName} rejected by ${rejectedByUserId}. Notifying ${callerUserId}`
-          );
-          io.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_REJECTED, {
-            roomName,
-            rejectedByName: rejectedByUserId,
-            message: "The user is currently busy or declined your call.",
-            callerName: callerName,
-            callerAvatar: callerAvatar,
-          });
-        }
-      );
-
-      socket.on(
-        SocketEventEnum.CALL_ACCEPTED,
-        ({ roomName, receiverId, callerUserId }) => {
-          console.log(
-            `Call to room ${roomName} accepted by ${receiverId}. Notifying ${callerUserId}`
-          );
-          io.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_ACCEPTED, {
-            roomName,
-            receiverId,
-            message: "Your call has been accepted.",
-          });
-        }
-      );
-
-      socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
-        console.log(
-          `User has disconnected userId: ${socket.user?.id || "unknown"}`
-        );
-        const userId = socket.user?.id;
-        if (userId) {
-          await User.update(
-            { last_seen_at: new Date() },
-            { where: { id: socket?.user?.id } }
-          );
-          await redis.set(`last_seen:${userId}`, Date.now());
-          const peerIds = await getConversationUserIds(userId);
-          for (const peerId of peerIds) {
-            io.to(`user:${peerId}`).emit(SocketEventEnum.OFFLINE, {
-              userId,
-              lastSeen: Date.now(),
-            });
-          }
-          socket.leave(userId.toString());
-        }
-      });
+      runSocketEvents(socket)
     } catch (error) {
       console.error("Socket connection error:", error);
       socket.emit(

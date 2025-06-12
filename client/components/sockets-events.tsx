@@ -1,7 +1,7 @@
 "use client"
 
 import SocketEventEnum from "@/constants/socket-event";
-import { useCallActions, useCallStore } from "@/hooks/use-call-store";
+import { useCallActions } from "@/hooks/use-call-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
 import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
@@ -17,7 +17,7 @@ const SocketEvents = () => {
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
-  const { setIncomingCall, setRejectedCallInfo, stopRingtone } = useCallActions();
+  const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall } = useCallActions();
   const router = useRouter()
 
 
@@ -222,6 +222,34 @@ const SocketEvents = () => {
     });
     return () => {
       socket.off(SocketEventEnum.CALL_REJECTED);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.CALLER_LEFT, (payload) => {
+      setRejectedCallInfo(payload)
+      setCallStatus('ended')
+      endCall()
+      router.push('/')
+    });
+    return () => {
+      socket.off(SocketEventEnum.CALLER_LEFT);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.CALL_TIMEOUT, (payload) => {
+      endCall()
+      setRejectedCallInfo(payload)
+      setCallStatus('missed')
+      router.push('/')
+    });
+    return () => {
+      socket.off(SocketEventEnum.CALL_TIMEOUT);
     };
   }, [socket]);
 

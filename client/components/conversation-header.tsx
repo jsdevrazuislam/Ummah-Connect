@@ -5,10 +5,7 @@ import { Phone, Video, Info } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { FC } from "react"
 import { useCallActions } from "@/hooks/use-call-store"
-import { useSocketStore } from "@/hooks/use-socket"
-import SocketEventEnum from "@/constants/socket-event"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/store/store"
 import { v4 as uuidv4 } from 'uuid';
 import { useMutation } from "@tanstack/react-query"
 import { initialize_call } from "@/lib/apis/stream"
@@ -30,29 +27,17 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
 
     const { mutate } = useMutation({
         mutationFn: initialize_call,
-        onError:(error)=>{
+        onError: (error) => {
             toast.error(error.message)
         }
     })
     const { startCall } = useCallActions();
-    const { socket } = useSocketStore()
     const router = useRouter()
-    const { user } = useAuthStore()
 
     const handleStartCall = (callType: 'audio' | 'video') => {
         if (!selectedConversation || !selectedConversation?.id) return;
         const authToken = uuidv4();
         const roomName = `call-${selectedConversation.id}-${Date.now()}`;
-
-        socket?.emit(SocketEventEnum.OUTGOING_CALL, {
-            from: user?.id,
-            to: selectedConversation?.id,
-            callType: callType,
-            roomName: roomName,
-            callerName: user?.full_name,
-            callerAvatar: user?.avatar,
-            authToken
-        });
         mutate({
             roomName,
             callType: callType,

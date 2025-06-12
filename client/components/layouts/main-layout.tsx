@@ -134,7 +134,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                         <item.icon className="h-4 w-4 mr-3" />
                         <span>{item.label}</span>
                         {(item.label === "Notifications" || item.label === "Messages") && (
-                          <Badge variant="destructive" className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
+                          <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
                             {item.label === "Notifications" ? "3" : "2"}
                           </Badge>
                         )}

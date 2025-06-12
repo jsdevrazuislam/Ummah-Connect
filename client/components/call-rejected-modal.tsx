@@ -3,7 +3,7 @@ import { useCallStore, useCallActions } from '@/hooks/use-call-store';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Clock, UserX, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const CallRejectedModal = () => {
 
@@ -21,31 +21,34 @@ const CallRejectedModal = () => {
                     <DialogTitle>Call Rejected</DialogTitle>
                     <DialogDescription>call rejected call.</DialogDescription>
                 </DialogHeader>
-                <DialogContent className="max-w-xs rounded-xl bg-gray-800 text-white border-none">
+                <DialogContent onInteractOutside={(e) => {
+                    e.preventDefault();
+                }} className="max-w-xs rounded-xl bg-gray-800 text-white border-none">
                     <div className="flex flex-col items-center justify-center p-8 gap-4">
                         {callStatus === 'rejected' && (
                             <>
-                                <div className="bg-red-500/20 p-4 rounded-full">
-                                    <X className="h-8 w-8 text-red-500" />
-                                </div>
+                                <Avatar className="h-20 w-20">
+                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
+                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                </Avatar>
                                 <h2 className="text-xl font-bold">Call Declined</h2>
                                 <p className="text-gray-300 text-center">
-                                   The user {rejectedCallInfo?.callerName} is currently busy or declined your call.
+                                    The user {rejectedCallInfo?.callerName} is currently busy declined your call.
                                 </p>
                             </>
                         )}
                         {callStatus === 'missed' && (
                             <>
-                                <div className="bg-yellow-500/20 p-4 rounded-full">
-                                    <Clock className="h-8 w-8 text-yellow-500" />
-                                </div>
+                                <Avatar className="h-20 w-20">
+                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
+                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                </Avatar>
                                 <h2 className="text-xl font-bold">Missed Call</h2>
                                 <p className="text-gray-300 text-center">
-                                    {incomingCall?.callerName} is unavailable right now
+                                    {rejectedCallInfo?.message}
                                 </p>
                                 <Button
-                                    variant="outline"
-                                    className="mt-4 text-white border-white/30 hover:bg-white/10"
+                                    className="mt-4 cursor-pointer"
                                     onClick={() => {
                                         setCallStatus(null);
                                     }}
@@ -56,12 +59,13 @@ const CallRejectedModal = () => {
                         )}
                         {callStatus === 'ended' && (
                             <>
-                                <div className="bg-blue-500/20 p-4 rounded-full">
-                                    <UserX className="h-8 w-8" />
-                                </div>
+                                <Avatar className="h-20 w-20">
+                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
+                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                </Avatar>
                                 <h2 className="text-xl font-bold">Call Ended</h2>
                                 <p className="text-gray-300 text-center">
-                                    The call has been ended
+                                    {rejectedCallInfo?.callerName} has been ended the call
                                 </p>
                             </>
                         )}
