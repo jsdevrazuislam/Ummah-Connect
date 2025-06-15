@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSocketStore } from '@/hooks/use-socket'
 import SocketEventEnum from '@/constants/socket-event'
 import { useAuthStore } from '@/store/store'
+import { useConversationStore } from '@/hooks/use-conversation-store'
 
 
 interface ConversationItemProps {
@@ -14,6 +15,8 @@ const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
 
     const { socket } = useSocketStore()
     const { getIsUserOnline} = useAuthStore()
+    const { unreadCounts } = useConversationStore();
+    const unreadCount = unreadCounts[conv.id] ?? 0;
 
     useEffect(() => {
         if (!socket) return;
@@ -48,9 +51,9 @@ const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
                     </div>
                     <div className="flex justify-between items-center">
                         <p className="text-sm text-muted-foreground truncate">{conv?.lastMessage?.content}</p>
-                        {conv?.unreadCount > 0 && (
+                        {unreadCount > 0 && (
                             <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                                {conv?.unreadCount}
+                                {unreadCount}
                             </span>
                         )}
                     </div>

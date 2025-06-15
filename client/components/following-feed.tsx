@@ -3,6 +3,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import React from 'react'
 import InfiniteScrollPost from '@/components/infinite-scroll-post';
 import { FollowingEmptyState } from '@/components/post-empty-state';
+import { ErrorMessage } from "@/components/api-error"
+
 
 const FollowingFeed = () => {
 
@@ -13,7 +15,6 @@ const FollowingFeed = () => {
         isFetchingNextPage,
         isLoading,
         isError,
-        error,
     } = useInfiniteQuery<PostsResponse>({
         queryKey: ['get_all_following_posts'],
         queryFn: ({ pageParam = 1 }) => get_all_following_posts({ page: Number(pageParam) }),
@@ -34,11 +35,11 @@ const FollowingFeed = () => {
         }
     };
 
-    if (isError) {
-        return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
-    }
-
-    console.log("posts", posts)
+   if (isError) {
+       return <div className="flex justify-center items-center mt-10">
+         <ErrorMessage type='network' />
+       </div>
+     }
 
     return (
         <>

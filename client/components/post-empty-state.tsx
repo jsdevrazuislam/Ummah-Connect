@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 
 export function FollowingEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="flex flex-col items-center justify-center min-h-screen text-center">
       <div className="bg-muted/50 p-6 rounded-full mb-4">
         <Users className="h-10 w-10 text-muted-foreground" />
       </div>

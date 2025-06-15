@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Search, Users, MessageSquare, Plus, ChevronLeft } from "lucide-react"
 import ConversationSkeleton from "@/app/(sidebar-layout)/messages/loading"
@@ -25,17 +25,18 @@ import { CreateGroupDialog } from "@/components/create-group-dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ErrorMessage } from "@/components/api-error"
+import { useConversationStore } from "@/hooks/use-conversation-store"
 
 
 
 export default function ConversationPage() {
   const [message, setMessage] = useState("")
   const [showCreateGroup, setShowCreateGroup] = useState(false)
-  const [isMobileView, setIsMobileView] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useAuthStore()
   const queryClient = useQueryClient()
   const { socket } = useSocketStore()
+  const { setBulkUnreadCounts, resetUnreadCount } = useConversationStore()
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout>();
   const [recordingTime, setRecordingTime] = useState(0);
@@ -54,7 +55,6 @@ export default function ConversationPage() {
     isFetchingNextPage,
     isLoading,
     isError,
-    error,
   } = useInfiniteQuery<ConversationResponse>({
     queryKey: ['get_conversations'],
     queryFn: ({ pageParam = 1 }) => get_conversations({ page: Number(pageParam) }),
@@ -67,7 +67,9 @@ export default function ConversationPage() {
     gcTime: 1000 * 60 * 5,
   });
 
-  const conversations = data?.pages.flatMap(page => page?.data?.conversations) ?? [];
+  const conversations = useMemo(() => {
+    return data?.pages.flatMap(page => page?.data?.conversations) ?? [];
+  }, [data]);
 
 
   const loadMoreConversation = () => {
@@ -83,7 +85,6 @@ export default function ConversationPage() {
     isFetchingNextPage: isMessageFetchNextPage,
     isLoading: messageLoading,
     isError: isMessageError,
-    error: messageError,
   } = useInfiniteQuery<ConversationMessagesResponse>({
     queryKey: ['get_conversation_messages', selectedConversation?.conversationId],
     queryFn: ({ pageParam = 1 }) => get_conversation_messages({ page: Number(pageParam), id: selectedConversation?.conversationId }),
@@ -105,6 +106,7 @@ export default function ConversationPage() {
       queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
         return updatedUnReadCount(oldData, variable.conversationId)
       })
+      resetUnreadCount(variable.conversationId)
     },
     onError: (error) => {
       toast.error(error.message)
@@ -281,6 +283,14 @@ export default function ConversationPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const unreadMap = conversations.reduce((acc, conv) => {
+      acc[conv.id] = conv.unreadCount ?? 0;
+      return acc;
+    }, {} as Record<number, number>);
+    setBulkUnreadCounts(unreadMap)
+  }, [conversations])
+
 
   if (isError || isMessageError) {
     return <div className="flex justify-center items-center h-[90vh] ">
@@ -324,7 +334,7 @@ export default function ConversationPage() {
                 ) : (
                   conversations?.length > 0 ? conversations.map((conv) => (
                     <ConversationItem key={conv.id} conv={conv} onClick={() => handleSelectionMessage(conv)} />
-                  )) : <div className="text-center py-16 flex flex-col justify-center items-center rounded-lg">
+                  )) : <div className="text-center py-16 px-4 flex flex-col justify-center items-center rounded-lg">
                     <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h4 className="font-medium mb-2">No conversation yet</h4>
                     <p className="text-muted-foreground mb-4">

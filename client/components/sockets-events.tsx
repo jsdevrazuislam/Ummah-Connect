@@ -2,6 +2,7 @@
 
 import SocketEventEnum from "@/constants/socket-event";
 import { useCallActions } from "@/hooks/use-call-store";
+import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
 import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
@@ -18,6 +19,7 @@ const SocketEvents = () => {
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
   const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall } = useCallActions();
+  const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
 
 
@@ -151,6 +153,7 @@ const SocketEvents = () => {
           if (shouldIncrementUnread) return addUnReadCount(oldData, payload.conversation_id, payload)
           else return oldData
         })
+        incrementUnreadCount(payload.conversation_id)
       }
     });
     return () => {

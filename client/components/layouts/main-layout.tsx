@@ -25,6 +25,7 @@ import { RightSidebar } from "@/components/right-sidebar"
 import { LeftSidebar } from "@/components/left-sidebar"
 import { useAuthStore } from "@/store/store"
 import { useQueryClient } from "@tanstack/react-query"
+import { useConversationStore } from "@/hooks/use-conversation-store"
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -43,7 +44,7 @@ const moreNavItems = [
 ]
 
 const hiddenSidebarPages = ["/messages", "/shorts", "/settings"]
-const hiddenRightSidebarPages = ["/messages", "/shorts", "/settings", "/prayer-times"]
+const hiddenRightSidebarPages = ["/messages", "/shorts", "/settings", "/prayer-times", "/live/create"]
 
 interface SocialMediaLayoutProps {
   children: React.ReactNode
@@ -54,6 +55,9 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const { logout, user } = useAuthStore()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const totalUnread = useConversationStore((state) =>
+  Object.values(state.unreadCounts).reduce((acc, count) => acc + count, 0)
+);
 
   const handleLogout = () => {
     queryClient.clear()
@@ -117,9 +121,9 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                 <Link href="/messages">
                   <Button size="sm" variant="ghost" className="rounded-full relative">
                     <MessageCircle className="h-5 w-5" />
-                    <Badge  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
-                      2
-                    </Badge>
+                    {totalUnread > 0 && <Badge  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                      {totalUnread}
+                    </Badge>}
                   </Button>
                 </Link>
               </div>

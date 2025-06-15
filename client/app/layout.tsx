@@ -11,8 +11,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import IncomingCallNotification from "@/components/incoming-call-modal";
 import { RingtonePlayer } from "@/components/ringtone-player"
 import CallRejectedModal from "@/components/call-rejected-modal"
+import WrapperLoader from "@/components/wrapper-loader"
 
-const nato = Noto_Sans({ subsets: ["latin"], display:"swap" })
+const nato = Noto_Sans({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
   title: "Ummah Connect",
@@ -30,13 +31,15 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider>
             <ReactQueryProvider>
-              <SocketEvents />
-              <IncomingCallNotification />
-              <RingtonePlayer />
-              <CallRejectedModal />
-              {children}
-              {/* <AIAssistant /> */}
-              <Toaster />
+              <WrapperLoader>
+                <SocketEvents />
+                <IncomingCallNotification />
+                <RingtonePlayer />
+                <CallRejectedModal />
+                {children}
+                <AIAssistant />
+                <Toaster />
+              </WrapperLoader>
             </ReactQueryProvider>
           </TooltipProvider>
         </ThemeProvider>
