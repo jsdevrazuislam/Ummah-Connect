@@ -7,7 +7,9 @@
 
 interface StartLiveStreamResponse{
   statusCode: number;
-  data?: LiveStreamData;
+  data?: {
+    stream: LiveStreamData
+  };
   message: string;
   success: boolean;
 }

@@ -8,7 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, PowerOff, X } from "lucide-react";
+import { AlertTriangle, PhoneOff, X } from "lucide-react";
 import { useState } from "react";
 
 interface EndStreamConfirmationProps {
@@ -22,12 +22,10 @@ export function EndStreamConfirmation({ onConfirm, isLoading }: EndStreamConfirm
     return (
         <>
             <Button
-                variant="destructive"
-                className="gap-2"
+                className="gap-2 bg-red-500 text-white"
                 onClick={() => setIsOpen(true)}
             >
-                <PowerOff className="h-4 w-4" />
-                End Stream
+                <PhoneOff className="h-4 w-4" />
             </Button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -66,7 +64,7 @@ export function EndStreamConfirmation({ onConfirm, isLoading }: EndStreamConfirm
                             className="gap-2"
                             disabled={isLoading}
                         >
-                            <PowerOff className="h-4 w-4" />
+                            <PhoneOff className="h-4 w-4" />
                             {isLoading ? 'Ending...' : 'Yes, End Stream'}
                         </Button>
                     </DialogFooter>
