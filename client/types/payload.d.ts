@@ -115,3 +115,12 @@ interface QueryOldDataCommentsPayload {
   pageParams: number[];
   pages: CommentsResponse[];
 }
+interface StreamPayload {
+  title: string;
+  description: string;
+  category: string;
+  enable_chat: boolean;
+  save_recording: boolean;
+  notify_followers: boolean;
+  tags?: string[] | undefined;
+}

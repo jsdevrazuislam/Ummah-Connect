@@ -44,7 +44,6 @@ const moreNavItems = [
 ]
 
 const hiddenSidebarPages = ["/messages", "/shorts", "/settings"]
-const hiddenRightSidebarPages = ["/messages", "/shorts", "/settings", "/prayer-times", "/live/create"]
 
 interface SocialMediaLayoutProps {
   children: React.ReactNode
@@ -66,7 +65,12 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   }
 
   const shouldHideLeftSidebar = hiddenSidebarPages.includes(pathname)
-  const shouldHideRightSidebar = hiddenRightSidebarPages.includes(pathname)
+  const shouldHideRightSidebar = [
+  "/messages",
+  "/shorts",
+  "/settings",
+  "/prayer-times",
+].includes(pathname) || pathname.startsWith("/live");
 
   return (
     <div className="min-h-screen bg-background">

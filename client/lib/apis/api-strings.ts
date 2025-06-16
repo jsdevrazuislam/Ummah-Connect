@@ -40,7 +40,9 @@ const ApiStrings = {
   READ_MESSAGE: `/conversation/read-message`,
   SEND_ATTACHMENT: `/conversation/send-attachment`,
   // stream
-  INITIAL_CALL: '/stream/initiate-call'
+  INITIAL_CALL: '/stream/initiate-call',
+  GET_LIVES: '/stream/',
+  START_LIVE: '/stream/start',
 };
 
 export default ApiStrings;

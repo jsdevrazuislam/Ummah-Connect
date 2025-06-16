@@ -12,6 +12,7 @@ import Message from '@/models/messages.models'
 import MessageReaction from '@/models/message-reaction.models'
 import MessageStatus from '@/models/message-status.models'
 import MessageAttachment from '@/models/message-attachment.models'
+import LiveStream from '@/models/stream.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -91,8 +92,9 @@ MessageAttachment.belongsTo(Message, {
   foreignKey: 'message_id'
 });
 
+LiveStream.belongsTo(User, { foreignKey: 'user_id', as:'user'})
 
 
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus };
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream };
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream };
