@@ -19,7 +19,7 @@ import { ReportModal } from "@/components/report-modal"
 import { toast } from "sonner"
 import { LiveKitRoom, TrackRefContext, useRoomContext, useTracks, VideoTrack } from "@livekit/components-react"
 import { useAuthStore } from "@/store/store"
-import { Track } from "livekit-client"
+import { RemoteParticipant, Track } from "livekit-client"
 import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
@@ -59,10 +59,10 @@ const initialChatMessages = [
     },
 ]
 
-function StreamUi({ stream, isHost }: { stream: LiveStreamData, isHost: boolean }) {
+function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
 
-    const audioEl = useRef<HTMLAudioElement>(null);
     const room = useRoomContext()
+    const { socket } = useSocketStore()
 
     const tracks = useTracks([
         { source: Track.Source.Camera, withPlaceholder: false },
@@ -84,6 +84,37 @@ function StreamUi({ stream, isHost }: { stream: LiveStreamData, isHost: boolean 
         track.participant.identity === stream.user.id.toString() &&
         track.source === Track.Source.Microphone
     );
+
+    useEffect(() => {
+        if (!room) return;
+
+        const handleDisconnect = (participant: RemoteParticipant) => {
+            if (Number(participant.identity) === stream?.user_id) {
+                socket?.emit(SocketEventEnum.HOST_LEFT_LIVE_STREAM, {
+                    streamId: stream.id,
+                    username: stream?.user?.username,
+                });
+            }
+        };
+
+        const handleConnect = (participant: RemoteParticipant) => {
+            if (Number(participant.identity) === stream?.user_id) {
+                socket?.emit(SocketEventEnum.HOST_JOIN_LIVE_STREAM, {
+                    streamId: stream.id,
+                    username: stream?.user?.username,
+                });
+            }
+        };
+
+        room.on("participantConnected", handleConnect);
+        room.on("participantDisconnected", handleDisconnect);
+
+        return () => {
+            room.off("participantConnected", handleConnect);
+            room.off("participantDisconnected", handleDisconnect);
+        };
+    }, [room, stream]);
+
 
     useEffect(() => {
         if (!hostAudioTrack || !audioEl.current) return;
@@ -146,9 +177,34 @@ function StreamUi({ stream, isHost }: { stream: LiveStreamData, isHost: boolean 
     )
 }
 
-function ParticipantCount() {
+function ParticipantCount({ streamId }: {streamId:number}) {
     const room = useRoomContext()
-    return room?.numParticipants
+    const [participantCount, setParticipantCount] = useState(0);
+    const { socket } = useSocketStore()
+
+    useEffect(() => {
+        if (!room) return;
+
+        const updateParticipantCount = () => {
+            const count = room.numParticipants;
+            setParticipantCount(count);
+            socket?.emit(SocketEventEnum.LIVE_VIEW_COUNT, { streamId, count})
+        };
+
+        room.on('participantConnected', updateParticipantCount);
+        room.on('participantDisconnected', updateParticipantCount);
+        room.on('connected', updateParticipantCount);
+
+        updateParticipantCount();
+
+        return () => {
+            room.off('participantConnected', updateParticipantCount);
+            room.off('participantDisconnected', updateParticipantCount);
+            room.off('connected', updateParticipantCount);
+        };
+    }, [room]);
+
+    return participantCount
 }
 
 export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: string, stream: LiveStreamData, token: string, livekitUrl: string }) {
@@ -159,11 +215,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const [chatMessage, setChatMessage] = useState("")
     const [chatMessages, setChatMessages] = useState(initialChatMessages)
     const [likes, setLikes] = useState(0)
-    const videoRef = useRef<HTMLVideoElement>(null)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const { user } = useAuthStore()
     const { socket } = useSocketStore()
     const isHost = user?.id === stream?.user_id
+    const audioEl = useRef<HTMLAudioElement>(null);
+
 
 
 
@@ -177,9 +234,9 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     };
 
     const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !muted
-            setMuted(!muted)
+        if (audioEl.current) {
+            audioEl.current.muted = !muted;
+            setMuted(!muted);
         }
     }
 
@@ -228,7 +285,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         >
             <div className="flex-1 w-full">
                 <div className="relative bg-black">
-                    <StreamUi stream={stream} isHost={isHost} />
+                    <StreamUi stream={stream} isHost={isHost} audioEl={audioEl} />
                     <div className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
                         <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
                         LIVE
@@ -256,7 +313,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                 className="rounded-full bg-black/50 text-white hover:bg-black/70 px-3"
                             >
                                 <Users className="h-4 w-4 mr-1" />
-                                <ParticipantCount />
+                                <ParticipantCount streamId={stream.id} />
                             </Button>
                         </div>
                     </div>

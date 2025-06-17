@@ -13,11 +13,12 @@ import { useState } from "react";
 
 interface EndStreamConfirmationProps {
     onConfirm: () => void
-    isLoading: boolean
+    isLoading: boolean,
+    isOpen: boolean
+    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export function EndStreamConfirmation({ onConfirm, isLoading }: EndStreamConfirmationProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function EndStreamConfirmation({ onConfirm, isLoading, isOpen, setIsOpen }: EndStreamConfirmationProps) {
 
     return (
         <>

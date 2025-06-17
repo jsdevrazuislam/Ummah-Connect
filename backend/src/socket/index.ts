@@ -18,7 +18,7 @@ interface SocketAuth {
   token?: string;
 }
 
-interface InitializeSocketIOOptions {
+export interface InitializeSocketIOOptions {
   io: Server;
 }
 
@@ -106,7 +106,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      runSocketEvents(socket)
+      runSocketEvents(socket, io)
     } catch (error) {
       console.error("Socket connection error:", error);
       socket.emit(

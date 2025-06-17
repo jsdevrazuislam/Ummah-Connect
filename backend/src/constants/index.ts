@@ -1,6 +1,7 @@
 const DB_NAME = "chaiaurcode";
 const DATA_LIMIT = "5MB";
 const API_VERSION = '/api/v1'
+const GRACE_PERIOD_MS = 60_000
 
 const SocketEventEnum = Object.freeze({
   SOCKET_CONNECTED: "connected",
@@ -10,6 +11,7 @@ const SocketEventEnum = Object.freeze({
   JOIN_CONVERSATION: "joinConversation",
   JOIN_LIVE_STREAM: "joinLiveStream",
   HOST_LEFT_LIVE_STREAM: "hostLeftLiveStream",
+  HOST_JOIN_LIVE_STREAM: "hostJointLiveStream",
   HOST_END_LIVE_STREAM: "hostEndLiveStream",
   POST_REACT:"post_react",
   COMMENT_REACT:"commentReact",
@@ -30,6 +32,8 @@ const SocketEventEnum = Object.freeze({
   CALL_REJECTED:"call:rejected",
   CALL_TIMEOUT:"call_timeout",
   CALLER_LEFT:"caller_left",
+  LIVE_VIEW_COUNT:'liveViewCount'
+
 });
 
 const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bio', 'privacy_settings'];
@@ -37,4 +41,4 @@ const REACT_ATTRIBUTE = ['userId', 'react_type', 'icon', 'commentId', 'postId'];
 const POST_ATTRIBUTE = ['id', 'media', 'content', 'location', 'privacy', 'createdAt']
 const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username', 'last_seen_at']
 
-export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER };
+export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER, GRACE_PERIOD_MS };

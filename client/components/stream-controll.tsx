@@ -6,7 +6,7 @@ import {
 } from '@livekit/components-react';
 import { ConnectionState, Track } from 'livekit-client';
 import { Mic, MicOff, ScreenShare, ScreenShareOff, Video, VideoOff } from 'lucide-react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { EndStreamConfirmation } from "@/components/live-end-modal"
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -19,6 +19,7 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
     const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(true);
     const [isCameraEnabled, setIsCameraEnabled] = useState(true);
     const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
     const room = useRoomContext()
     const tracks = useTracks([
         { source: Track.Source.Camera, withPlaceholder: false },
@@ -40,7 +41,6 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
         mutationFn: end_live,
         onSuccess: async () => {
             await room.disconnect()
-            router.push('/')
         },
         onError: (error) => {
             toast.error(error.message)
@@ -83,6 +83,8 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
     );
 
     const handleLiveEnd = async () => {
+        setIsOpen(false)
+        router.push('/')
         mutate(streamId)
     }
 
@@ -129,7 +131,7 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
                             <ScreenShare className="h-5 w-5 text-white" />
                         )}
                     </TrackToggle>
-                    <EndStreamConfirmation onConfirm={handleLiveEnd} isLoading={isPending} />
+                    <EndStreamConfirmation isOpen={isOpen} setIsOpen={setIsOpen} onConfirm={handleLiveEnd} isLoading={isPending} />
                 </div>
             </div>
         </div>

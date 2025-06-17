@@ -114,7 +114,7 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
         ) : (
           <ThumbsUp className="h-4 w-4" />
         )}
-        <span>{currentReaction ? currentReaction.charAt(0).toUpperCase() + currentReaction.slice(1) : "React"}</span>
+        <span>{currentReaction ? currentReaction.charAt(0).toUpperCase() + currentReaction.slice(1) : ""}</span>
       </Button>
 
       {isOpen && (

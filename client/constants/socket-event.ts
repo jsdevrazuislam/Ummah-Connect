@@ -12,6 +12,7 @@ const SocketEventEnum = Object.freeze({
   JOIN_CONVERSATION: "joinConversation",
   JOIN_LIVE_STREAM: "joinLiveStream",
   HOST_LEFT_LIVE_STREAM: "hostLeftLiveStream",
+  HOST_JOIN_LIVE_STREAM: "hostJointLiveStream",
   HOST_END_LIVE_STREAM: "hostEndLiveStream",
   SEND_MESSAGE_TO_CONVERSATION:"sendMessageToConversation",
   SEND_CONVERSATION_REQUEST:"addConversation",
@@ -26,6 +27,7 @@ const SocketEventEnum = Object.freeze({
   CALL_ACCEPTED:"call:accepted",
   CALLER_LEFT:"caller_left",
   CALL_TIMEOUT:"call_timeout",
+  LIVE_VIEW_COUNT:'liveViewCount'
 });
 
 export default SocketEventEnum

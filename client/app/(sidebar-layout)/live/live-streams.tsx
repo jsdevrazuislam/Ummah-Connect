@@ -78,7 +78,7 @@ export default function LivePage() {
                                         </div>
                                         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
                                             <Users className="h-3 w-3" />
-                                            {stream.viewers}
+                                            {stream.viewers ?? 0}
                                         </div>
                                     </div>
                                     <div className="p-3">
@@ -89,9 +89,9 @@ export default function LivePage() {
                                             </Avatar>
                                             <div>
                                                 <h3 className="font-medium line-clamp-1">{stream?.title}</h3>
-                                                <p className="text-sm text-muted-foreground">{stream?.user?.full_name}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{stream?.category}</span>
+                                                <p className="text-sm text-muted-foreground">Host By: {stream?.user?.full_name}</p>
+                                                <div className="flex items-center gap-2 mt-1 text-xs ">
+                                                    Topic: <span className="bg-muted px-2 py-0.5 rounded-full">{stream?.category}</span>
                                                 </div>
                                             </div>
                                         </div>

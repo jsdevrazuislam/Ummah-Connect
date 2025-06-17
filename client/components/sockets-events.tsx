@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
+import { addedConversation, addMessageConversation, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -260,12 +260,25 @@ const SocketEvents = () => {
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEventEnum.HOST_END_LIVE_STREAM, (payload) => {
-        setShowEndModal(true)
-        setHostUsername(payload?.username)
-        router.push('/')
+      setShowEndModal(true)
+      setHostUsername(payload?.username)
+      router.push('/')
     });
     return () => {
       socket.off(SocketEventEnum.HOST_END_LIVE_STREAM);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.LIVE_VIEW_COUNT, (payload) => {
+      queryClient.setQueryData(['get_streams'], (oldData: LiveStreamResponse) => {
+        return updateParticipantCount(oldData, Number(payload?.streamId), payload?.count ?? 0)
+      })
+    });
+    return () => {
+      socket.off(SocketEventEnum.LIVE_VIEW_COUNT);
     };
   }, [socket]);
 
