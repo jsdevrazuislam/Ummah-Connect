@@ -43,6 +43,7 @@ const ApiStrings = {
   INITIAL_CALL: '/stream/initiate-call',
   GET_LIVES: '/stream/',
   START_LIVE: '/stream/start',
+  END_LIVE: '/stream/end',
 };
 
 export default ApiStrings;

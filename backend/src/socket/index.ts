@@ -39,6 +39,7 @@ const joinRoom = (socket: Socket, eventEnum: string, roomPrefix: string) => {
 const setupSocketListeners = (socket: Socket) => {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
   joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
+  joinRoom(socket, SocketEventEnum.JOIN_LIVE_STREAM, "live_stream");
 };
 
 const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {

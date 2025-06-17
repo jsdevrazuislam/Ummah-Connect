@@ -1,54 +1,85 @@
-import { Button } from "@/components/ui/button";
-import { Rocket, Users, Home, Smile } from "lucide-react";
-import Link from "next/link";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Home, Search, ArrowLeft, Users, MessageCircle } from "lucide-react"
 
-export default function NotFoundPage() {
+export default function NotFound() {
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex flex-col items-center justify-center p-6 text-center">
-      <div className="max-w-md mx-auto">
-        <div className="relative mb-8">
-          <div className="absolute -inset-4 bg-blue-200 rounded-full opacity-75 animate-pulse"></div>
-          <div className="relative bg-white p-8 rounded-full shadow-lg">
-            <div className="text-9xl font-bold text-indigo-600">404</div>
-          </div>
-        </div>
-
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Lost in the digital cosmos</h1>
-        <p className="text-lg text-gray-600 mb-8">
-          The page you're looking for doesn't exist or has been moved. Let's get you back on track!
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild className="gap-2">
-            <Link href="/">
-              <Home className="h-4 w-4" />
-              Go Home
-            </Link>
-          </Button>
-          <Button variant="outline" asChild className="gap-2">
-            <Link href="/explore">
-              <Rocket className="h-4 w-4" />
-              Explore Content
-            </Link>
-          </Button>
-        </div>
-
-        <div className="mt-12 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
+        <CardContent className="p-8 md:p-12 text-center space-y-8">
           <div className="relative">
-            <Users className="h-16 w-16 text-indigo-400" />
-            <Smile className="absolute -right-2 -bottom-2 h-6 w-6 text-yellow-400" />
+            <div className="text-8xl md:text-9xl font-bold text-primary/20 select-none">404</div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="w-12 h-12 md:w-16 md:h-16 text-primary/60" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-8 text-sm text-gray-500">
-          <p>Still lost? Try these:</p>
-          <div className="flex flex-wrap justify-center gap-3 mt-2">
-            <Link href="/help" className="hover:text-indigo-600 hover:underline">Help Center</Link>
-            <Link href="/contact" className="hover:text-indigo-600 hover:underline">Contact Support</Link>
-            <Link href="/status" className="hover:text-indigo-600 hover:underline">System Status</Link>
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Oops! Page Not Found</h1>
+            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
+              The page you're looking for seems to have wandered off into the digital void. Don't worry, even the best
+              explorers get lost sometimes!
+            </p>
           </div>
-        </div>
-      </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <Link href="/" className="flex items-center gap-2">
+                <Home className="w-4 h-4" />
+                Back to Home
+              </Link>
+            </Button>
+
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+              <Link href="/search" className="flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Search Posts
+              </Link>
+            </Button>
+          </div>
+
+          <div className="pt-8 border-t border-border/50">
+            <p className="text-sm text-muted-foreground mb-4">Or try one of these popular sections:</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/feed" className="flex items-center gap-2">
+                  <MessageCircle className="w-3 h-3" />
+                  Feed
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/discover" className="flex items-center gap-2">
+                  <Search className="w-3 h-3" />
+                  Discover
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/profile" className="flex items-center gap-2">
+                  <Users className="w-3 h-3" />
+                  Profile
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Link href='/'>
+              <Button
+                variant="link"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Go back to previous page
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

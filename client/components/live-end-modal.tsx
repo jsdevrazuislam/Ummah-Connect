@@ -29,7 +29,9 @@ export function EndStreamConfirmation({ onConfirm, isLoading }: EndStreamConfirm
             </Button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-lg">
+                <DialogContent className="sm:max-w-[425px] rounded-lg" onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}>
                     <DialogHeader>
                         <div className="flex flex-col items-center text-center gap-4">
                             <div className="relative">

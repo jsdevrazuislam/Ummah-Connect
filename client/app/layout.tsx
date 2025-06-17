@@ -12,6 +12,7 @@ import IncomingCallNotification from "@/components/incoming-call-modal";
 import { RingtonePlayer } from "@/components/ringtone-player"
 import CallRejectedModal from "@/components/call-rejected-modal"
 import WrapperLoader from "@/components/wrapper-loader"
+import { StreamEndedModal } from "@/components/live-stream-end-modal-for-viewers"
 
 const nato = Noto_Sans({ subsets: ["latin"], display: "swap" })
 
@@ -36,6 +37,7 @@ export default function RootLayout({
                 <IncomingCallNotification />
                 <RingtonePlayer />
                 <CallRejectedModal />
+                <StreamEndedModal />
                 {children}
                 <AIAssistant />
                 <Toaster />

@@ -3,6 +3,7 @@ import { generateLiveKitToken, generateLiveToken, roomServiceClient } from "@/co
 import redis from "@/config/redis";
 import { SocketEventEnum } from "@/constants";
 import { LiveStream, User } from "@/models";
+import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
@@ -259,6 +260,8 @@ export const end_live_stream = asyncHandler(async (req: Request, res: Response) 
     await roomServiceClient.deleteRoom(stream.room_name)
         .then(() => console.log(`LiveKit room '${stream.room_name}' deleted successfully.`))
         .catch((error) => console.log("Room delete error", error))
+
+    emitSocketEvent({ req, roomId: `live_stream_${streamId}`, event: SocketEventEnum.HOST_END_LIVE_STREAM, payload: {username: req.user.username, message:'Host is ending live stream'}})
 
     return res.status(200).json(new ApiResponse(200, null, "Stream ended and room deleted successfully"));
 });

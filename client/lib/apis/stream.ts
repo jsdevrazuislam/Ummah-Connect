@@ -11,6 +11,11 @@ export const start_live = async (payload:StreamPayload): Promise<StartLiveStream
   return response.data;
 };
 
+export const end_live = async (streamId:number) => {
+  const response = await api.post(ApiStrings.END_LIVE, { streamId});
+  return response.data;
+};
+
 export const get_streams = async (): Promise<LiveStreamResponse> => {
   const response = await api.get<LiveStreamResponse>(ApiStrings.GET_LIVES);
   return response.data;

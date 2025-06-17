@@ -17,14 +17,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ReportModal } from "@/components/report-modal"
 import { toast } from "sonner"
-import { LiveKitRoom,  TrackRefContext, useRoomContext, useTracks, VideoTrack } from "@livekit/components-react"
+import { LiveKitRoom, TrackRefContext, useRoomContext, useTracks, VideoTrack } from "@livekit/components-react"
 import { useAuthStore } from "@/store/store"
 import { Track } from "livekit-client"
 import CustomControlBar from "@/components/stream-controll"
+import { useSocketStore } from "@/hooks/use-socket"
+import SocketEventEnum from "@/constants/socket-event"
 
 
 
-// Mock chat messages
 const initialChatMessages = [
     {
         id: "1",
@@ -58,9 +59,10 @@ const initialChatMessages = [
     },
 ]
 
-function StreamUi({ stream }: { stream: LiveStreamData }) {
+function StreamUi({ stream, isHost }: { stream: LiveStreamData, isHost: boolean }) {
 
     const audioEl = useRef<HTMLAudioElement>(null);
+    const room = useRoomContext()
 
     const tracks = useTracks([
         { source: Track.Source.Camera, withPlaceholder: false },
@@ -119,12 +121,18 @@ function StreamUi({ stream }: { stream: LiveStreamData }) {
                         </div>
                     </div>
 
-                    <h1 className="text-2xl font-semibold mt-6">Waiting for Host Video</h1>
+                    <h1 className="text-2xl font-semibold mt-6">
+                        {isHost ? 'Connecting to Stream...' : 'Waiting for Host Video'}
+                    </h1>
                     <p className="text-muted-foreground mt-2 max-w-md">
-                        The host hasn't started streaming yet. As soon as the video starts, it will appear here.
+                        {
+                            isHost ? "Hang tight! We're connecting you to the stream." : "The host hasn't started streaming yet. As soon as the video starts, it will appear here."
+                        }
                     </p>
 
-                    <div className="mt-6 text-sm text-muted-foreground italic">Powered by Ummah Connect</div>
+                    {
+                        !isHost && <div className="mt-6 text-sm text-muted-foreground italic">Powered by Ummah Connect</div>
+                    }
                 </div>
             )}
 
@@ -138,7 +146,7 @@ function StreamUi({ stream }: { stream: LiveStreamData }) {
     )
 }
 
-function ParticipantCount(){
+function ParticipantCount() {
     const room = useRoomContext()
     return room?.numParticipants
 }
@@ -154,6 +162,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const videoRef = useRef<HTMLVideoElement>(null)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const { user } = useAuthStore()
+    const { socket } = useSocketStore()
     const isHost = user?.id === stream?.user_id
 
 
@@ -201,6 +210,14 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [chatMessages])
 
+    useEffect(() => {
+        if (!socket) return;
+        socket.emit(SocketEventEnum.JOIN_LIVE_STREAM, id?.toString());
+        return () => {
+            socket.off(SocketEventEnum.JOIN_LIVE_STREAM);
+        };
+    }, [socket, id]);
+
     return (
         <LiveKitRoom
             connect={true}
@@ -211,7 +228,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         >
             <div className="flex-1 w-full">
                 <div className="relative bg-black">
-                    <StreamUi stream={stream} />
+                    <StreamUi stream={stream} isHost={isHost} />
                     <div className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
                         <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
                         LIVE
@@ -230,9 +247,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                             </div>
                         }
                         {
-                            isHost && <div className="relative w-full flex justify-center items-center m-auto">
-                                <CustomControlBar />
-                            </div>
+                            isHost && <CustomControlBar stream={stream} streamId={stream.id} />
                         }
                         <div className="flex gap-2">
                             <Button

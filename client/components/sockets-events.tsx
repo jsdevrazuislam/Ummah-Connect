@@ -18,7 +18,7 @@ const SocketEvents = () => {
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
-  const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall } = useCallActions();
+  const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall, setShowEndModal, setHostUsername } = useCallActions();
   const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
 
@@ -253,6 +253,19 @@ const SocketEvents = () => {
     });
     return () => {
       socket.off(SocketEventEnum.CALL_TIMEOUT);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.HOST_END_LIVE_STREAM, (payload) => {
+        setShowEndModal(true)
+        setHostUsername(payload?.username)
+        router.push('/')
+    });
+    return () => {
+      socket.off(SocketEventEnum.HOST_END_LIVE_STREAM);
     };
   }, [socket]);
 
