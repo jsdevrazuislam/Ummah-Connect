@@ -1,10 +1,9 @@
 import { Socket, Server } from "socket.io";
-import { LiveStream, MessageStatus, User } from "@/models";
+import { LiveStream, MessageStatus, User, StreamChatConversation } from "@/models";
 import { SocketEventEnum, GRACE_PERIOD_MS } from "@/constants";
 import { Op } from "sequelize";
 import redis from "@/config/redis";
 import { getConversationUserIds } from "@/utils/query";
-
 
 export const runSocketEvents = (socket: Socket, io: Server) => {
   socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
@@ -110,9 +109,14 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
             { where: { id: streamId } }
           );
 
-          io
-            .to(`live_stream_${streamId}`)
-            .emit(SocketEventEnum.HOST_END_LIVE_STREAM, { username });
+          await StreamChatConversation.destroy({
+            where: { stream_id: streamId },
+          });
+
+          io.to(`live_stream_${streamId}`).emit(
+            SocketEventEnum.HOST_END_LIVE_STREAM,
+            { username }
+          );
           console.log(`[Grace Timer Expired] Stream ${streamId} ended`);
         }
       }, GRACE_PERIOD_MS);

@@ -99,5 +99,5 @@ StreamChatConversation.belongsTo(User, { foreignKey: "sender_id", as: "sender" }
 StreamChatConversation.belongsTo(LiveStream, { foreignKey: "stream_id", as: "stream" });
 
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream };
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream };
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation};
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation};

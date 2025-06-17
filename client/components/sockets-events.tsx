@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addMessageConversation, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
+import { addedConversation, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -268,6 +268,21 @@ const SocketEvents = () => {
       socket.off(SocketEventEnum.HOST_END_LIVE_STREAM);
     };
   }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.LIVE_CHAT_SEND, (payload: LiveStreamChatData) => {
+      if (payload?.sender_id !== user?.id) {
+        queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
+          return addMessageConversationLiveStream(oldData, payload, payload?.stream_id)
+        })
+      }
+    });
+    return () => {
+      socket.off(SocketEventEnum.LIVE_CHAT_SEND);
+    };
+  }, [socket, user]);
 
 
   useEffect(() => {

@@ -7,7 +7,7 @@
  interface LiveStreamChatsResponse {
   statusCode: number;
   data?: {
-    messages: LiveStreamChatData
+    messages: LiveStreamChatData[]
     totalPages: number
     currentPage: number
   };
@@ -73,6 +73,7 @@ interface StartLiveStreamResponse{
     username:string,
     full_name:string
     id:number
+    isFollowing: boolean
   followerCount: string
 
   }

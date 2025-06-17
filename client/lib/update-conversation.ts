@@ -206,3 +206,33 @@ export function updateParticipantCount(
     data: updatedData,
   };
 }
+
+export const addMessageConversationLiveStream = (
+  oldData: QueryOldDataPayloadLiveStreamChats | undefined,
+  data: LiveStreamChatData,
+  steamId: number
+) => {
+  if (!oldData || !steamId) return oldData;
+
+  const updatedPages = oldData.pages.map((page) => {
+    const existingConversation = page?.data?.messages ?? [];
+    const shouldAddMessage = existingConversation?.length === 0 || existingConversation.some((c) => c.stream_id === steamId);
+
+    if (shouldAddMessage) {
+      return {
+        ...page,
+        data: {
+          ...page.data,
+          messages: [...existingConversation, data],
+        },
+      };
+    }
+
+    return page;
+  });
+
+  return {
+    ...oldData,
+    pages: updatedPages,
+  };
+};

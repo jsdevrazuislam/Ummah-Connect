@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { VolumeX, Volume2, Users, Share, Heart, MoreHorizontal, Send } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { VolumeX, Volume2, Users, Share, Heart, MoreHorizontal, Send, MessageCircle, Ban } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,9 +22,15 @@ import { RemoteParticipant, Track } from "livekit-client"
 import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { get_stream_messages, send_stream_message } from "@/lib/apis/stream"
 import { ErrorMessage } from "@/components/api-error"
+import { formatDistanceToNow } from 'date-fns';
+import { InfiniteScroll } from "@/components/infinite-scroll"
+import { MessageSkeleton } from "@/components/message-skeleton"
+import { addMessageConversationLiveStream } from "@/lib/update-conversation"
+import FollowButton from "@/components/follow-button"
+
 
 function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
 
@@ -176,7 +181,6 @@ function ParticipantCount({ streamId }: { streamId: number }) {
 }
 
 export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: string, stream: LiveStreamData, token: string, livekitUrl: string }) {
-    const router = useRouter()
     const [showReportModal, setShowReportModal] = useState(false);
     const [muted, setMuted] = useState(false)
     const [liked, setLiked] = useState(false)
@@ -187,6 +191,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const { socket } = useSocketStore()
     const isHost = user?.id === stream?.user_id
     const audioEl = useRef<HTMLAudioElement>(null);
+    const queryClient = useQueryClient()
     const {
         data,
         fetchNextPage,
@@ -205,13 +210,13 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         initialPageParam: 1,
         staleTime: 1000 * 60,
         gcTime: 1000 * 60 * 5,
-        enabled: id ? true : false
+        enabled: id ? stream.enable_chat : false
     });
     const messages = useMemo(() => {
         return data?.pages.flatMap(page => page?.data?.messages) ?? [];
-      }, [data]);
+    }, [data]);
 
-    const loadMorePosts = () => {
+    const loadMoreMessages = () => {
         if (hasNextPage && !isFetchingNextPage) {
             fetchNextPage();
         }
@@ -220,7 +225,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
 
     const { isPending, mutate } = useMutation({
         mutationFn: send_stream_message,
-        onSuccess: () => { },
+        onSuccess: (data) => {
+            const payload = data?.data
+            queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
+                return addMessageConversationLiveStream(oldData, payload, payload?.stream_id)
+            })
+        },
         onError: (error) => {
             toast.error(error?.message)
         }
@@ -282,132 +292,164 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             serverUrl={livekitUrl}
             token={token}
         >
-            <div className="flex-1 w-full">
-                <div className="relative bg-black">
-                    <StreamUi stream={stream} isHost={isHost} audioEl={audioEl} />
-                    <div className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                        <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
-                        LIVE
-                    </div>
-                    <div className="absolute w-full bottom-4 m-auto flex justify-between items-center">
-                        {
-                            !isHost && <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row">
+                <div className="flex-1 md:max-w-[65%]">
+                    <div className="relative bg-black">
+                        <StreamUi stream={stream} isHost={isHost} audioEl={audioEl} />
+                        <div className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                            <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
+                            LIVE
+                        </div>
+                        <div className="absolute w-full left-0 bottom-2 m-auto flex justify-between items-center">
+                            {
+                                !isHost && <div className="flex ml-2 gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full bg-black/50 text-white hover:bg-black/70"
+                                        onClick={toggleMute}
+                                    >
+                                        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                                    </Button>
+                                </div>
+                            }
+                            {
+                                isHost && <CustomControlBar stream={stream} streamId={stream.id} />
+                            }
+                            <div>
                                 <Button
                                     variant="ghost"
-                                    size="icon"
+                                    size="sm"
                                     className="rounded-full bg-black/50 text-white hover:bg-black/70"
-                                    onClick={toggleMute}
                                 >
-                                    {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                                    <Users className="h-4 w-4 mr-1" />
+                                    <ParticipantCount streamId={stream.id} />
                                 </Button>
                             </div>
-                        }
-                        {
-                            isHost && <CustomControlBar stream={stream} streamId={stream.id} />
-                        }
-                        <div className="flex gap-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="rounded-full bg-black/50 text-white hover:bg-black/70 px-3"
-                            >
-                                <Users className="h-4 w-4 mr-1" />
-                                <ParticipantCount streamId={stream.id} />
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="p-4">
-                    <h1 className="text-xl font-bold">{stream?.title}</h1>
-                    <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-2">
-                            <Avatar>
-                                <AvatarImage src={stream?.user?.avatar || "/placeholder.svg"} alt={stream?.user?.full_name} />
-                                <AvatarFallback>{stream?.user?.full_name?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <div className="font-medium">{stream?.user?.full_name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                    {stream?.user?.followerCount} followers
-                                </div>
-                            </div>
-                            <Button size="sm" variant="secondary" className="ml-2">
-                                Follow
-                            </Button>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="icon" className={liked ? "text-red-500" : ""} onClick={toggleLike}>
-                                <Heart className={`h-5 w-5 ${liked ? "fill-red-500" : ""}`} />
-                            </Button>
-                            <Button onClick={handleCopy} variant="outline" size="icon">
-                                <Share className="h-5 w-5" />
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon">
-                                        <MoreHorizontal className="h-5 w-5" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-20" align="start">
-                                    <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)} className="cursor-pointer">
-                                        Report
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                     </div>
 
-                    <div className="mt-4">
-                        <div className="flex flex-wrap gap-2 mb-3">
-                            <Badge variant="secondary">{stream?.category}</Badge>
-                            {stream?.tags?.map((tag) => (
-                                <Badge key={tag} variant="outline">
-                                    {tag}
-                                </Badge>
-                            ))}
-                        </div>
-                        <p className="text-sm">{stream?.description}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="border-t md:border-t-0 md:border-l border-border flex flex-col h-[500px] md:h-auto">
-                <div className="p-3 border-b border-border">
-                    <h2 className="font-medium">Live Chat</h2>
-                </div>
-                <ScrollArea className="flex-1 p-3">
-                    <div className="space-y-4">
-                        {messages?.map((message) => (
-                            <div key={message?.id} className="flex gap-2">
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.full_name} />
-                                    <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
+                    <div className="p-4">
+                        <h1 className="text-xl font-bold">{stream?.title}</h1>
+                        <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                                <Avatar>
+                                    <AvatarImage src={stream?.user?.avatar || "/placeholder.svg"} alt={stream?.user?.full_name} />
+                                    <AvatarFallback>{stream?.user?.full_name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium text-sm">{message?.sender?.full_name}</span>
-                                        <span className="text-xs text-muted-foreground">{message?.timestamp}</span>
+                                <div className="mr-2">
+                                    <div className="font-medium">{stream?.user?.full_name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {stream?.user?.followerCount} followers
                                     </div>
-                                    <p className="text-sm">{message?.content}</p>
                                 </div>
+                                {
+                                    !isHost && <FollowButton isFollowing={stream?.user?.isFollowing} id={stream?.user_id} />
+                                }
                             </div>
-                        ))}
-                        <div ref={chatEndRef} />
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="icon" className={liked ? "text-red-500" : ""} onClick={toggleLike}>
+                                    <Heart className={`h-5 w-5 ${liked ? "fill-red-500" : ""}`} />
+                                </Button>
+                                <Button onClick={handleCopy} variant="outline" size="icon">
+                                    <Share className="h-5 w-5" />
+                                </Button>
+                                {
+                                    !isHost && <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="icon">
+                                                <MoreHorizontal className="h-5 w-5" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-20" align="start">
+                                            <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)} className="cursor-pointer">
+                                                Report
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                }
+                            </div>
+                        </div>
+
+                        <div className="mt-4">
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                <Badge variant="secondary">{stream?.category}</Badge>
+                                {stream?.tags?.map((tag) => (
+                                    <Badge key={tag} variant="outline">
+                                        {tag}
+                                    </Badge>
+                                ))}
+                            </div>
+                            <p className="text-sm">{stream?.description}</p>
+                        </div>
                     </div>
-                </ScrollArea>
-                <div className="p-3 border-t border-border">
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
-                        <Input
-                            placeholder="Send a message..."
-                            value={chatMessage}
-                            onChange={(e) => setChatMessage(e.target.value)}
-                            className="flex-1"
-                        />
-                        <Button type="submit" size="icon" disabled={!chatMessage.trim() || isPending}>
-                            <Send className="h-4 w-4" />
-                        </Button>
-                    </form>
+                </div>
+
+                <div className="md:w-[35%] h-[500px]">
+                    {!stream?.enable_chat ? <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full p-6">
+                        <Ban className="h-10 w-10 mb-3 text-gray-400" />
+                        <p className="text-sm font-medium">Chat is disabled</p>
+                        <p className="text-xs text-muted-foreground">The host has disabled chat for this stream</p>
+                    </div> : <div className="border-t md:border-t-0 md:border-l border-border flex flex-col h-[500px] md:h-auto">
+                        <div className="p-3 border-b border-border">
+                            <h2 className="font-medium">Live Chat</h2>
+                        </div>
+                        <InfiniteScroll
+                            hasMore={hasNextPage}
+                            isLoading={isLoading}
+                            onLoadMore={loadMoreMessages}
+                        >
+                            <ScrollArea className="p-3 h-[500px]">
+                                <div className="space-y-4">
+                                    {isLoading ? (
+                                        <MessageSkeleton />
+                                    ) : (
+                                        messages?.length > 0 ? messages?.map((message) => (
+                                            <div key={message?.id} className="flex gap-2">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.full_name} />
+                                                    <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="-mt-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-sm">{message?.sender?.full_name}</span>
+                                                        <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(message?.createdAt ?? ''))}</span>
+                                                    </div>
+                                                    <p className="text-sm">{message?.content}</p>
+                                                </div>
+                                            </div>
+                                        )) : <div className="text-center py-16 px-4 flex flex-col justify-center items-center rounded-lg">
+                                            <MessageCircle className="h-10 w-10 mb-3 text-gray-400" />
+                                            <p className="text-sm font-medium">No messages yet</p>
+                                            <p className="text-xs text-muted-foreground">Be the first to start the conversation</p>
+                                        </div>
+                                    )}
+
+                                    {isFetchingNextPage && (
+                                        <>
+                                            <MessageSkeleton />
+                                            <MessageSkeleton />
+                                        </>
+                                    )}
+                                    <div ref={chatEndRef} />
+                                </div>
+                            </ScrollArea>
+                        </InfiniteScroll>
+
+                        <div className="p-3 border-t border-border">
+                            <form onSubmit={handleSendMessage} className="flex gap-2">
+                                <Input
+                                    placeholder="Send a message..."
+                                    value={chatMessage}
+                                    onChange={(e) => setChatMessage(e.target.value)}
+                                    className="flex-1"
+                                />
+                                <Button type="submit" size="icon" disabled={!chatMessage.trim() || isPending}>
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </form>
+                        </div>
+                    </div>}
                 </div>
             </div>
             <ReportModal

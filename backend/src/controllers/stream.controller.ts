@@ -12,6 +12,7 @@ import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
+import { getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 import { Request, Response } from "express";
 
 export const generate_livekit_token = asyncHandler(
@@ -189,16 +190,19 @@ export const start_chat_live_stream = asyncHandler(
 
     const fullMessage = await StreamChatConversation.findByPk(message.id, {
       include: [
-        { model: User, as: "sender", attributes: ["id", "username", "avatar"] },
+        { model: User, as: "sender", attributes: ["id", "username", "avatar", "full_name"] },
       ],
     });
 
-    emitSocketEvent({
-      req,
-      roomId: `live_stream_${stream_id}`,
-      event: SocketEventEnum.LIVE_CHAT_SEND,
-      payload: fullMessage,
-    });
+    if(!fullMessage) throw new ApiError(404, 'Live Stream Conversation Not Found')
+
+
+      emitSocketEvent({
+        req,
+        roomId: `live_stream_${stream_id}`,
+        event: SocketEventEnum.LIVE_CHAT_SEND,
+        payload: fullMessage,
+      });
 
     return res.json(
       new ApiResponse(200, fullMessage, "Stream details fetched successfully")
@@ -233,6 +237,7 @@ export const stream_details = asyncHandler(
                         )`),
               "followerCount",
             ],
+            getIsFollowingLiteral(req.user.id, '"user"."id"'),
           ],
         },
       ],

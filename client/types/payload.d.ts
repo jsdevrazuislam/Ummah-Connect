@@ -95,6 +95,10 @@ interface QueryOldDataPayloadConversation {
   pageParams: number[];
   pages: ConversationMessagesResponse[];
 }
+interface QueryOldDataPayloadLiveStreamChats {
+  pageParams: number[];
+  pages: LiveStreamChatsResponse[];
+}
 interface QueryOldDataPayloadConversations {
   pageParams: number[];
   pages: ConversationResponse[];

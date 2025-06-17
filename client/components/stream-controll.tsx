@@ -40,7 +40,8 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
     const { isPending, mutate } = useMutation({
         mutationFn: end_live,
         onSuccess: async () => {
-            await room.disconnect()
+            setIsOpen(false)
+            router.push('/')
         },
         onError: (error) => {
             toast.error(error.message)
@@ -83,14 +84,12 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
     );
 
     const handleLiveEnd = async () => {
-        setIsOpen(false)
-        router.push('/')
         mutate(streamId)
     }
 
     return (
         (hostVideoTrack && hostAudioTrack) && room.state !== ConnectionState.Disconnected && <div className='relative w-full flex justify-center items-center m-auto'>
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+            <div className="flex justify-center">
                 <div className="bg-black/70 rounded-full px-4 py-2 flex items-center gap-2 backdrop-blur-sm">
                     <TrackToggle
                         source={Track.Source.Microphone}
