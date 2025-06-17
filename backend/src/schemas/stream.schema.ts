@@ -9,3 +9,10 @@ export const startLiveStreamSchema = z.object({
   save_recording: z.boolean().optional().default(false),
   notify_followers: z.boolean().optional().default(true),
 });
+
+
+export const chatMessageSchema = z.object({
+  stream_id: z.number(),
+  sender_id: z.number(),
+  content: z.string().min(1).max(1000),
+});

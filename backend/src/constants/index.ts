@@ -13,6 +13,7 @@ const SocketEventEnum = Object.freeze({
   HOST_LEFT_LIVE_STREAM: "hostLeftLiveStream",
   HOST_JOIN_LIVE_STREAM: "hostJointLiveStream",
   HOST_END_LIVE_STREAM: "hostEndLiveStream",
+  LIVE_CHAT_SEND:"liveChatSend",
   POST_REACT:"post_react",
   COMMENT_REACT:"commentReact",
   CREATE_COMMENT:"createComment",

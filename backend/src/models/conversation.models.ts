@@ -2,7 +2,6 @@ import { DataTypes, Model} from 'sequelize'
 import sequelize from '@/config/db'
 
 class Conversation extends Model{
-
     public id!: number
     public type!:string
     public name!: string

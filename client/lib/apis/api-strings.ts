@@ -44,6 +44,8 @@ const ApiStrings = {
   GET_LIVES: '/stream/',
   START_LIVE: '/stream/start',
   END_LIVE: '/stream/end',
+  GET_CHATS: '/stream/chats',
+  SEND_CHAT: '/stream/chat',
 };
 
 export default ApiStrings;

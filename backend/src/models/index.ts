@@ -13,6 +13,7 @@ import MessageReaction from '@/models/message-reaction.models'
 import MessageStatus from '@/models/message-status.models'
 import MessageAttachment from '@/models/message-attachment.models'
 import LiveStream from '@/models/stream.models'
+import StreamChatConversation from '@/models/stream-chat.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -94,6 +95,8 @@ MessageAttachment.belongsTo(Message, {
 
 LiveStream.belongsTo(User, { foreignKey: 'user_id', as:'user'})
 
+StreamChatConversation.belongsTo(User, { foreignKey: "sender_id", as: "sender" });
+StreamChatConversation.belongsTo(LiveStream, { foreignKey: "stream_id", as: "stream" });
 
 
 export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream };

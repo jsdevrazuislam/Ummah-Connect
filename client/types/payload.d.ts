@@ -124,3 +124,7 @@ interface StreamPayload {
   notify_followers: boolean;
   tags?: string[] | undefined;
 }
+
+interface LiveStreamChatPayload{
+  stream_id:number, sender_id:number, content:string
+}

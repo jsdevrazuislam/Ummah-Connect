@@ -6,17 +6,33 @@ export const initialize_call = async (payload: CallInitialPayload) => {
   return response.data;
 };
 
-export const start_live = async (payload:StreamPayload): Promise<StartLiveStreamResponse> => {
+export const start_live = async (payload: StreamPayload): Promise<StartLiveStreamResponse> => {
   const response = await api.post<StartLiveStreamResponse>(ApiStrings.START_LIVE, payload);
   return response.data;
 };
 
-export const end_live = async (streamId:number) => {
-  const response = await api.post(ApiStrings.END_LIVE, { streamId});
+export const end_live = async (streamId: number) => {
+  const response = await api.post(ApiStrings.END_LIVE, { streamId });
   return response.data;
 };
 
 export const get_streams = async (): Promise<LiveStreamResponse> => {
   const response = await api.get<LiveStreamResponse>(ApiStrings.GET_LIVES);
+  return response.data;
+};
+
+export const send_stream_message = async (payload:LiveStreamChatPayload) => {
+  const response = await api.post(ApiStrings.SEND_CHAT, payload);
+  return response.data;
+};
+
+export const get_stream_messages = async ({
+  page = 1,
+  limit = 50,
+  streamId = 0
+}): Promise<LiveStreamChatsResponse> => {
+  const response = await api.get<LiveStreamChatsResponse>(ApiStrings.GET_CHATS, {
+    params: { page, limit, streamId },
+  });
   return response.data;
 };

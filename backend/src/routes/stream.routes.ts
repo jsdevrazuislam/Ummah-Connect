@@ -1,7 +1,7 @@
-import { end_live_stream, generate_livekit_token, get_active_lives, initiate_call, start_live_stream, stream_details, validate_call_token } from '@/controllers/stream.controller'
+import { end_live_stream, generate_livekit_token, get_active_lives, get_stream_chats, initiate_call, start_chat_live_stream, start_live_stream, stream_details, validate_call_token } from '@/controllers/stream.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
 import { validateData } from '@/middleware/validation.middleware'
-import { startLiveStreamSchema } from '@/schemas/stream.schema'
+import { chatMessageSchema, startLiveStreamSchema } from '@/schemas/stream.schema'
 import { Router } from 'express'
 
 
@@ -12,6 +12,8 @@ router.get("/validate-call-token", verify_auth, validate_call_token)
 router.get("/", verify_auth, get_active_lives)
 router.get("/details", verify_auth, stream_details)
 router.post("/start", validateData(startLiveStreamSchema), verify_auth, start_live_stream)
+router.post("/chat", validateData(chatMessageSchema), verify_auth, start_chat_live_stream)
+router.get("/chats", verify_auth, get_stream_chats)
 router.post("/end", verify_auth, end_live_stream)
 
 

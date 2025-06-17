@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -23,41 +23,9 @@ import { RemoteParticipant, Track } from "livekit-client"
 import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
-
-
-
-const initialChatMessages = [
-    {
-        id: "1",
-        user: {
-            name: "Ibrahim Khan",
-            username: "ibrahim_k",
-            avatar: "/placeholder.svg?height=32&width=32",
-        },
-        message: "Assalamu alaikum! Excited for this session!",
-        timestamp: "2 minutes ago",
-    },
-    {
-        id: "2",
-        user: {
-            name: "Aisha Rahman",
-            username: "aisha_r",
-            avatar: "/placeholder.svg?height=32&width=32",
-        },
-        message: "Can you explain the difference between conventional and Islamic banking?",
-        timestamp: "1 minute ago",
-    },
-    {
-        id: "3",
-        user: {
-            name: "Omar Farooq",
-            username: "omar_f",
-            avatar: "/placeholder.svg?height=32&width=32",
-        },
-        message: "JazakAllah khair for doing this stream! Very informative.",
-        timestamp: "Just now",
-    },
-]
+import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
+import { get_stream_messages, send_stream_message } from "@/lib/apis/stream"
+import { ErrorMessage } from "@/components/api-error"
 
 function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
 
@@ -177,7 +145,7 @@ function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost:
     )
 }
 
-function ParticipantCount({ streamId }: {streamId:number}) {
+function ParticipantCount({ streamId }: { streamId: number }) {
     const room = useRoomContext()
     const [participantCount, setParticipantCount] = useState(0);
     const { socket } = useSocketStore()
@@ -188,7 +156,7 @@ function ParticipantCount({ streamId }: {streamId:number}) {
         const updateParticipantCount = () => {
             const count = room.numParticipants;
             setParticipantCount(count);
-            socket?.emit(SocketEventEnum.LIVE_VIEW_COUNT, { streamId, count})
+            socket?.emit(SocketEventEnum.LIVE_VIEW_COUNT, { streamId, count })
         };
 
         room.on('participantConnected', updateParticipantCount);
@@ -213,15 +181,50 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const [muted, setMuted] = useState(false)
     const [liked, setLiked] = useState(false)
     const [chatMessage, setChatMessage] = useState("")
-    const [chatMessages, setChatMessages] = useState(initialChatMessages)
     const [likes, setLikes] = useState(0)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const { user } = useAuthStore()
     const { socket } = useSocketStore()
     const isHost = user?.id === stream?.user_id
     const audioEl = useRef<HTMLAudioElement>(null);
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        isError,
+        refetch
+    } = useInfiniteQuery<LiveStreamChatsResponse>({
+        queryKey: ['get_stream_messages'],
+        queryFn: ({ pageParam = 1 }) => get_stream_messages({ page: Number(pageParam), streamId: Number(id) }),
+        getNextPageParam: (lastPage) => {
+            const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
+            return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
+        },
+        initialPageParam: 1,
+        staleTime: 1000 * 60,
+        gcTime: 1000 * 60 * 5,
+        enabled: id ? true : false
+    });
+    const messages = useMemo(() => {
+        return data?.pages.flatMap(page => page?.data?.messages) ?? [];
+      }, [data]);
+
+    const loadMorePosts = () => {
+        if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    };
 
 
+    const { isPending, mutate } = useMutation({
+        mutationFn: send_stream_message,
+        onSuccess: () => { },
+        onError: (error) => {
+            toast.error(error?.message)
+        }
+    })
 
 
     const handleCopy = () => {
@@ -248,24 +251,14 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault()
         if (chatMessage.trim()) {
-            const newMessage = {
-                id: Date.now().toString(),
-                user: {
-                    name: "You",
-                    username: "current_user",
-                    avatar: "/placeholder.svg?height=32&width=32",
-                },
-                message: chatMessage,
-                timestamp: "Just now",
-            }
-            setChatMessages([...chatMessages, newMessage])
+            mutate({ sender_id: user?.id ?? 0, stream_id: stream.id, content: chatMessage?.trim() })
             setChatMessage("")
         }
     }
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, [chatMessages])
+    }, [messages])
 
     useEffect(() => {
         if (!socket) return;
@@ -274,6 +267,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             socket.off(SocketEventEnum.JOIN_LIVE_STREAM);
         };
     }, [socket, id]);
+
+    if (isError) {
+        return <div className="flex justify-center items-center mt-10">
+            <ErrorMessage type='network' />
+        </div>
+    }
 
     return (
         <LiveKitRoom
@@ -373,25 +372,24 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                 </div>
             </div>
 
-            {/* Chat section */}
             <div className="border-t md:border-t-0 md:border-l border-border flex flex-col h-[500px] md:h-auto">
                 <div className="p-3 border-b border-border">
                     <h2 className="font-medium">Live Chat</h2>
                 </div>
                 <ScrollArea className="flex-1 p-3">
                     <div className="space-y-4">
-                        {chatMessages.map((message) => (
-                            <div key={message.id} className="flex gap-2">
+                        {messages?.map((message) => (
+                            <div key={message?.id} className="flex gap-2">
                                 <Avatar className="h-6 w-6">
-                                    <AvatarImage src={message.user.avatar || "/placeholder.svg"} alt={message.user.name} />
-                                    <AvatarFallback>{message.user.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.full_name} />
+                                    <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="font-medium text-sm">{message.user.name}</span>
-                                        <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+                                        <span className="font-medium text-sm">{message?.sender?.full_name}</span>
+                                        <span className="text-xs text-muted-foreground">{message?.timestamp}</span>
                                     </div>
-                                    <p className="text-sm">{message.message}</p>
+                                    <p className="text-sm">{message?.content}</p>
                                 </div>
                             </div>
                         ))}
@@ -406,7 +404,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                             onChange={(e) => setChatMessage(e.target.value)}
                             className="flex-1"
                         />
-                        <Button type="submit" size="icon" disabled={!chatMessage.trim()}>
+                        <Button type="submit" size="icon" disabled={!chatMessage.trim() || isPending}>
                             <Send className="h-4 w-4" />
                         </Button>
                     </form>

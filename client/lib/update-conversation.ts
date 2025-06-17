@@ -201,7 +201,6 @@ export function updateParticipantCount(
   const updatedData = oldData?.data?.map((stream) =>
     stream.id === streamId ? { ...stream, viewers: count } : stream
   );
-  console.log(updatedData);
   return {
     ...oldData,
     data: updatedData,

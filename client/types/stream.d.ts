@@ -4,6 +4,33 @@
   message: string;
   success: boolean;
 }
+ interface LiveStreamChatsResponse {
+  statusCode: number;
+  data?: {
+    messages: LiveStreamChatData
+    totalPages: number
+    currentPage: number
+  };
+  message: string;
+  success: boolean;
+}
+
+ interface LiveStreamChatData {
+  id: number;
+  stream_id: number;
+  sender_id: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  sender: Sender;
+}
+ interface Sender {
+  id: number;
+  username: string;
+  full_name: string;
+  avatar: string;
+}
+
 
 interface StartLiveStreamResponse{
   statusCode: number;
