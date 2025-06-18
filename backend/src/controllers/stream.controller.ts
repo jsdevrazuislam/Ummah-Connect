@@ -6,7 +6,7 @@ import {
 } from "@/config/livekit";
 import redis from "@/config/redis";
 import { SocketEventEnum } from "@/constants";
-import { LiveStream, User } from "@/models";
+import { LiveStream, LiveStreamBan, User } from "@/models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
@@ -216,6 +216,20 @@ export const stream_details = asyncHandler(
 
     if (!streamId) {
       throw new ApiError(400, "streamId is required");
+    }
+
+    const banned = await LiveStreamBan.findOne({
+      where: {
+        stream_id: streamId,
+        banned_user_id: req.user.id,
+      },
+    });
+
+    if(banned) throw new ApiError(429, 'You are banned from this live stream.')
+
+    const count = await redis.get(`report:stream:${streamId}:user:${req.user.id}`)
+    if (parseInt(count ?? '0') >= 5) {
+      throw new ApiError(429, 'You have been removed due to violation')
     }
 
     const stream = await LiveStream.findOne({

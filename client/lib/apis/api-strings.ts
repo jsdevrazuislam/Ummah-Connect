@@ -46,6 +46,9 @@ const ApiStrings = {
   END_LIVE: '/stream/end',
   GET_CHATS: '/stream/chats',
   SEND_CHAT: '/stream/chat',
+  // report
+  REPORT:'/report/',
+  BAN_USER:'/report/ban',
 };
 
 export default ApiStrings;

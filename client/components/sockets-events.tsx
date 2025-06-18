@@ -297,6 +297,16 @@ const SocketEvents = () => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.USER_KICK_FROM_LIVE, () => {
+      router.refresh()
+    });
+    return () => {
+      socket.off(SocketEventEnum.USER_KICK_FROM_LIVE);
+    };
+  }, [socket]);
+
   return null
 }
 

@@ -29,5 +29,6 @@ router.post("/request-otp", validateData(emailSchema), request_email_otp)
 router.post("/2fa/email-verify", validateData(email2FALoginSchema), verify_2FA_otp)
 
 
+export const basePath = '/auth';
 export default router
 

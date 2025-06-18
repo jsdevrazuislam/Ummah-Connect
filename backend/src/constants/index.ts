@@ -33,7 +33,8 @@ const SocketEventEnum = Object.freeze({
   CALL_REJECTED:"call:rejected",
   CALL_TIMEOUT:"call_timeout",
   CALLER_LEFT:"caller_left",
-  LIVE_VIEW_COUNT:'liveViewCount'
+  LIVE_VIEW_COUNT:'liveViewCount',
+  USER_KICK_FROM_LIVE:'user_kick_from_live',
 
 });
 

@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function LiveStreamCardSkeleton() {
+
+export function LiveStreamCardSkeleton() {
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
@@ -27,5 +28,33 @@ export default function LiveStreamCardSkeleton() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function LivePageSkeleton() {
+  return (
+    <>
+      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
+        <div className="flex justify-between items-center mb-4">
+          <Skeleton className="h-6 w-24 ml-12 lg:ml-0" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <div className="relative mb-4">
+          <Skeleton className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 rounded-full" />
+          <Skeleton className="w-full h-9 pl-10" />
+        </div>
+        <div className="mt-4">
+          <Skeleton className="w-full h-10 rounded-md" />
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <LiveStreamCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </>
   );
 }

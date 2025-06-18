@@ -16,6 +16,6 @@ router.post("/chat", validateData(chatMessageSchema), verify_auth, start_chat_li
 router.get("/chats", verify_auth, get_stream_chats)
 router.post("/end", verify_auth, end_live_stream)
 
-
+export const basePath = '/stream';
 export default router
 

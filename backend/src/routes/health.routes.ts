@@ -8,4 +8,6 @@ router.get("/", (req: Request, res: Response) => {
   });
 });
 
+export const basePath = '/health-check';
+
 export default router;

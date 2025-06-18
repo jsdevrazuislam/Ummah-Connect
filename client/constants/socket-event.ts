@@ -29,6 +29,8 @@ const SocketEventEnum = Object.freeze({
   CALL_TIMEOUT:"call_timeout",
   LIVE_VIEW_COUNT:'liveViewCount',
   LIVE_CHAT_SEND:"liveChatSend",
+  USER_KICK_FROM_LIVE:'user_kick_from_live',
+
 });
 
 export default SocketEventEnum

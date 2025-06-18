@@ -14,6 +14,8 @@ import MessageStatus from '@/models/message-status.models'
 import MessageAttachment from '@/models/message-attachment.models'
 import LiveStream from '@/models/stream.models'
 import StreamChatConversation from '@/models/stream-chat.models'
+import Report from '@/models/report.models'
+import LiveStreamBan from '@/models/livestream-ban-models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -98,6 +100,9 @@ LiveStream.belongsTo(User, { foreignKey: 'user_id', as:'user'})
 StreamChatConversation.belongsTo(User, { foreignKey: "sender_id", as: "sender" });
 StreamChatConversation.belongsTo(LiveStream, { foreignKey: "stream_id", as: "stream" });
 
+Report.belongsTo(User, { foreignKey: "reporter_id", as: "reporter" });
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation};
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation};
+
+
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan};
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan};

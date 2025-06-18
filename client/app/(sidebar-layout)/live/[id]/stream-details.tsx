@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { VolumeX, Volume2, Users, Share, Heart, MoreHorizontal, Send, MessageCircle, Ban } from "lucide-react"
+import { VolumeX, Volume2, Users, Share, Heart, MoreHorizontal, Send, MessageCircle, Ban, UserX, Flag, Smile } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,13 +23,16 @@ import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_stream_messages, send_stream_message } from "@/lib/apis/stream"
+import { get_stream_messages, report_user, send_stream_message } from "@/lib/apis/stream"
 import { ErrorMessage } from "@/components/api-error"
 import { formatDistanceToNow } from 'date-fns';
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import { MessageSkeleton } from "@/components/message-skeleton"
 import { addMessageConversationLiveStream } from "@/lib/update-conversation"
 import FollowButton from "@/components/follow-button"
+import emojiData from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { useTheme } from "next-themes"
 
 
 function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
@@ -182,6 +185,7 @@ function ParticipantCount({ streamId }: { streamId: number }) {
 
 export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: string, stream: LiveStreamData, token: string, livekitUrl: string }) {
     const [showReportModal, setShowReportModal] = useState(false);
+    const { theme } = useTheme()
     const [muted, setMuted] = useState(false)
     const [liked, setLiked] = useState(false)
     const [chatMessage, setChatMessage] = useState("")
@@ -192,6 +196,10 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const isHost = user?.id === stream?.user_id
     const audioEl = useRef<HTMLAudioElement>(null);
     const queryClient = useQueryClient()
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const [type, setType] = useState('spamming')
+    const [reportedId, setReportedId] = useState<number | null>(null)
     const {
         data,
         fetchNextPage,
@@ -199,7 +207,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         isFetchingNextPage,
         isLoading,
         isError,
-        refetch
     } = useInfiniteQuery<LiveStreamChatsResponse>({
         queryKey: ['get_stream_messages'],
         queryFn: ({ pageParam = 1 }) => get_stream_messages({ page: Number(pageParam), streamId: Number(id) }),
@@ -236,6 +243,18 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         }
     })
 
+    const { isPending: reportSubmitLoading, mutate: reportMuFunc } = useMutation({
+        mutationFn: report_user,
+        onSuccess: () => {
+            setShowReportModal(false)
+            toast.success('Report submitted')
+        },
+        onError: (error) => {
+            console.log(error)
+            toast.error(error?.message)
+        }
+    })
+
 
     const handleCopy = () => {
         navigator.clipboard.writeText(window.location.href)
@@ -256,6 +275,19 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const toggleLike = () => {
         setLiked(!liked)
         setLikes(liked ? likes - 1 : likes + 1)
+    }
+
+    const handleReportSubmit = (description: string, images: File[]) => {
+        if(!reportedId) return
+        const formData = new FormData()
+        formData.append("stream_id", id)
+        formData.append("type", type)
+        formData.append("reported_id", String(reportedId))
+        formData.append('reason', description)
+        for (const file of images) {
+            formData.append("attachments", file);
+        }
+        reportMuFunc(formData)
     }
 
     const handleSendMessage = (e: React.FormEvent) => {
@@ -362,7 +394,10 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="w-20" align="start">
-                                            <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => {
+                                                setShowReportModal(!showReportModal)
+                                                setType('stream')
+                                            }} className="cursor-pointer">
                                                 Report
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -405,17 +440,56 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                         <MessageSkeleton />
                                     ) : (
                                         messages?.length > 0 ? messages?.map((message) => (
-                                            <div key={message?.id} className="flex gap-2">
+                                            <div key={message?.id} className="flex gap-2 group relative">
                                                 <Avatar className="h-6 w-6">
                                                     <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.full_name} />
                                                     <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
                                                 </Avatar>
-                                                <div className="-mt-1">
+
+                                                <div className="-mt-1 flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium text-sm">{message?.sender?.full_name}</span>
-                                                        <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(message?.createdAt ?? ''))}</span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {formatDistanceToNow(new Date(message?.createdAt ?? ''))}
+                                                        </span>
                                                     </div>
                                                     <p className="text-sm">{message?.content}</p>
+                                                </div>
+
+                                                <div className="absolute right-0 top-0">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 hover:bg-muted"
+                                                            >
+                                                                <MoreHorizontal className="h-3 w-3" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48">
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setShowReportModal(true)
+                                                                    setReportedId(message?.sender_id ?? 0)
+                                                                }}
+                                                                className="text-sm"
+                                                            >
+                                                                <Flag className="h-4 w-4 mr-2" />
+                                                                Report Message
+                                                            </DropdownMenuItem>
+
+                                                            {isHost && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() => console.log(`Ban ${message?.sender?.full_name}`)}
+                                                                    className="text-sm text-red-600"
+                                                                >
+                                                                    <UserX className="h-4 w-4 mr-2" />
+                                                                    Ban from Live
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </div>
                                             </div>
                                         )) : <div className="text-center py-16 px-4 flex flex-col justify-center items-center rounded-lg">
@@ -436,8 +510,22 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                             </ScrollArea>
                         </InfiniteScroll>
 
-                        <div className="p-3 border-t border-border">
+                        <div className="p-3 relative border-t border-border">
+                            {showEmojiPicker && (
+                                <div ref={emojiPickerRef} className="absolute bottom-14 left-2 z-10">
+                                    <Picker
+                                        data={emojiData}
+                                        onEmojiSelect={(emoji: EmojiPicker) => setChatMessage(prev => prev + emoji.native)}
+                                        theme={theme}
+                                        previewPosition="none"
+                                        searchPosition="none"
+                                    />
+                                </div>
+                            )}
                             <form onSubmit={handleSendMessage} className="flex gap-2">
+                                <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
+                                    <Smile className="h-5 w-5" />
+                                </Button>
                                 <Input
                                     placeholder="Send a message..."
                                     value={chatMessage}
@@ -455,7 +543,8 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             <ReportModal
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
-                onSubmit={() => console.log('report submit')}
+                onSubmit={handleReportSubmit}
+                isLoading={reportSubmitLoading}
             />
         </LiveKitRoom>
     )

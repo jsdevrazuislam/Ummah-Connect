@@ -10,8 +10,9 @@ import { Search, Video, Users } from "lucide-react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { get_streams } from "@/lib/apis/stream"
-import LiveStreamCardSkeleton from "@/app/(sidebar-layout)/live/loading"
+import {LiveStreamCardSkeleton} from "@/app/(sidebar-layout)/live/loading"
 import { NoLiveStreams } from "@/components/stream-empty-state"
+
 
 
 export default function LivePage() {
