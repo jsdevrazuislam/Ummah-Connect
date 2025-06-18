@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { VolumeX, Volume2, Users, Share, Heart, MoreHorizontal, Send, MessageCircle, Ban, UserX, Flag, Smile } from "lucide-react"
+import { VolumeX, Volume2, Users, Share, MoreHorizontal, Send, MessageCircle, Ban, UserX, Flag, Smile } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,12 +28,14 @@ import { ErrorMessage } from "@/components/api-error"
 import { formatDistanceToNow } from 'date-fns';
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import { MessageSkeleton } from "@/components/message-skeleton"
-import { addMessageConversationLiveStream } from "@/lib/update-conversation"
+import { addMessageConversationLiveStream, replaceMessageInConversationStream } from "@/lib/update-conversation"
 import FollowButton from "@/components/follow-button"
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
 import { BanModal } from "@/components/ban-modal"
+import { cn } from "@/lib/utils"
+import { loadTempDataForStreamChat } from "@/lib/temp-load-data"
 
 
 function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
@@ -188,9 +190,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const [showReportModal, setShowReportModal] = useState(false);
     const { theme } = useTheme()
     const [muted, setMuted] = useState(false)
-    const [liked, setLiked] = useState(false)
     const [chatMessage, setChatMessage] = useState("")
-    const [likes, setLikes] = useState(0)
     const chatEndRef = useRef<HTMLDivElement>(null)
     const { user } = useAuthStore()
     const { socket } = useSocketStore()
@@ -238,14 +238,18 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
 
     const { isPending, mutate } = useMutation({
         mutationFn: send_stream_message,
-        onSuccess: (data) => {
+        onSuccess: (data, variable) => {
             const payload = data?.data
             queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
-                return addMessageConversationLiveStream(oldData, payload, payload?.stream_id)
+                return replaceMessageInConversationStream(oldData, variable.id, { ...payload, status: 'sent' }, payload?.stream_id)
             })
         },
-        onError: (error) => {
+        onError: (error, variable) => {
             toast.error(error?.message)
+            const payload = loadTempDataForStreamChat(user, variable.content, stream.id, variable.id)
+            queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
+                return replaceMessageInConversationStream(oldData, variable.id, { ...payload, status: 'failed' }, payload?.stream_id)
+            })
         }
     })
 
@@ -278,13 +282,8 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         }
     }
 
-    const toggleLike = () => {
-        setLiked(!liked)
-        setLikes(liked ? likes - 1 : likes + 1)
-    }
-
     const handleReportSubmit = (description: string, images: File[]) => {
-        if(!reportedId) return
+        if (!reportedId) return
         const formData = new FormData()
         formData.append("stream_id", id)
         formData.append("type", type)
@@ -299,7 +298,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault()
         if (chatMessage.trim()) {
-            mutate({ sender_id: user?.id ?? 0, stream_id: stream.id, content: chatMessage?.trim() })
+            const id = Date.now()
+            const tempMessage = loadTempDataForStreamChat(user, chatMessage?.trim(), stream.id, id)
+            queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
+                return addMessageConversationLiveStream(oldData, tempMessage, stream.id)
+            })
+            mutate({ sender_id: user?.id ?? 0, stream_id: stream.id, content: chatMessage?.trim(), id })
             setChatMessage("")
             setShowEmojiPicker(false)
         }
@@ -387,9 +391,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                 }
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="icon" className={liked ? "text-red-500" : ""} onClick={toggleLike}>
-                                    <Heart className={`h-5 w-5 ${liked ? "fill-red-500" : ""}`} />
-                                </Button>
                                 <Button onClick={handleCopy} variant="outline" size="icon">
                                     <Share className="h-5 w-5" />
                                 </Button>
@@ -447,7 +448,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                         <MessageSkeleton />
                                     ) : (
                                         messages?.length > 0 ? messages?.map((message) => (
-                                            <div key={message?.id} className="flex gap-2 group relative">
+                                            <div key={message?.id} className={cn('flex gap-2 group relative', { "opacity-70": message?.status === 'sending' || message?.status === 'failed' })}>
                                                 <Avatar className="h-6 w-6">
                                                     <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.full_name} />
                                                     <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
@@ -477,7 +478,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                         <DropdownMenuContent align="end" className="w-48">
                                                             <DropdownMenuItem
                                                                 onClick={() => {
-                                                                    if(message?.sender_id === stream.user_id) return
+                                                                    if (message?.sender_id === stream.user_id) return
                                                                     setShowReportModal(true)
                                                                     setReportedId(message?.sender_id ?? 0)
                                                                 }}
@@ -491,7 +492,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                             {isHost && (
                                                                 <DropdownMenuItem
                                                                     onClick={() => {
-                                                                        if(message?.sender_id === stream.user_id) return
+                                                                        if (message?.sender_id === stream.user_id) return
                                                                         setBanUser({
                                                                             userId: message?.sender_id ?? 0,
                                                                             username: message?.sender?.full_name ?? ''
@@ -508,6 +509,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>}
+                                                {message?.status === 'failed' && (
+                                                    <span className="text-xs text-red-500">Failed to send</span>
+                                                )}
+                                                {message?.status === 'sending' && (
+                                                    <span className="text-xs text-gray-300">sending..</span>
+                                                )}
                                             </div>
                                         )) : <div className="text-center py-16 px-4 flex flex-col justify-center items-center rounded-lg">
                                             <MessageCircle className="h-10 w-10 mb-3 text-gray-400" />

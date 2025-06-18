@@ -130,7 +130,8 @@ interface StreamPayload {
 }
 
 interface LiveStreamChatPayload{
-  stream_id:number, sender_id:number, content:string
+  id:number
+  stream_id:number, sender_id:number, content:string,
 }
 
 interface BanLivePayload{

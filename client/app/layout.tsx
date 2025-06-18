@@ -39,7 +39,7 @@ export default function RootLayout({
                 <CallRejectedModal />
                 <StreamEndedModal />
                 {children}
-                <AIAssistant />
+                {/* <AIAssistant /> */}
                 <Toaster />
               </WrapperLoader>
             </ReactQueryProvider>

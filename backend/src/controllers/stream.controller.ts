@@ -13,6 +13,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
+import { isSpam } from "@/utils/spam-detection-algorithm";
 import { Request, Response } from "express";
 
 export const generate_livekit_token = asyncHandler(
@@ -177,6 +178,10 @@ export const start_live_stream = asyncHandler(
 export const start_chat_live_stream = asyncHandler(
   async (req: Request, res: Response) => {
     const { stream_id, sender_id, content } = req.body;
+
+    if (isSpam(sender_id, content)) {
+      throw new ApiError(400, 'Please avoid spamming. Otherwise er ban you from our platform')
+    }
 
     const stream = await LiveStream.findOne({ where: { id: stream_id } });
     if (!stream) throw new ApiError(404, "Live Stream Not Found");

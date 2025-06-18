@@ -236,3 +236,36 @@ export const addMessageConversationLiveStream = (
     pages: updatedPages,
   };
 };
+
+
+export function replaceMessageInConversationStream(
+  oldData: QueryOldDataPayloadLiveStreamChats,
+  id: number,
+  newMessage: LiveStreamChatData,
+  steamId: number
+) {
+  if (!oldData || !steamId) return oldData;
+
+  const updatedPages = oldData.pages.map((page) => {
+    const existingConversation = page?.data?.messages ?? [];
+    const shouldUpdateConversationMessage = existingConversation.some((c) => c.stream_id === steamId);
+    const updatedMessages = existingConversation.map((msg) =>msg.id === id ? newMessage : msg);
+
+    if (shouldUpdateConversationMessage) {
+      return {
+        ...page,
+        data: {
+          ...page.data,
+          messages: updatedMessages,
+        },
+      };
+    }
+
+    return page;
+  });
+
+  return {
+    ...oldData,
+    pages: updatedPages,
+  };
+}

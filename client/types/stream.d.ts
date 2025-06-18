@@ -23,6 +23,7 @@
   createdAt: string;
   updatedAt: string;
   sender: Sender;
+  status?: string
 }
  interface Sender {
   id: number;
