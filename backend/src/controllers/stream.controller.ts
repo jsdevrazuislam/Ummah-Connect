@@ -178,9 +178,10 @@ export const start_chat_live_stream = asyncHandler(
   async (req: Request, res: Response) => {
     const { stream_id, sender_id, content } = req.body;
 
-    const stream = await LiveStream.findOne({ where: { id: stream_id}})
-    if(!stream) throw new ApiError(404, 'Live Stream Not Found')
-    if(!stream?.enable_chat) throw new ApiError(400, 'For this live stream chat is disabled')
+    const stream = await LiveStream.findOne({ where: { id: stream_id } });
+    if (!stream) throw new ApiError(404, "Live Stream Not Found");
+    if (!stream?.enable_chat)
+      throw new ApiError(400, "For this live stream chat is disabled");
 
     const message = await StreamChatConversation.create({
       stream_id,
@@ -190,19 +191,23 @@ export const start_chat_live_stream = asyncHandler(
 
     const fullMessage = await StreamChatConversation.findByPk(message.id, {
       include: [
-        { model: User, as: "sender", attributes: ["id", "username", "avatar", "full_name"] },
+        {
+          model: User,
+          as: "sender",
+          attributes: ["id", "username", "avatar", "full_name"],
+        },
       ],
     });
 
-    if(!fullMessage) throw new ApiError(404, 'Live Stream Conversation Not Found')
+    if (!fullMessage)
+      throw new ApiError(404, "Live Stream Conversation Not Found");
 
-
-      emitSocketEvent({
-        req,
-        roomId: `live_stream_${stream_id}`,
-        event: SocketEventEnum.LIVE_CHAT_SEND,
-        payload: fullMessage,
-      });
+    emitSocketEvent({
+      req,
+      roomId: `live_stream_${stream_id}`,
+      event: SocketEventEnum.LIVE_CHAT_SEND,
+      payload: fullMessage,
+    });
 
     return res.json(
       new ApiResponse(200, fullMessage, "Stream details fetched successfully")
@@ -216,20 +221,6 @@ export const stream_details = asyncHandler(
 
     if (!streamId) {
       throw new ApiError(400, "streamId is required");
-    }
-
-    const banned = await LiveStreamBan.findOne({
-      where: {
-        stream_id: streamId,
-        banned_user_id: req.user.id,
-      },
-    });
-
-    if(banned) throw new ApiError(429, 'You are banned from this live stream.')
-
-    const count = await redis.get(`report:stream:${streamId}:user:${req.user.id}`)
-    if (parseInt(count ?? '0') >= 5) {
-      throw new ApiError(429, 'You have been removed due to violation')
     }
 
     const stream = await LiveStream.findOne({
@@ -261,6 +252,47 @@ export const stream_details = asyncHandler(
       throw new ApiError(404, "Stream not found");
     }
 
+    const banned = await LiveStreamBan.findOne({
+      where: {
+        stream_id: streamId,
+        banned_user_id: req.user.id,
+        banned_by_id: stream?.user_id,
+      },
+    });
+
+    if (banned) {
+      const now = new Date();
+      const banTime = new Date(banned.createdAt);
+
+      if (banned.ban_duration === null) {
+        throw new ApiError(
+          429,
+          "You are permanently banned from this live stream."
+        );
+      } else if (banned.ban_duration === 0) {
+        const isActive = stream?.is_active;
+        if (isActive) {
+          throw new ApiError(
+            429,
+            "You are banned from this ongoing live stream."
+          );
+        }
+      } else {
+        const expiry = new Date(banTime.getTime() + banned.ban_duration * 1000);
+        if (now < expiry) {
+          throw new ApiError(
+            429,
+            `You are banned from this stream until ${expiry.toLocaleString()}`
+          );
+        }
+      }
+    }
+
+    const count = await redis.get(`report:stream:${streamId}:user:${req.user.id}`);
+    if (parseInt(count ?? "0") >= 5) {
+      throw new ApiError(429, "You have been removed due to violation");
+    }
+
     const token = await generateLiveToken({
       roomName: stream.room_name,
       userId: String(req.user.id),
@@ -285,7 +317,7 @@ export const get_stream_chats = asyncHandler(
     const skip = (page - 1) * limit;
     const streamId = req.query?.streamId;
 
-    const { count, rows} = await StreamChatConversation.findAndCountAll({
+    const { count, rows } = await StreamChatConversation.findAndCountAll({
       where: { stream_id: streamId },
       limit,
       offset: skip,
@@ -305,7 +337,7 @@ export const get_stream_chats = asyncHandler(
         {
           messages: rows,
           totalPages: Math.ceil(count / limit),
-          currentPage: page
+          currentPage: page,
         },
         "Stream message fetched successfully"
       )

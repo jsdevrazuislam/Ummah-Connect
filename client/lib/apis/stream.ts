@@ -31,8 +31,8 @@ export const send_stream_message = async (payload: LiveStreamChatPayload) => {
   return response.data;
 };
 
-export const ban_user = async (payload: LiveStreamChatPayload) => {
-  const response = await api.post(ApiStrings.BAN_USER, payload);
+export const ban_user = async (payload: BanLivePayload) => {
+  const response = await api.post(ApiStrings.BAN_USER(payload.stream_id), payload);
   return response.data;
 };
 

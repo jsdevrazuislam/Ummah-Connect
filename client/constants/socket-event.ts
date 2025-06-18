@@ -30,6 +30,7 @@ const SocketEventEnum = Object.freeze({
   LIVE_VIEW_COUNT:'liveViewCount',
   LIVE_CHAT_SEND:"liveChatSend",
   USER_KICK_FROM_LIVE:'user_kick_from_live',
+  BAN_VIEWER_FROM_MY_LIVE_STREAM:'ban_user_from_my_live_stream',
 
 });
 

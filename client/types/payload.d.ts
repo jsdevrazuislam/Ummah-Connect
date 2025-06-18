@@ -132,3 +132,10 @@ interface StreamPayload {
 interface LiveStreamChatPayload{
   stream_id:number, sender_id:number, content:string
 }
+
+interface BanLivePayload{
+  banned_user_id: number
+  reason:string
+  duration_type: string
+  stream_id: number
+}

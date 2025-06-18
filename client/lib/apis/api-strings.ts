@@ -48,7 +48,7 @@ const ApiStrings = {
   SEND_CHAT: '/stream/chat',
   // report
   REPORT:'/report/',
-  BAN_USER:'/report/ban',
+  BAN_USER: (id:number) => `/report/ban/${id}`,
 };
 
 export default ApiStrings;

@@ -307,6 +307,16 @@ const SocketEvents = () => {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM, () => {
+      router.refresh()
+    });
+    return () => {
+      socket.off(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM);
+    };
+  }, [socket]);
+
   return null
 }
 

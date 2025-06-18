@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Report } from "@/models";
+import { LiveStream, LiveStreamBan, Report } from "@/models";
 import uploadFileOnCloudinary from "@/utils/cloudinary";
 import { sendEmail } from "@/utils/send-email";
 import redis from "@/config/redis";
@@ -64,3 +64,44 @@ export const create_report = asyncHandler(
     );
   }
 );
+
+
+export const ban_viewer = asyncHandler(async(req:Request, res:Response) =>{
+  const { id: streamId } = req.params;
+  const { banned_user_id, reason, duration_type} = req.body;
+  const hostId = req.user.id;
+
+  const stream = await LiveStream.findOne({ where: { id: streamId, is_active: true}});
+  if (!stream || stream.user_id !== hostId) {
+    throw new ApiError(403, "Only the host can ban users.");
+  }
+
+  let ban_duration: number | null;
+
+  switch (duration_type) {
+    case "current":
+      ban_duration = 0;
+      break;
+    case "24h":
+      ban_duration = 60 * 60 * 24;
+      break;
+    case "permanent":
+      ban_duration = null;
+      break;
+    default:
+      throw new ApiError(400, "Invalid ban duration type.");
+  }
+
+  await LiveStreamBan.create({
+    stream_id:streamId,
+    banned_user_id,
+    banned_by_id: hostId,
+    reason,
+    ban_duration
+  });
+
+  const socket = req.app.get("io");
+  socket.to(`user:${banned_user_id}`).emit(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM, { message: 'You are banned from this live stream.', status: 429 });
+
+  res.json(new ApiResponse(200, null, "Viewer banned successfully"));
+})

@@ -33,6 +33,7 @@ import FollowButton from "@/components/follow-button"
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
+import { BanModal } from "@/components/ban-modal"
 
 
 function StreamUi({ stream, isHost, audioEl }: { stream: LiveStreamData, isHost: boolean, audioEl: React.RefObject<HTMLAudioElement | null> }) {
@@ -200,6 +201,11 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const [type, setType] = useState('spamming')
     const [reportedId, setReportedId] = useState<number | null>(null)
+    const [isBan, setIsBan] = useState(false)
+    const [banUser, setBanUser] = useState({
+        userId: 0,
+        username: ''
+    })
     const {
         data,
         fetchNextPage,
@@ -295,6 +301,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         if (chatMessage.trim()) {
             mutate({ sender_id: user?.id ?? 0, stream_id: stream.id, content: chatMessage?.trim() })
             setChatMessage("")
+            setShowEmojiPicker(false)
         }
     }
 
@@ -456,7 +463,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                     <p className="text-sm">{message?.content}</p>
                                                 </div>
 
-                                                <div className="absolute right-0 top-0">
+                                                {message?.sender_id !== stream.user_id && <div className="absolute right-0 top-0">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button
@@ -470,10 +477,12 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                         <DropdownMenuContent align="end" className="w-48">
                                                             <DropdownMenuItem
                                                                 onClick={() => {
+                                                                    if(message?.sender_id === stream.user_id) return
                                                                     setShowReportModal(true)
                                                                     setReportedId(message?.sender_id ?? 0)
                                                                 }}
                                                                 className="text-sm"
+                                                                disabled={message?.sender_id === stream.user_id}
                                                             >
                                                                 <Flag className="h-4 w-4 mr-2" />
                                                                 Report Message
@@ -481,8 +490,16 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
 
                                                             {isHost && (
                                                                 <DropdownMenuItem
-                                                                    onClick={() => console.log(`Ban ${message?.sender?.full_name}`)}
+                                                                    onClick={() => {
+                                                                        if(message?.sender_id === stream.user_id) return
+                                                                        setBanUser({
+                                                                            userId: message?.sender_id ?? 0,
+                                                                            username: message?.sender?.full_name ?? ''
+                                                                        })
+                                                                        setIsBan(true)
+                                                                    }}
                                                                     className="text-sm text-red-600"
+                                                                    disabled={message?.sender_id === stream.user_id}
                                                                 >
                                                                     <UserX className="h-4 w-4 mr-2" />
                                                                     Ban from Live
@@ -490,7 +507,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                             )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
-                                                </div>
+                                                </div>}
                                             </div>
                                         )) : <div className="text-center py-16 px-4 flex flex-col justify-center items-center rounded-lg">
                                             <MessageCircle className="h-10 w-10 mb-3 text-gray-400" />
@@ -546,6 +563,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                 onSubmit={handleReportSubmit}
                 isLoading={reportSubmitLoading}
             />
+            <BanModal isOpen={isBan} onClose={() => setIsBan(false)} userId={banUser?.userId} streamId={stream.id} username={banUser?.username} />
         </LiveKitRoom>
     )
 }
