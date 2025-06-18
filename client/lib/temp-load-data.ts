@@ -66,3 +66,22 @@ export const loadTempDataForMessage = ({
     attachments: processedAttachments,
   };
 };
+
+
+export const loadTempDataForStreamChat = (user: User | null, content:string, streamId:number, id:number) =>{
+   return {
+    id,
+    stream_id: streamId,
+    sender_id: user?.id ?? 0,
+    content,
+    createdAt: `${new Date()}`,
+    updatedAt: `${new Date()}`,
+    sender: {
+      id: user?.id ?? 0,
+      username: user?.username ?? '',
+      full_name: user?.full_name ?? '',
+      avatar: user?.avatar ?? ''
+    },
+    status: 'sending'
+  }
+}

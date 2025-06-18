@@ -18,7 +18,7 @@ interface SocketAuth {
   token?: string;
 }
 
-interface InitializeSocketIOOptions {
+export interface InitializeSocketIOOptions {
   io: Server;
 }
 
@@ -39,6 +39,7 @@ const joinRoom = (socket: Socket, eventEnum: string, roomPrefix: string) => {
 const setupSocketListeners = (socket: Socket) => {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
   joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
+  joinRoom(socket, SocketEventEnum.JOIN_LIVE_STREAM, "live_stream");
 };
 
 const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
@@ -105,7 +106,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      runSocketEvents(socket)
+      runSocketEvents(socket, io)
     } catch (error) {
       console.error("Socket connection error:", error);
       socket.emit(

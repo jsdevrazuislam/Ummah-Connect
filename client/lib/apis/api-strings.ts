@@ -40,7 +40,15 @@ const ApiStrings = {
   READ_MESSAGE: `/conversation/read-message`,
   SEND_ATTACHMENT: `/conversation/send-attachment`,
   // stream
-  INITIAL_CALL: '/stream/initiate-call'
+  INITIAL_CALL: '/stream/initiate-call',
+  GET_LIVES: '/stream/',
+  START_LIVE: '/stream/start',
+  END_LIVE: '/stream/end',
+  GET_CHATS: '/stream/chats',
+  SEND_CHAT: '/stream/chat',
+  // report
+  REPORT:'/report/',
+  BAN_USER: (id:number) => `/report/ban/${id}`,
 };
 
 export default ApiStrings;

@@ -18,4 +18,6 @@ router.delete("/delete/:postId", verify_auth, delete_post)
 router.delete("/delete/media/:postId", verify_auth, delete_post_image)
 router.get("/following/posts", verify_auth, get_following_posts)
 
+
+export const basePath = '/post';
 export default router

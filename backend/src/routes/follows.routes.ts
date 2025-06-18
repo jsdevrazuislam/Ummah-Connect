@@ -6,5 +6,5 @@ const router = Router()
 
 router.post("/:id", verify_auth, followUnFollow)
 
-
+export const basePath = '/follow';
 export default router

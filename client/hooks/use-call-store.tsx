@@ -27,12 +27,16 @@ interface CallState {
     token: string | null;
     livekitUrl: string | null;
     isFetchingToken: boolean;
+    showEndModal?:boolean
+    hostUsername?:string
     actions: {
         setIncomingCall: (call: IncomingCall | null) => void;
         setRejectedCallInfo: (rejectedCallInfo: RejectedCallInfo | null) => void;
         setCallStatus: (status: 'rejected' | 'missed' | 'ended' | null) => void;
         startCall: (callType: CallType, roomName: string) => void;
         acceptCall: () => void;
+        setShowEndModal: (showEndModal: boolean) => void;
+        setHostUsername: (username:string) => void;
         rejectCall: () => void;
         endCall: () => void;
         fetchToken: (roomName: string, identity: string, callType: CallType) => Promise<void>;
@@ -52,8 +56,12 @@ export const useCallStore = create<CallState>((set, get) => ({
     callAttemptTimeoutId: null,
     hasCallTimedOut: false,
     callStatus: null,
+    showEndModal: false,
+    hostUsername: '',
     actions: {
         setIncomingCall: (call) => set({ incomingCall: call }),
+        setShowEndModal: (showEndModal) => set({ showEndModal }),
+        setHostUsername: (name) => set({ hostUsername: name }),
         setRejectedCallInfo: (rejectedCallInfo) => {
             set({ rejectedCallInfo })
             get().actions.endCall();

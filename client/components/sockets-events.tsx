@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addMessageConversation, addUnReadCount } from "@/lib/update-conversation";
+import { addedConversation, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ const SocketEvents = () => {
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
   const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
-  const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall } = useCallActions();
+  const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall, setShowEndModal, setHostUsername } = useCallActions();
   const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
 
@@ -253,6 +253,67 @@ const SocketEvents = () => {
     });
     return () => {
       socket.off(SocketEventEnum.CALL_TIMEOUT);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.HOST_END_LIVE_STREAM, (payload) => {
+      setShowEndModal(true)
+      setHostUsername(payload?.username)
+      router.push('/')
+    });
+    return () => {
+      socket.off(SocketEventEnum.HOST_END_LIVE_STREAM);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.LIVE_CHAT_SEND, (payload: LiveStreamChatData) => {
+      if (payload?.sender_id !== user?.id) {
+        queryClient.setQueryData(['get_stream_messages'], (oldData: QueryOldDataPayloadLiveStreamChats) => {
+          return addMessageConversationLiveStream(oldData, payload, payload?.stream_id)
+        })
+      }
+    });
+    return () => {
+      socket.off(SocketEventEnum.LIVE_CHAT_SEND);
+    };
+  }, [socket, user]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.LIVE_VIEW_COUNT, (payload) => {
+      queryClient.setQueryData(['get_streams'], (oldData: LiveStreamResponse) => {
+        return updateParticipantCount(oldData, Number(payload?.streamId), payload?.count ?? 0)
+      })
+    });
+    return () => {
+      socket.off(SocketEventEnum.LIVE_VIEW_COUNT);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.USER_KICK_FROM_LIVE, () => {
+      router.refresh()
+    });
+    return () => {
+      socket.off(SocketEventEnum.USER_KICK_FROM_LIVE);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM, () => {
+      router.refresh()
+    });
+    return () => {
+      socket.off(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM);
     };
   }, [socket]);
 

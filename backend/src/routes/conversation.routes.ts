@@ -15,4 +15,5 @@ router.get("/:id", verify_auth, get_conversation_message)
 router.post("/read-message", validateData(readMessageSchema), verify_auth, read_message)
 
 
+export const basePath = '/conversation';
 export default router

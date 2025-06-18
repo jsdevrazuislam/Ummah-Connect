@@ -95,6 +95,10 @@ interface QueryOldDataPayloadConversation {
   pageParams: number[];
   pages: ConversationMessagesResponse[];
 }
+interface QueryOldDataPayloadLiveStreamChats {
+  pageParams: number[];
+  pages: LiveStreamChatsResponse[];
+}
 interface QueryOldDataPayloadConversations {
   pageParams: number[];
   pages: ConversationResponse[];
@@ -114,4 +118,25 @@ interface ReadMessagePayload {
 interface QueryOldDataCommentsPayload {
   pageParams: number[];
   pages: CommentsResponse[];
+}
+interface StreamPayload {
+  title: string;
+  description: string;
+  category: string;
+  enable_chat: boolean;
+  save_recording: boolean;
+  notify_followers: boolean;
+  tags?: string[] | undefined;
+}
+
+interface LiveStreamChatPayload{
+  id:number
+  stream_id:number, sender_id:number, content:string,
+}
+
+interface BanLivePayload{
+  banned_user_id: number
+  reason:string
+  duration_type: string
+  stream_id: number
 }

@@ -13,4 +13,5 @@ router.post("/react/:commentId", validateData(reactSchema), verify_auth, comment
 router.delete("/delete/:id", verify_auth, delete_comment)
 router.get("/:postId/comments", verify_auth, get_comments)
 
+export const basePath = '/comment';
 export default router
