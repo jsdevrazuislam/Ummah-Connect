@@ -41,6 +41,7 @@ const AccountForm = () => {
         mutationFn: updateCurrentUser,
         onSuccess: (updateUser) => {
             toast.success("Update Profile Success")
+            console.log(updateUser?.data)
             setUser(updateUser.data)
         },
         onError: (error) => {
@@ -143,7 +144,7 @@ const AccountForm = () => {
                                         aria-label="Upload image"
                                     />
                                     <Image
-                                            src={cover}
+                                            src={cover ? cover : '/placeholder.svg'}
                                             alt="Cover photo"
                                             className="w-full h-full object-cover"
                                             width={1024}
@@ -169,7 +170,7 @@ const AccountForm = () => {
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-2 mt-4">
                             <Avatar className="h-20 w-20">
-                                <Image width={80} height={80} src={selectAvatar} alt="Profile" />
+                                <Image width={80} height={80} src={selectAvatar ? selectAvatar : '/placeholder.svg'} alt="Profile" />
                             </Avatar>
                             <div className="space-y-2">
                                 <ImageUpload
