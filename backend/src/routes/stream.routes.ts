@@ -1,5 +1,6 @@
-import { end_live_stream, generate_livekit_token, get_active_lives, get_stream_chats, initiate_call, start_chat_live_stream, start_live_stream, stream_details, validate_call_token } from '@/controllers/stream.controller'
+import { end_live_stream, generate_livekit_token, get_active_lives, get_stream_chats, get_sign_url, initiate_call, start_chat_live_stream, start_live_stream, stream_details, upload_short, validate_call_token } from '@/controllers/stream.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
+import { uploadMulter } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
 import { chatMessageSchema, startLiveStreamSchema } from '@/schemas/stream.schema'
 import { Router } from 'express'
@@ -15,6 +16,8 @@ router.post("/start", validateData(startLiveStreamSchema), verify_auth, start_li
 router.post("/chat", validateData(chatMessageSchema), verify_auth, start_chat_live_stream)
 router.get("/chats", verify_auth, get_stream_chats)
 router.post("/end", verify_auth, end_live_stream)
+router.post("/upload-short", verify_auth, uploadMulter.single('media'), upload_short)
+router.get("/url/:publicId", verify_auth, get_sign_url)
 
 export const basePath = '/stream';
 export default router

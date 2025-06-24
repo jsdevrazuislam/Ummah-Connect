@@ -14,8 +14,9 @@ import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
-import uploadFileOnCloudinary, {
+import {
     getThumbnailFromVideo,
+    uploadFileOnCloudinary
 } from "@/utils/cloudinary";
 import { formatConversations } from "@/utils/formater";
 import { formatTimeAgo, getFileType, getOrSetCache } from "@/utils/helper";

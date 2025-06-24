@@ -12,9 +12,12 @@ import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
+import cloudinary from "@/utils/cloudinary";
 import { getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
 import { Request, Response } from "express";
+import fs from "fs";
+
 
 export const generate_livekit_token = asyncHandler(
   async (req: Request, res: Response) => {
@@ -422,3 +425,38 @@ export const end_live_stream = asyncHandler(
       );
   }
 );
+
+export const upload_short = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) throw new ApiError(400, 'No file uploaded.')
+
+  const result = await new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { resource_type: 'video', folder: 'ummah_connect/shorts' },
+      (error, result) => {
+        if (error) reject(error);
+        resolve(result);
+      }
+    );
+    uploadStream.end(req?.file?.buffer);
+  });
+
+  fs.unlinkSync(req.file.path);
+
+  return res.json(
+    new ApiResponse(200, result, 'Video uploaded successfully')
+  );
+
+})
+
+export const get_sign_url = asyncHandler(async (req: Request, res: Response) => {
+  const publicId = decodeURIComponent(req.params.publicId);
+
+  const hlsUrl = cloudinary.url(`${publicId}.m3u8`, {
+    resource_type: 'video',
+    streaming_profile: 'auto',
+    sign_url: true,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+  });
+
+  res.json({ hlsUrl })
+})

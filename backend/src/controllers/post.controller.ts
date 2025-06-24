@@ -4,8 +4,9 @@ import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Follow, Post, Reaction, User } from "@/models";
 import { postSchema } from "@/schemas/post.schema";
-import uploadFileOnCloudinary, {
+import  {
   removeOldImageOnCloudinary,
+  uploadFileOnCloudinary
 } from "@/utils/cloudinary";
 import { formatTimeAgo, getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";

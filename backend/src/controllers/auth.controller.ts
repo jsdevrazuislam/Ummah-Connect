@@ -13,7 +13,7 @@ import {
 } from "@/utils/auth-helper";
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
-import uploadFileOnCloudinary, { removeOldImageOnCloudinary } from "@/utils/cloudinary";
+import { removeOldImageOnCloudinary, uploadFileOnCloudinary } from "@/utils/cloudinary";
 import BookmarkPost from "@/models/bookmark.models";
 import { formatPosts } from "@/utils/formater";
 import { UploadedFiles } from "@/types/global";

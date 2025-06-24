@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import VideoPlayer, { VideoPlayerHandle } from '@/app/(dashboard)/shorts/[id]/player'
 
 
 const shortsData = [
@@ -50,7 +51,7 @@ const shortsData = [
 export function ShortsPlayer({ shortId }: { shortId: string }) {
   const router = useRouter()
   const params = useParams()
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const playerRef = useRef<VideoPlayerHandle>(null);
   const containerRef = useRef<HTMLDivElement>(null)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
@@ -70,30 +71,15 @@ export function ShortsPlayer({ shortId }: { shortId: string }) {
   const titleTextRef = useRef<HTMLParagraphElement>(null)
   const [showComments, setShowComments] = useState(false)
 
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration)
-    }
-  }
-
-  const handleTimeUpdate = () => {
-    if (!isSeeking && videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime)
-    }
-  }
 
   const handleSliderChange = (value: number[]) => {
-    const newTime = value[0]
-    setCurrentTime(newTime)
-    setIsSeeking(true)
+    setCurrentTime(value[0]);
+    setIsSeeking(true);
   }
 
   const handleSliderCommit = (value: number[]) => {
-    const newTime = value[0]
-    if (videoRef.current) {
-      videoRef.current.currentTime = newTime
-    }
-    setIsSeeking(false)
+    playerRef.current?.seekTo(value[0]);
+    setIsSeeking(false);
   }
 
   const shareToPlatform = (platform: string) => {
@@ -132,23 +118,7 @@ export function ShortsPlayer({ shortId }: { shortId: string }) {
     }
   }, [shortId, expanded])
 
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-
-    video.addEventListener('play', handlePlay)
-    video.addEventListener('pause', handlePause)
-
-    video.play().catch(e => console.error("Video play failed:", e))
-
-    return () => {
-      video.removeEventListener('play', handlePlay)
-      video.removeEventListener('pause', handlePause)
-    }
-  }, [currentShort])
 
   useEffect(() => {
     const newShort = shortsData.find(short => short.id === params.id)
@@ -214,8 +184,13 @@ export function ShortsPlayer({ shortId }: { shortId: string }) {
       <div
         ref={containerRef}
         className="relative mx-auto mt-4 max-w-[350px] h-[calc(100vh-96px)] overflow-hidden bg-black rounded-xl"
+        onClick={() => {
+          const player = playerRef.current;
+          if (player?.isPlaying()) player.pause();
+          else player?.play();
+        }}
       >
-        <video
+        {/* <video
           ref={videoRef}
           src={currentShort.videoUrl}
           className="w-full h-full object-cover"
@@ -225,7 +200,18 @@ export function ShortsPlayer({ shortId }: { shortId: string }) {
           playsInline
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
-        />
+        /> */}
+        <VideoPlayer
+          ref={playerRef}
+          autoPlay={false}
+          muted={isMuted}
+          onLoadedMetadata={(dur) => setDuration(dur)}
+          onTimeUpdate={(time) => {
+            if (!isSeeking) setCurrentTime(time);
+            if (playerRef.current?.isPlaying()) setIsPlaying(true);
+            else setIsPlaying(false);
+          }}
+          publicId='ummah_connect/shorts/wdscei9aettfo2voyyww' />
 
         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
@@ -275,12 +261,14 @@ export function ShortsPlayer({ shortId }: { shortId: string }) {
         <ShortsControls
           isPlaying={isPlaying}
           isMuted={isMuted}
-          onPlayPause={() => videoRef.current?.paused ? videoRef.current.play() : videoRef.current?.pause()}
+          onPlayPause={() => {
+            const player = playerRef.current;
+            if (player?.isPlaying()) player.pause();
+            else player?.play();
+          }}
           onMuteUnmute={() => {
-            if (videoRef.current) {
-              videoRef.current.muted = !isMuted
-              setIsMuted(!isMuted)
-            }
+            setIsMuted((prev) => !prev);
+            playerRef.current?.toggleMute();
           }}
         />
 
