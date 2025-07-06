@@ -6,12 +6,15 @@ import ShortsControls from '@/app/(dashboard)/shorts/[id]/shorts-controls'
 import {
     Heart, MessageCircle, Share2,
     Facebook,
-    Link,
+    Link as LinkIcon,
     Mail,
     X,
     ArrowUp,
     ArrowDown,
-    Phone
+    Phone,
+    VideoOff,
+    PlayIcon,
+    PauseIcon
 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -19,9 +22,17 @@ import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import VideoPlayer, { VideoPlayerHandle } from '@/app/(dashboard)/shorts/[id]/player'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { get_shorts } from '@/lib/apis/stream'
 import { ErrorMessage } from '@/components/api-error'
+import Link from 'next/link'
+import { react_post } from '@/lib/apis/posts'
+import { toast } from 'sonner'
+import { create_comment } from '@/lib/apis/comment'
+import { cn } from '@/lib/utils'
+import ShortLoading from '@/app/(dashboard)/shorts/loading'
+import { motion, AnimatePresence } from 'framer-motion'
+
 
 
 
@@ -41,6 +52,11 @@ export default function ShortsListView() {
     const titleTextRef = useRef<HTMLParagraphElement>(null)
     const [showComments, setShowComments] = useState(false)
     const [currentShortIndex, setCurrentShortIndex] = useState(0);
+    const queryClient = useQueryClient()
+    const [commentText, setCommentText] = useState("")
+    const [liked, setLiked] = useState(false)
+    const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
+    const [overlayIconType, setOverlayIconType] = useState<'play' | 'pause' | null>(null);
 
     const {
         data,
@@ -71,11 +87,31 @@ export default function ShortsListView() {
         }
     };
 
-    if (isError) {
-        return <div className="flex justify-center items-center mt-10">
-            <ErrorMessage type='network' />
-        </div>
-    }
+    const { mutate } = useMutation({
+        mutationFn: react_post,
+        onSuccess: (updateData, variable) => {
+
+        },
+        onError: (error) => {
+            toast.error(error.message)
+        }
+    })
+
+    const { mutate: mnFun, isPending } = useMutation({
+        mutationFn: create_comment,
+        onSuccess: (newComment, variable) => {
+            // queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
+            //   return addCommentToPost(oldData, variable.postId, newComment.data)
+            // })
+            // queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+            //   return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
+            // })
+            setCommentText("")
+        },
+        onError: (error) => {
+            toast.error(error.message)
+        }
+    })
 
 
     const handleSliderChange = (value: number[]) => {
@@ -126,7 +162,7 @@ export default function ShortsListView() {
 
 
 
-   const navigateShort = (direction: 'next' | 'prev') => {
+    const navigateShort = (direction: 'next' | 'prev') => {
         if (direction === 'next') {
             if (currentShortIndex < shorts.length - 1) {
                 setCurrentShortIndex(prevIndex => prevIndex + 1);
@@ -139,6 +175,58 @@ export default function ShortsListView() {
             }
         }
     };
+
+    const handlePlayPauseClick = () => {
+        const player = playerRef.current;
+        if (player) {
+            if (player.isPlaying()) {
+                player.pause();
+                setOverlayIconType('pause');
+            } else {
+                player.play();
+                setOverlayIconType('play');
+            }
+            setShowPlayPauseOverlay(true);
+            setTimeout(() => {
+                setShowPlayPauseOverlay(false);
+            }, 500);
+        }
+    };
+
+
+    const handleLike = () => {
+        const payload = {
+            react_type: 'love',
+            icon: '❤️',
+            id: currentShort?.id ?? 0,
+            type: 'short'
+        }
+        mutate(payload)
+        setLiked(true)
+    }
+
+    if (isLoading) {
+        return (
+            <ShortLoading />
+        );
+    }
+
+    if (isError) {
+        return <div className="flex justify-center items-center mt-10">
+            <ErrorMessage type='network' />
+        </div>
+    }
+
+    if (!shorts || shorts.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-96px)] text-gray-400">
+                <VideoOff className="h-10 w-10 mb-3" />
+                <p className="text-lg font-semibold">No Shorts found</p>
+                <p className="text-sm mt-1">Please try again later or upload a video.</p>
+            </div>
+        );
+    }
+
 
 
     return (
@@ -153,23 +241,42 @@ export default function ShortsListView() {
                     muted={isMuted}
                     onLoadedMetadata={(dur) => setDuration(dur)}
                     onTimeUpdate={(time) => {
-                        console.log(time)
                         if (!isSeeking) setCurrentTime(time);
                         if (playerRef.current?.isPlaying()) setIsPlaying(true);
                         else setIsPlaying(false);
                     }}
                     videoUrl={`https://res.cloudinary.com/dqh3uisur/video/upload/sp_auto/v1751778607/${currentShort?.video_id}.m3u8`} />
 
+                <div className="absolute inset-0 z-10" onClick={handlePlayPauseClick}>
+                    <AnimatePresence>
+                        {showPlayPauseOverlay && (
+                            <motion.div
+                                key="overlay"
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            >
+                                <div className="h-20 w-20 rounded-full drop-shadow-lg bg-black/70 flex justify-center items-center">
+                                    {overlayIconType === 'play' && <PlayIcon className="text-white w-8 h-8" />}
+                                    {overlayIconType === 'pause' && <PauseIcon className="text-white w-8 h-8" />}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
                 <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
-                <div className="absolute z-30 bottom-20 left-4 right-16">
-                    <div className="flex items-center space-x-2 mb-2">
+                <div className="absolute z-30 bottom-8 left-4 right-16">
+                    <Link href={`/profile/${currentShort?.user?.username}`} className="flex items-center space-x-2 mb-2 cursor-pointer">
                         <Avatar className="h-8 w-8">
                             {currentShort?.user?.avatar && <AvatarImage src={currentShort?.user?.avatar} />}
                             {!currentShort?.user?.avatar && <AvatarFallback>{currentShort?.user?.full_name?.charAt(0)}</AvatarFallback>}
                         </Avatar>
                         <span className="font-semibold text-white">{currentShort?.user?.full_name}</span>
-                    </div>
+                    </Link>
 
                     <div className="relative">
                         <div
@@ -291,8 +398,8 @@ export default function ShortsListView() {
             </div>
             <div className="absolute z-30 right-[33%] bottom-20 flex flex-col items-center space-y-5">
                 <div className="flex flex-col items-center">
-                    <Button variant="ghost" size="icon" className="rounded-full bg-white/10 text-white hover:bg-white/20">
-                        <Heart className="h-5 w-5" />
+                    <Button onClick={handleLike} variant="ghost" size="icon" className="rounded-full bg-white/10 text-white hover:bg-white/20">
+                        <Heart className={cn("h-5 w-5", liked ? "fill-red-500 text-red-500" : "")} />
                     </Button>
                     <span className="text-white text-xs mt-1">{currentShort?.totalReactionsCount}</span>
                 </div>
@@ -351,7 +458,7 @@ export default function ShortsListView() {
                             className="flex flex-col items-center space-y-2 text-white hover:text-purple-400 transition-colors"
                         >
                             <div className="p-3 bg-gray-800 rounded-full">
-                                <Link className="h-6 w-6" />
+                                <LinkIcon className="h-6 w-6" />
                             </div>
                             <span className="text-xs">Copy Link</span>
                         </button>

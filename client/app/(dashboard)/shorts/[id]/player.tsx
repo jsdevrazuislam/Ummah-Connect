@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, useRef, forwardRef, useState } from 'react';
 import Hls from 'hls.js';
 
 
@@ -21,87 +21,111 @@ interface VideoPlayerProps {
     onTimeUpdate?: (currentTime: number) => void;
 }
 
+
 const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-    ({ videoUrl, autoPlay = false, muted = false, loop = false, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
-        const videoRef = useRef<HTMLVideoElement>(null);
+  ({ videoUrl, autoPlay = false, muted = false, loop = false, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-        useImperativeHandle(ref, () => ({
-            play: () => videoRef.current?.play(),
-            pause: () => videoRef.current?.pause(),
-            seekTo: (s: number) => {
-                if (videoRef.current) videoRef.current.currentTime = s;
-            },
-            toggleMute: () => {
-                if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
-            },
-            isPlaying: () => !!(videoRef.current && !videoRef.current.paused),
-        }));
+    useImperativeHandle(ref, () => ({
+      play: () => videoRef.current?.play(),
+      pause: () => videoRef.current?.pause(),
+      seekTo: (s: number) => {
+        if (videoRef.current) videoRef.current.currentTime = s;
+      },
+      toggleMute: () => {
+        if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
+      },
+      isPlaying: () => !!(videoRef.current && !videoRef.current.paused),
+    }));
+
+    useEffect(() => {
+      if (!videoUrl || !videoRef.current) return;
+
+      const video = videoRef.current;
+      setIsLoading(true);
+
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
+        const duration = data.details?.totalduration || 0;
+        onLoadedMetadata?.(duration);
+        setIsLoading(false);
+        if (autoPlay) video.play().catch(() => {});
+        onReady?.();
+      });
 
 
-        useEffect(() => {
-            if (!videoUrl || !videoRef.current) return;
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          setIsLoading(false);
+        });
 
-            const video = videoRef.current;
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error("HLS.js error", data);
+        });
 
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(videoUrl);
-                hls.attachMedia(video);
+        return () => hls.destroy();
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = videoUrl;
+        video.addEventListener("loadedmetadata", () => {
+          const duration = video.duration || 0;
+          onLoadedMetadata?.(duration);
+          if (autoPlay) video.play().catch(() => {});
+          onReady?.();
+        });
 
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    const duration = video.duration || hls.media?.duration || 0;
-                    onLoadedMetadata?.(duration);
+        video.addEventListener("canplay", () => setIsLoading(false));
+      }
+    }, [videoUrl]);
 
-                    if (autoPlay) {
-                        video.play().catch(() => { });
-                    }
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
 
-                    onReady?.();
-                });
+      const handleMetadata = () => {
+        const duration = video.duration || 0;
+        onLoadedMetadata?.(duration);
+      };
+      const handleTime = () => {
+        onTimeUpdate?.(video.currentTime);
+      };
 
-                return () => hls.destroy();
-            }
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = videoUrl;
-                video.addEventListener('loadedmetadata', () => {
-                    if (autoPlay) video.play().catch(() => { });
-                    onReady?.();
-                });
-            }
-        }, [videoUrl]);
+      video.addEventListener("loadedmetadata", handleMetadata);
+      video.addEventListener("timeupdate", handleTime);
+      video.addEventListener("waiting", () => setIsLoading(true));
+      video.addEventListener("playing", () => setIsLoading(false));
 
-        useEffect(() => {
-            const video = videoRef.current;
-            if (!video) return;
+      return () => {
+        video.removeEventListener("loadedmetadata", handleMetadata);
+        video.removeEventListener("timeupdate", handleTime);
+        video.removeEventListener("waiting", () => setIsLoading(true));
+        video.removeEventListener("playing", () => setIsLoading(false));
+      };
+    }, [onLoadedMetadata, onTimeUpdate]);
 
-            const handleMetadata = () => {
-                const duration = video.duration || 0;
-                onLoadedMetadata?.(duration);
-            };
-            const handleTime = () => onTimeUpdate?.(video.currentTime);
-
-            video.addEventListener('loadedmetadata', handleMetadata);
-            video.addEventListener('timeupdate', handleTime);
-
-            return () => {
-                video.removeEventListener('loadedmetadata', handleMetadata);
-                video.removeEventListener('timeupdate', handleTime);
-            };
-        }, [onLoadedMetadata, onTimeUpdate]);
-
-        return (
-            <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                muted={muted}
-                loop={loop}
-                playsInline
-                controls={false}
-                onContextMenu={(e) => e.preventDefault()}
-            />
-        );
-    }
+    return (
+      <div className="relative w-full h-full">
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+            <div className="h-6 w-6 border-2 border-white border-t-transparent animate-spin rounded-full" />
+          </div>
+        )}
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          autoPlay={autoPlay}
+          muted={muted}
+          loop={loop}
+          playsInline
+          controls={false}
+          onContextMenu={(e) => e.preventDefault()}
+        />
+      </div>
+    );
+  }
 );
 
-
-export default ControlledVideoPlayer;
+export default  ControlledVideoPlayer

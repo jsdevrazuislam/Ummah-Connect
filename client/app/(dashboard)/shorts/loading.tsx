@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import React from 'react'
 
-const loading = () => {
+const ShortLoading = () => {
     return (
         <div>
             <div className='relative'>
@@ -44,4 +44,4 @@ const loading = () => {
     )
 }
 
-export default loading
+export default ShortLoading

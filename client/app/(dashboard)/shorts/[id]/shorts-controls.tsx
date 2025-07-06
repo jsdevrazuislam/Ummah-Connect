@@ -14,6 +14,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ReportModal } from '@/components/report-modal'
+import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 
 export default function ShortsControls({
   isPlaying,
@@ -24,10 +27,15 @@ export default function ShortsControls({
 }: {
   isPlaying: boolean
   isMuted: boolean
-  shortId?:number
+  shortId?: number
   onPlayPause: () => void
   onMuteUnmute: () => void
 }) {
+
+  const [showReportModal, setShowReportModal] = useState(false);
+  const { isPending, mutate } = useMutation({})
+
+
   const handleSaveShort = () => {
     console.log('Save short clicked')
   }
@@ -38,12 +46,16 @@ export default function ShortsControls({
   }
 
   const handleReport = () => {
-    console.log('Report clicked')
+    setShowReportModal(true)
+  }
+
+  const handleReportSubmit = () => {
+
   }
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="absolute top-8 right-8 flex items-center">
+      <div className="absolute z-20 top-8 right-8 flex items-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -103,6 +115,13 @@ export default function ShortsControls({
           </TooltipContent>
         </Tooltip>
       </div>
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={isPending}
+      />
     </TooltipProvider>
   )
 }
