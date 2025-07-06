@@ -136,3 +136,29 @@ export const getUserReactionLiteral = (
     'currentUserReaction'
   ];
 };
+
+
+export const getCommentUserReactionLiteral = (
+  userId: number,
+  alias: string
+): [Literal, string] => {
+  return [
+    sequelize.literal(`(
+      SELECT r."react_type"
+      FROM "reactions" AS r
+      WHERE r."commentId" = ${alias}.id AND r."userId" = ${userId}
+      LIMIT 1
+    )`),
+    'currentUserReaction'
+  ];
+};
+
+export const getCommentTotalReactionsCountLiteral = (alias: string): [Literal, string] => {
+  return [
+    sequelize.literal(`(
+      SELECT COUNT(*) FROM "reactions" AS r
+      WHERE r."commentId" = ${alias}.id
+    )`),
+    'totalReactionsCount'
+  ];
+};

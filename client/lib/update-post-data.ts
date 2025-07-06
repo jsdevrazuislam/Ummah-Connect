@@ -1,7 +1,7 @@
 function updatePostInQueryData(
   oldData: QueryOldDataPayload | undefined,
   postId: number,
-  updateFn: (currentReactions: Reactions) => Reactions
+  data: PostsEntity
 ) {
 
   const updatedPages = oldData?.pages?.map((page) => {
@@ -9,7 +9,7 @@ function updatePostInQueryData(
       if (post.id === postId) {
         return {
           ...post,
-          reactions: updateFn(post.reactions),
+          totalReactionsCount: data?.totalReactionsCount,
         };
       }
       return post;
@@ -94,19 +94,21 @@ export function addReplyCommentToPost(
   };
 }
 
+
 export function addCommentReactionToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   parentId: number,
   isReply: boolean | undefined,
-  updateFn: (currentReactions: Reactions) => Reactions) {
+  amount: number | string
+) {
 
   const updatedPages = oldData?.pages?.map((page) => {
     const updatedComments = page?.data?.comments?.map((comment) => {
       if (comment.id === commentId) {
         return {
           ...comment,
-          reactions: updateFn(comment.reactions)
+          totalReactionsCount: amount
         }
       }
       if (isReply && comment.id === parentId) {
@@ -115,7 +117,7 @@ export function addCommentReactionToPost(
           if (replyComment.parentId === parentId && replyComment.id === commentId) {
             return {
               ...replyComment,
-              reactions: updateFn(replyComment.reactions)
+              totalReactionsCount: amount
             }
           }
           return replyComment
@@ -250,9 +252,7 @@ export function incrementDecrementCommentCount(
       if (post.id === postId) {
         return {
           ...post,
-          comments: {
-            total: amount,
-          },
+          totalCommentsCount: amount
         }
       }
 

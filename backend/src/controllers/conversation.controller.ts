@@ -18,7 +18,7 @@ import {
     getThumbnailFromVideo,
     uploadFileOnCloudinary
 } from "@/utils/cloudinary";
-import { formatConversations } from "@/utils/formater";
+import { formatConversations } from "@/utils/format";
 import { formatTimeAgo, getFileType, getOrSetCache } from "@/utils/helper";
 import { Request, Response } from "express";
 import { Op } from "sequelize";

@@ -51,9 +51,7 @@ interface UpdatedCommentPayload {
 }
 
 interface PostReactPayload {
-  postData: {
-    reactions: Reactions;
-  };
+  postData: PostsEntity
   postId: number;
 }
 
@@ -69,9 +67,7 @@ interface CommentReactPayload {
   commentId: number;
   parentId: number;
   isReply: boolean;
-  data: {
-    reactions: Reactions;
-  };
+  data: CommentPreview
 }
 
 interface DeleteCommentPayload {

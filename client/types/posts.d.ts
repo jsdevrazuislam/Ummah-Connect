@@ -34,6 +34,7 @@ interface PostsData {
 }
 interface PostsEntity {
   id: number;
+  authorId: number;
   user: PostAuthor;
   content: string;
   timestamp: string;
@@ -42,12 +43,14 @@ interface PostsEntity {
   privacy: string;
   isBookmarked: boolean;
   likes: number;
-  comments: Comments;
-  shares: number;
+  totalReactionsCount: number;
+  totalCommentsCount: number;
+  currentUserReaction: ReactionType;
+  share: number;
   image?: string;
   media?: string;
   location: string;
-  reactions: Reactions;
+  createdAt?:string
 }
 interface PostAuthor {
   id: number;
@@ -60,9 +63,6 @@ interface PostAuthor {
   bio:string
   isFollowing?: boolean;
   privacy_settings?:PrivacySettings
-}
-interface Comments {
-  total: number;
 }
 
 interface CommentsResponse{
@@ -77,16 +77,19 @@ interface CommentsResponse{
 }
 interface CommentPreview {
   id: number;
+  userId: number;
   content: string;
   user: PostAuthor;
   replies?: RepliesEntity[];
   repliesCount: number;
-  reactions: Reactions;
   createdAt: string;
   isEdited:boolean
   parentId:number
   postId?: number
   totalComments?: number
+  totalReactionsCount?: number
+  currentUserReaction: ReactionType
+
 }
 
 type ReactionType =
@@ -100,21 +103,18 @@ type ReactionType =
   | null;
 
 interface RepliesEntity {
+  userId: number;
   id: number;
   parentId: number;
   postId?:number
   content: string;
   user: PostAuthor;
   repliesCount: number;
-  reactions: Reactions;
   createdAt: string;
   isEdited:boolean
   totalComments?:number
-}
-
-interface Reactions {
-  counts: Counts;
-  currentUserReaction?: ReactionType;
+  totalReactionsCount?: number
+  currentUserReaction: ReactionType
 }
 interface Counts {
   love: number;
