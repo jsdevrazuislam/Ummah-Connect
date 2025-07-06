@@ -5,15 +5,16 @@ import {
   roomServiceClient,
 } from "@/config/livekit";
 import redis from "@/config/redis";
-import { SocketEventEnum } from "@/constants";
-import { LiveStream, LiveStreamBan, User } from "@/models";
+import { REACT_ATTRIBUTE, SocketEventEnum } from "@/constants";
+import { LiveStream, LiveStreamBan, Reaction, Shorts, User } from "@/models";
+import BookmarkPost from "@/models/bookmark.models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
-import cloudinary from "@/utils/cloudinary";
-import { getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
+import cloudinary, { getThumbnailFromVideo } from "@/utils/cloudinary";
+import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
 import { Request, Response } from "express";
 import fs from "fs";
@@ -427,36 +428,68 @@ export const end_live_stream = asyncHandler(
 );
 
 export const upload_short = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.file) throw new ApiError(400, 'No file uploaded.')
+  const { description } = req.body;
+  const videoPath = req?.file?.path;
 
-  const result = await new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { resource_type: 'video', folder: 'ummah_connect/shorts' },
-      (error, result) => {
-        if (error) reject(error);
-        resolve(result);
-      }
-    );
-    uploadStream.end(req?.file?.buffer);
+  if (!videoPath) throw new ApiError(400, 'Video file is required');
+
+  const publicId = `${Date.now()}`;
+
+  const uploadRes = await cloudinary.uploader.upload(videoPath, {
+    resource_type: "video",
+    public_id: publicId,
+    folder: "ummah_connect/shorts",
+    use_filename: true,
+    overwrite: true,
   });
 
-  fs.unlinkSync(req.file.path);
+  fs.unlinkSync(videoPath);
+
+  const short = await Shorts.create({
+    userId: req.user.id,
+    video_id: uploadRes.public_id,
+    description,
+    is_public: true,
+    thumbnail_url: getThumbnailFromVideo(uploadRes?.url, req?.file?.mimetype ?? '')
+  });
+
+  res.json(new ApiResponse(200, short, "Short uploaded successfully"));
+});
+
+
+export const get_shorts = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const { rows: shorts, count } = await Shorts.findAndCountAll({
+    where: { is_public: true },
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'username', 'avatar', 'full_name'] },
+    ],
+    attributes: {
+      include: [
+        getTotalCommentsCountLiteral('"Short"'),
+        getTotalReactionsCountLiteral('"Short"'),
+        getIsBookmarkedLiteral(req.user.id, '"Short"'),
+        getUserReactionLiteral(req.user.id, '"Short"'),
+      ],
+    },
+    order: [['createdAt', 'DESC']],
+    limit,
+    offset
+  });
 
   return res.json(
-    new ApiResponse(200, result, 'Video uploaded successfully')
+    new ApiResponse(
+      200,
+      {
+        shorts,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        totalItems: count,
+      },
+      'Shorts fetched'
+    )
   );
-
-})
-
-export const get_sign_url = asyncHandler(async (req: Request, res: Response) => {
-  const publicId = decodeURIComponent(req.params.publicId);
-
-  const hlsUrl = cloudinary.url(`${publicId}.m3u8`, {
-    resource_type: 'video',
-    streaming_profile: 'auto',
-    sign_url: true,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-  });
-
-  res.json({ hlsUrl })
-})
+});

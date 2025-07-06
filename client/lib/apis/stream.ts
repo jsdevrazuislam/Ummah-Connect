@@ -60,3 +60,16 @@ export const get_stream_messages = async ({
   );
   return response.data;
 };
+
+export const get_shorts = async ({
+  page = 1,
+  limit = 50,
+}): Promise<ShortsResponse> => {
+  const response = await api.get<ShortsResponse>(
+    ApiStrings.GET_SHORTS,
+    {
+      params: { page, limit },
+    }
+  );
+  return response.data;
+};

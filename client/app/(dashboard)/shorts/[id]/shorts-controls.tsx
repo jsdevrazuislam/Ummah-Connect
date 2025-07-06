@@ -20,9 +20,11 @@ export default function ShortsControls({
   isMuted,
   onPlayPause,
   onMuteUnmute,
+  shortId,
 }: {
   isPlaying: boolean
   isMuted: boolean
+  shortId?:number
   onPlayPause: () => void
   onMuteUnmute: () => void
 }) {
@@ -31,7 +33,7 @@ export default function ShortsControls({
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href)
+    navigator.clipboard.writeText(`${window.location.href}/${shortId}`)
     toast.success('Link copied to clipboard')
   }
 

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
 import Hls from 'hls.js';
-import api from '@/lib/apis/api';
 
 
 export interface VideoPlayerHandle {
@@ -13,7 +12,7 @@ export interface VideoPlayerHandle {
     isPlaying: () => boolean;
 }
 interface VideoPlayerProps {
-    publicId: string;
+    videoUrl: string;
     autoPlay?: boolean;
     muted?: boolean;
     loop?: boolean;
@@ -23,9 +22,8 @@ interface VideoPlayerProps {
 }
 
 const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-    ({ publicId, autoPlay = false, muted = false, loop = false, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
+    ({ videoUrl, autoPlay = false, muted = false, loop = false, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
         const videoRef = useRef<HTMLVideoElement>(null);
-        const [hlsUrl, setHlsUrl] = useState<string | null>(null);
 
         useImperativeHandle(ref, () => ({
             play: () => videoRef.current?.play(),
@@ -39,47 +37,47 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
             isPlaying: () => !!(videoRef.current && !videoRef.current.paused),
         }));
 
-        useEffect(() => {
-            const fetchVideoUrl = async () => {
-                try {
-                    const { data } = await api.get(`/stream/url/${encodeURIComponent(publicId)}`);
-                    setHlsUrl(data?.hlsUrl);
-                } catch (error) {
-                    console.error("Failed to get video URL", error);
-                }
-            };
-            fetchVideoUrl();
-        }, [publicId]);
 
         useEffect(() => {
-            if (!hlsUrl || !videoRef.current) return;
+            if (!videoUrl || !videoRef.current) return;
 
             const video = videoRef.current;
 
             if (Hls.isSupported()) {
                 const hls = new Hls();
-                hls.loadSource(hlsUrl);
+                hls.loadSource(videoUrl);
                 hls.attachMedia(video);
+
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    if (autoPlay) video.play().catch(() => { });
+                    const duration = video.duration || hls.media?.duration || 0;
+                    onLoadedMetadata?.(duration);
+
+                    if (autoPlay) {
+                        video.play().catch(() => { });
+                    }
+
                     onReady?.();
                 });
 
                 return () => hls.destroy();
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = hlsUrl;
+            }
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoUrl;
                 video.addEventListener('loadedmetadata', () => {
                     if (autoPlay) video.play().catch(() => { });
                     onReady?.();
                 });
             }
-        }, [hlsUrl]);
+        }, [videoUrl]);
 
         useEffect(() => {
             const video = videoRef.current;
             if (!video) return;
 
-            const handleMetadata = () => onLoadedMetadata?.(video.duration);
+            const handleMetadata = () => {
+                const duration = video.duration || 0;
+                onLoadedMetadata?.(duration);
+            };
             const handleTime = () => onTimeUpdate?.(video.currentTime);
 
             video.addEventListener('loadedmetadata', handleMetadata);
@@ -99,6 +97,7 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
                 loop={loop}
                 playsInline
                 controls={false}
+                onContextMenu={(e) => e.preventDefault()}
             />
         );
     }
