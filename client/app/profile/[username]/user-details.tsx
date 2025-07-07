@@ -14,13 +14,13 @@ import FollowButton from "@/components/follow-button"
 import MessageButton from "@/components/message-button"
 import Image from "next/image"
 import { useAuthStore } from "@/store/store"
-
-
+import { useRouter } from "next/navigation"
 
 
 export default function ProfilePage({ username, user }: { username: string, user: User }) {
 
     const { user: currentUser } = useAuthStore()
+    const router = useRouter()
 
     const {
         data,
@@ -59,12 +59,12 @@ export default function ProfilePage({ username, user }: { username: string, user
     }
 
     return (
-        <div className="flex min-h-screen bg-background">
+        <div className="flex min-h-screen bg-background mt-5">
             <main className="flex-1 border-x border-border">
                 <div className="relative">
                     <div className="h-48 bg-muted w-full">
                         <Image
-                            src={user?.cover}
+                            src={user?.cover ?? '/placeholder.svg'}
                             alt="Cover"
                             className="w-full h-full object-cover"
                             width={200}
@@ -76,7 +76,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                         <div className="flex justify-between items-start">
                             <div className="flex items-end gap-4">
                                 <Avatar className="h-24 w-24 border-4 border-background -mt-12">
-                                    <Image width={96} height={96} src={user?.avatar ?? ''} alt={user?.full_name} />
+                                    <Image width={96} height={96} src={user?.avatar ?? '/placeholder.svg'} alt={user?.full_name} />
                                 </Avatar>
 
                                 {user?.privacy_settings?.private_account && (
@@ -87,7 +87,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                                 )}
                             </div>
 
-                            {currentUser?.id !== user?.id && <div className="flex gap-2">
+                            {currentUser?.id !== user?.id ? <div className="flex gap-2">
                                 <FollowButton isFollowing={user?.isFollowing} id={user?.id} />
                                 <MessageButton user={{
                                     id: user?.id,
@@ -101,7 +101,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                                     isFollowing: user?.isFollowing,
                                     privacy_settings: user?.privacy_settings
                                 }} />
-                            </div>}
+                            </div> : <Button onClick={() => router.push('/settings')}>Edit Profile</Button>}
                         </div>
 
                         <div className="mt-4">

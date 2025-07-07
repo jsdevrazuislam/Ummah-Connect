@@ -46,6 +46,7 @@ const ApiStrings = {
   END_LIVE: '/stream/end',
   GET_CHATS: '/stream/chats',
   SEND_CHAT: '/stream/chat',
+  GET_SHORTS: '/stream/shorts',
   // report
   REPORT:'/report/',
   BAN_USER: (id:number) => `/report/ban/${id}`,

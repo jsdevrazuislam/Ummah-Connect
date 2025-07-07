@@ -12,8 +12,6 @@ import {
   MessageCircle,
   Bookmark,
   Calendar,
-  Settings,
-  Plus,
   Menu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -40,10 +38,7 @@ const moreNavItems = [
   { href: "/messages", icon: MessageCircle, label: "Messages" },
   { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
   { href: "/prayer-times", icon: Calendar, label: "Prayer Times" },
-  { href: "/settings", icon: Settings, label: "Settings" },
 ]
-
-const hiddenSidebarPages = ["/messages", "/shorts", "/settings"]
 
 interface SocialMediaLayoutProps {
   children: React.ReactNode
@@ -64,13 +59,12 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
     router.push("/login")
   }
 
-  const shouldHideLeftSidebar = hiddenSidebarPages.includes(pathname)
+  const shouldHideLeftSidebar =  ["/messages", "/shorts"].includes(pathname) ||  pathname.startsWith("/shorts")
   const shouldHideRightSidebar = [
   "/messages",
-  "/shorts",
   "/settings",
   "/prayer-times",
-].includes(pathname) || pathname.startsWith("/live");
+].includes(pathname) || pathname.startsWith("/live") ||  pathname.startsWith("/profile") ||  pathname.startsWith("/shorts");
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,7 +90,6 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                       }`}
                   >
                     <item.icon className="h-6 w-6" />
-                    <span className="text-xs mt-1 font-medium">{item.label}</span>
                     {isActive && (
                       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-primary rounded-t-full" />
                     )}
@@ -107,14 +100,9 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 
             <div className="flex items-center space-x-2 flex-1 justify-end">
               <div className="hidden md:flex items-center space-x-2">
-                <Button size="sm" className="rounded-full" variant="secondary">
-                  <Plus className="h-4 w-4" />
-                </Button>
-
                 <ThemeToggle />
-
                 <Link href="/notifications">
-                  <Button size="sm" variant="ghost" className="rounded-full relative">
+                  <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
                       3
@@ -123,7 +111,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                 </Link>
 
                 <Link href="/messages">
-                  <Button size="sm" variant="ghost" className="rounded-full relative">
+                  <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <MessageCircle className="h-5 w-5" />
                     {totalUnread > 0 && <Badge  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
                       {totalUnread}
@@ -134,7 +122,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="ghost" className="rounded-full">
+                  <Button size="sm" variant="ghost" className="w-10 h-10 rounded-full">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -160,8 +148,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
                       {user?.avatar && <AvatarImage src={user?.avatar} />}
-                      {!user?.avatar && <AvatarFallback>{user?.full_name?.charAt(2)}</AvatarFallback>}
-
+                      {!user?.avatar && <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>}
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -170,7 +157,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
                         {user?.avatar && <AvatarImage src={user?.avatar} />}
-                        {!user?.avatar && <AvatarFallback>{user?.full_name?.charAt(2)}</AvatarFallback>}
+                        {!user?.avatar && <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>}
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">{user?.full_name}</p>

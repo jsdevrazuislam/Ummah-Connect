@@ -35,17 +35,18 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.POST_REACT, (payload: PostReactPayload) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return updatePostInQueryData(oldData, payload.postId, () => ({
-          ...payload?.postData?.reactions
-        }))
-      })
+      if (payload?.postData?.authorId !== user?.id) {
+        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+          return updatePostInQueryData(oldData, payload.postId, payload.postData)
+        })
+      }
+
     });
 
     return () => {
       socket.off(SocketEventEnum.POST_REACT);
     };
-  }, [socket]);
+  }, [socket, user]);
 
 
   useEffect(() => {
@@ -92,17 +93,17 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.COMMENT_REACT, (payload: CommentReactPayload) => {
-      queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, () => ({
-          ...payload?.data?.reactions
-        }))
-      })
+      if (payload?.data?.userId !== user?.id) {
+        queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+          return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, payload?.data?.totalReactionsCount ?? 0)
+        })
+      }
     });
 
     return () => {
       socket.off(SocketEventEnum.COMMENT_REACT);
     };
-  }, [socket]);
+  }, [socket, user]);
 
   useEffect(() => {
     if (!socket) return;

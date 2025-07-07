@@ -110,3 +110,55 @@ export const getTotalReactionsCountLiteral = (postAlias: string): [Literal, stri
     'totalReactionsCount'
   ];
 };
+
+
+export const getIsBookmarkedLiteral = (currentUserId: number, alias: string): [Literal, string] => {
+  return [
+    sequelize.literal(`EXISTS (
+      SELECT 1 FROM "bookmarks_posts" AS b
+      WHERE b."postId" = ${alias}.id AND b."userId" = ${currentUserId}
+    )`),
+    'isBookmarked'
+  ];
+};
+
+export const getUserReactionLiteral = (
+  currentUserId: number,
+  alias: string
+): [Literal, string] => {
+  return [
+    sequelize.literal(`(
+      SELECT r."react_type"
+      FROM "reactions" AS r
+      WHERE r."postId" = ${alias}.id AND r."userId" = ${currentUserId}
+      LIMIT 1
+    )`),
+    'currentUserReaction'
+  ];
+};
+
+
+export const getCommentUserReactionLiteral = (
+  userId: number,
+  alias: string
+): [Literal, string] => {
+  return [
+    sequelize.literal(`(
+      SELECT r."react_type"
+      FROM "reactions" AS r
+      WHERE r."commentId" = ${alias}.id AND r."userId" = ${userId}
+      LIMIT 1
+    )`),
+    'currentUserReaction'
+  ];
+};
+
+export const getCommentTotalReactionsCountLiteral = (alias: string): [Literal, string] => {
+  return [
+    sequelize.literal(`(
+      SELECT COUNT(*) FROM "reactions" AS r
+      WHERE r."commentId" = ${alias}.id
+    )`),
+    'totalReactionsCount'
+  ];
+};

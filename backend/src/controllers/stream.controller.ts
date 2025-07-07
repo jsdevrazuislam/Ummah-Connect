@@ -5,16 +5,20 @@ import {
   roomServiceClient,
 } from "@/config/livekit";
 import redis from "@/config/redis";
-import { SocketEventEnum } from "@/constants";
-import { LiveStream, LiveStreamBan, User } from "@/models";
+import { REACT_ATTRIBUTE, SocketEventEnum } from "@/constants";
+import { LiveStream, LiveStreamBan, Reaction, Shorts, User } from "@/models";
+import BookmarkPost from "@/models/bookmark.models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
-import { getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
+import cloudinary, { getThumbnailFromVideo } from "@/utils/cloudinary";
+import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
 import { Request, Response } from "express";
+import fs from "fs";
+
 
 export const generate_livekit_token = asyncHandler(
   async (req: Request, res: Response) => {
@@ -422,3 +426,70 @@ export const end_live_stream = asyncHandler(
       );
   }
 );
+
+export const upload_short = asyncHandler(async (req: Request, res: Response) => {
+  const { description } = req.body;
+  const videoPath = req?.file?.path;
+
+  if (!videoPath) throw new ApiError(400, 'Video file is required');
+
+  const publicId = `${Date.now()}`;
+
+  const uploadRes = await cloudinary.uploader.upload(videoPath, {
+    resource_type: "video",
+    public_id: publicId,
+    folder: "ummah_connect/shorts",
+    use_filename: true,
+    overwrite: true,
+  });
+
+  fs.unlinkSync(videoPath);
+
+  const short = await Shorts.create({
+    userId: req.user.id,
+    video_id: uploadRes.public_id,
+    description,
+    is_public: true,
+    thumbnail_url: getThumbnailFromVideo(uploadRes?.url, req?.file?.mimetype ?? '')
+  });
+
+  res.json(new ApiResponse(200, short, "Short uploaded successfully"));
+});
+
+
+export const get_shorts = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const { rows: shorts, count } = await Shorts.findAndCountAll({
+    where: { is_public: true },
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'username', 'avatar', 'full_name'] },
+    ],
+    attributes: {
+      include: [
+        getTotalCommentsCountLiteral('"Short"'),
+        getTotalReactionsCountLiteral('"Short"'),
+        getIsBookmarkedLiteral(req.user.id, '"Short"'),
+        getUserReactionLiteral(req.user.id, '"Short"'),
+      ],
+    },
+    order: [['createdAt', 'DESC']],
+    limit,
+    offset
+  });
+
+  return res.json(
+    new ApiResponse(
+      200,
+      {
+        shorts,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        totalItems: count,
+      },
+      'Shorts fetched'
+    )
+  );
+});

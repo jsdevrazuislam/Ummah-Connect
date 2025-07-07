@@ -4,23 +4,24 @@ import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Follow, Post, Reaction, User } from "@/models";
 import { postSchema } from "@/schemas/post.schema";
-import uploadFileOnCloudinary, {
+import  {
   removeOldImageOnCloudinary,
+  uploadFileOnCloudinary
 } from "@/utils/cloudinary";
 import { formatTimeAgo, getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
-import { ReactPostType } from "@/types/post";
-import { formatPosts } from "@/utils/formater";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { Op } from "sequelize";
 import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import {
   getFollowerCountLiteral,
   getFollowingCountLiteral,
+  getIsBookmarkedLiteral,
   getIsFollowingLiteral,
   getTotalCommentsCountLiteral,
   getTotalReactionsCountLiteral,
+  getUserReactionLiteral,
 } from "@/utils/sequelize-sub-query";
 import redis from "@/config/redis";
 
@@ -97,68 +98,43 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params?.postId;
   const userId = req.user?.id;
 
-  function reactions(posts: ReactPostType[]) {
-    const reactionCounts = posts.reduce((acc, reaction) => {
-      acc[reaction.react_type] = (acc[reaction.react_type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  const [reaction, created] = await Reaction.findOrCreate({
+    where: { userId, postId },
+    defaults: { react_type, icon },
+  });
 
-    const currentUserReaction = posts.find((r) => r.userId === req.user.id);
-
-    return {
-      reactions: {
-        counts: reactionCounts,
-        currentUserReaction: currentUserReaction?.react_type || null,
-      },
-    };
+  if (!created) {
+    await reaction.update({ react_type, icon });
   }
 
-  const oldReact = await Reaction.findOne({ where: { userId, postId } });
-  if (oldReact) {
-    await Reaction.update(
-      { react_type, icon },
-      {
-        where: { userId, postId },
-      }
-    );
-    const posts = await Reaction.findAll({ where: { postId } });
-    const reactionCounts = reactions(posts);
+  const postWithStats = await Post.findOne({
+    where: { id: postId },
+    attributes: {
+      include: [
+        getTotalReactionsCountLiteral('"Post"'),
+        getUserReactionLiteral(userId, '"Post"'),
+      ],
+    },
+  });
 
-    emitSocketEvent({
-      req,
-      roomId: `post_${postId}`,
-      event: SocketEventEnum.POST_REACT,
-      payload: { postData: reactionCounts, postId: Number(postId) },
-    });
+  if (!postWithStats) throw new ApiError(404, 'Post not found');
 
-    await redis.keys("posts:public:*").then((keys) => {
-      if (keys.length > 0) {
-        redis.del(...keys);
-      }
-    });
+  const postData = postWithStats.toJSON();
 
-    return res.json(new ApiResponse(200, reactionCounts, "React Successfully"));
-  } else {
-    await Reaction.create({
-      userId,
-      postId,
-      react_type,
-      icon,
-    });
+  emitSocketEvent({
+    req,
+    roomId: `post_${postId}`,
+    event: SocketEventEnum.POST_REACT,
+    payload: { postData, postId: Number(postId) },
+  });
 
-    const posts = await Reaction.findAll({ where: { postId } });
-    const reactionCounts = reactions(posts);
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) redis.del(...keys);
+  });
 
-    emitSocketEvent({
-      req,
-      roomId: `post_${postId}`,
-      event: SocketEventEnum.POST_REACT,
-      payload: { postData: reactionCounts, postId: Number(postId) },
-    });
-
-    return res.json(new ApiResponse(200, reactionCounts, "React Successfully"));
-  }
+  return res.json(new ApiResponse(200, postData, "React Successfully"));
 });
+
 
 export const get_posts = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
@@ -196,17 +172,6 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
             ],
           },
           {
-            model: Reaction,
-            required: false,
-            attributes: REACT_ATTRIBUTE,
-            as: "reactions",
-          },
-          {
-            model: BookmarkPost,
-            attributes: ["id", "postId", "userId"],
-            as: "bookmarks",
-          },
-          {
             model: User,
             required: false,
             as: "user",
@@ -223,13 +188,14 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
           include: [
             getTotalCommentsCountLiteral('"Post"'),
             getTotalReactionsCountLiteral('"Post"'),
+            getIsBookmarkedLiteral(currentUserId, '"Post"'),
+            getUserReactionLiteral(currentUserId, '"Post"'),
           ],
         },
       });
 
-      const formatPostData = formatPosts(posts, currentUserId);
       return {
-        posts: formatPostData,
+        posts,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
       };
@@ -513,7 +479,7 @@ export const get_following_posts = asyncHandler(
         });
 
         return {
-          posts: formatPosts(posts, currentUserId),
+          posts,
           totalPages: Math.ceil(count / limit),
           currentPage: page,
         };

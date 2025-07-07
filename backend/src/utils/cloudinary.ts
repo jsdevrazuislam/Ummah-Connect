@@ -11,7 +11,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadFileOnCloudinary = async (localFilePath: string, folderName: string) => {
+export const uploadFileOnCloudinary = async (localFilePath: string, folderName: string) => {
   try {
     if (!localFilePath)
       return {
@@ -68,4 +68,4 @@ export const removeOldImageOnCloudinary = async (url: string) => {
   }
 };
 
-export default uploadFileOnCloudinary;
+export default cloudinary;

@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Follow, Otp, Post, Reaction, RecoveryCodes, User } from "@/models";
+import { Follow, Otp, Post, RecoveryCodes, User } from "@/models";
 import { Op } from "sequelize";
 import {
   compare_password,
@@ -13,12 +13,10 @@ import {
 } from "@/utils/auth-helper";
 import { sendEmail } from "@/utils/send-email";
 import { JwtResponse } from "@/types/auth";
-import uploadFileOnCloudinary, { removeOldImageOnCloudinary } from "@/utils/cloudinary";
-import BookmarkPost from "@/models/bookmark.models";
-import { formatPosts } from "@/utils/formater";
+import { removeOldImageOnCloudinary, uploadFileOnCloudinary } from "@/utils/cloudinary";
 import { UploadedFiles } from "@/types/global";
-import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
-import { getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral } from "@/utils/sequelize-sub-query";
+import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { getIsBookmarkedLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
@@ -293,7 +291,7 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
-  const currentUserId = req.user?.id;
+  const currentUserId = req.user.id
 
   const user = await User.findOne({
     where: { username: req.params.username },
@@ -305,7 +303,7 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
   const { count, rows: posts } = await Post.findAndCountAll({
     limit: limit,
     offset: skip,
-    where: { authorId: user.id },
+    where: { authorId: user.id, privacy: 'public' },
     include: [
       {
         model: Post,
@@ -316,13 +314,6 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
         ]
       },
       {
-        model: Reaction,
-        required: false,
-        attributes: REACT_ATTRIBUTE,
-        as: 'reactions'
-      },
-      { model: BookmarkPost, attributes: ['id', 'postId', 'userId'], as: 'bookmarks' },
-      {
         model: User,
         required: false,
         attributes: USER_ATTRIBUTE,
@@ -332,17 +323,17 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
     attributes: {
       include: [
         getTotalCommentsCountLiteral('"Post"'),
-        getTotalReactionsCountLiteral('"Post"')
+        getTotalReactionsCountLiteral('"Post"'),
+        getIsBookmarkedLiteral(currentUserId, '"Post"'),
+        getUserReactionLiteral(currentUserId, '"Post"'),
       ],
     }
   });
 
-  const formatPostData = formatPosts(posts, currentUserId)
-
 
   return res.json(
     new ApiResponse(200, {
-      posts: formatPostData,
+      posts,
       totalPages: Math.ceil(count / limit),
       currentPage: page
     }, 'Post Success')

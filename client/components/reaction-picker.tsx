@@ -25,9 +25,7 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
     mutationFn: react_post,
     onSuccess: (updateData, variable) => {
       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return updatePostInQueryData(oldData, variable.id, () => ({
-          ...updateData?.data?.reactions
-        }))
+        return updatePostInQueryData(oldData, variable.id, updateData?.data)
       })
     },
     onError: (error) => {

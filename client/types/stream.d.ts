@@ -80,3 +80,39 @@ interface StartLiveStreamResponse{
   }
   updatedAt: string;
 }
+
+
+ interface ShortsResponse {
+  statusCode: number;
+  data: ShortsData;
+  message: string;
+  success: boolean;
+}
+ interface ShortsData {
+  shorts?: (ShortsEntity)[] | null;
+  totalPages: number;
+  currentPage: number;
+  totalItems: number;
+}
+ interface ShortsEntity {
+  id: number;
+  userId: number;
+  video_id: string;
+  thumbnail_url: string;
+  description: string;
+  is_public: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: ShortUser;
+  share:number
+  totalCommentsCount:number
+  totalReactionsCount:string
+  isBookmarked: boolean
+  currentUserReaction: string 
+}
+ interface ShortUser {
+  id: number;
+  username: string;
+  avatar?: null;
+  full_name: string;
+}

@@ -40,6 +40,7 @@ import { formatTimeAgo } from "@/lib/utils"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
 import { ConfirmationModal } from "@/components/confirmation-modal"
+import { formatDistanceToNowStrict } from "date-fns"
 
 
 
@@ -57,7 +58,7 @@ export function Post({ post }: PostProps) {
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.reactions?.currentUserReaction ?? null)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.currentUserReaction ?? null)
   const [isBookmarked, setIsBookmarked] = useState(post?.isBookmarked || false)
   const [isEditing, setIsEditing] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
@@ -132,13 +133,6 @@ export function Post({ post }: PostProps) {
     mutate(post.id)
   }
 
-  const getTotalReactions = () => {
-    if (post?.reactions?.counts && Object.keys(post?.reactions?.counts).length > 0) {
-      return Object.values(post?.reactions?.counts).reduce((sum, count) => sum + (count || 0), 0)
-    }
-    return 0
-  }
-
   useEffect(() => {
     if (!socket) return;
     socket.emit(SocketEventEnum.JOIN_POST, post.id.toString());
@@ -151,8 +145,8 @@ export function Post({ post }: PostProps) {
     <div className="border-b border-border p-4">
       <div className="flex gap-3">
         <Avatar>
-          <AvatarImage src={post?.user?.avatar || "/placeholder.svg"} alt={post?.user?.full_name} />
-          <AvatarFallback>{post?.user?.full_name?.charAt(0)}</AvatarFallback>
+          { post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.full_name} /> : 
+          <AvatarFallback>{post?.user?.full_name?.charAt(0)}</AvatarFallback>}
         </Avatar>
 
         <div className="flex-1">
@@ -162,7 +156,7 @@ export function Post({ post }: PostProps) {
                 <button onClick={() => router.push(`/profile/${post?.user?.username}`)} className="font-semibold capitalize cursor-pointer hover:underline">{post?.user?.full_name}</button>
               </CardHoverTooltip>
               <span className="text-muted-foreground">
-                @{post?.user?.username} · {post?.timestamp}
+                @{post?.user?.username} · {formatDistanceToNowStrict(new Date(post?.createdAt ?? ''), { addSuffix: true })}
               </span>
             </div>
             <DropdownMenu>
@@ -228,8 +222,8 @@ export function Post({ post }: PostProps) {
               <div className="px-4 py-2">
                 <div className="flex items-center gap-4">
                   <Avatar>
-                    <AvatarImage src={post.originalPost?.user?.avatar || "/placeholder.svg"} alt={post.originalPost?.user?.full_name} />
-                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>
+                    { post.originalPost?.user?.avatar ? <AvatarImage src={post.originalPost?.user?.avatar} alt={post.originalPost?.user?.full_name} /> : 
+                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>}
                   </Avatar>
                   <div>
                     <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
@@ -270,7 +264,7 @@ export function Post({ post }: PostProps) {
           <div className="mt-4 flex justify-between">
             <div className="flex items-center gap-2">
               <ReactionPicker id={post.id} onReactionSelect={setCurrentReaction} currentReaction={currentReaction} />
-              <span className="text-sm text-muted-foreground">{getTotalReactions()}</span>
+              <span className="text-sm text-muted-foreground">{post?.totalReactionsCount}</span>
             </div>
             <Button
               variant="ghost"
@@ -279,7 +273,7 @@ export function Post({ post }: PostProps) {
               onClick={() => setShowComments(!showComments)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{post?.comments?.total}</span>
+              <span>{post?.totalCommentsCount}</span>
             </Button>
             <Button
               variant="ghost"
@@ -288,7 +282,7 @@ export function Post({ post }: PostProps) {
               onClick={() => setShowShareDialog(true)}
             >
               <Share className="h-4 w-4" />
-              <span>{post?.shares}</span>
+              <span>{post?.share}</span>
             </Button>
             <Button
               variant="ghost"
@@ -305,11 +299,11 @@ export function Post({ post }: PostProps) {
             <div className="mt-4 space-y-4">
               <div className="flex gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={user?.avatar || "/placeholder.svg?height=32&width=32"}
+                  { user?.avatar ? <AvatarImage
+                    src={user?.avatar}
                     alt={user?.full_name || "Your avatar"}
-                  />
-                  <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>
+                  /> : 
+                  <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>}
                 </Avatar>
                 <div className="flex-1 flex gap-2">
                   <Input
@@ -326,7 +320,7 @@ export function Post({ post }: PostProps) {
               </div>
               <CommentItems
                 postId={post.id}
-                totalComment={post?.comments?.total}
+                totalComment={post?.totalCommentsCount}
               />
             </div>
           )}

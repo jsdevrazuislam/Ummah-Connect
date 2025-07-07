@@ -36,9 +36,7 @@ export function CommentReactionPicker({
     mutationFn: comment_react,
     onSuccess: (updateData, variable) => {
       queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addCommentReactionToPost(oldData, variable.id, parentId, isReply, () => ({
-          ...updateData?.data?.reactions
-        }))
+        return addCommentReactionToPost(oldData, variable.id, parentId, isReply, updateData?.data?.totalReactionsCount)
       })
     },
     onError: (error) => {

@@ -109,7 +109,7 @@ function CommentItem({
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(comment.content)
   const [showReplies, setShowReplies] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.reactions?.currentUserReaction ?? null)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.currentUserReaction ?? null)
   const isCurrentUserComment = user && comment.user.username === user.username
   const router = useRouter()
 
@@ -195,17 +195,12 @@ function CommentItem({
     setCurrentReaction(reaction)
   }
 
-  const getTotalReactions = () => {
-    if (Object.keys(comment?.reactions?.counts)?.length == 0) return 0
-    return Object.values(comment?.reactions?.counts).reduce((sum, count) => sum + (count || 0), 0)
-  }
-
   return (
 
     <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={comment?.user?.avatar || "/placeholder.svg"} alt={comment.user?.full_name} />
-        <AvatarFallback>{comment?.user?.full_name?.charAt(0)}</AvatarFallback>
+        { comment?.user?.avatar ? <AvatarImage src={comment?.user?.avatar} alt={comment.user?.full_name} /> : 
+        <AvatarFallback>{comment?.user?.full_name?.charAt(0)}</AvatarFallback>}
       </Avatar>
       <div className="flex-1">
         <div className="bg-muted rounded-lg px-3 py-2">
@@ -270,7 +265,7 @@ function CommentItem({
         <div className="flex gap-4 mt-1 ml-2 items-center">
           <div className="flex items-center gap-1">
             <CommentReactionPicker isReply={isReply} postId={postId} parentId={comment.parentId} id={comment.id} onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />
-            {getTotalReactions() > 0 && <span className="text-xs text-muted-foreground">{getTotalReactions()}</span>}
+            <span className="text-xs text-muted-foreground">{comment?.totalReactionsCount}</span>
           </div>
 
           {!isReply && (
@@ -297,11 +292,11 @@ function CommentItem({
         {showReplyForm && (
           <div className="mt-3 flex gap-2">
             <Avatar className="h-6 w-6">
-              <AvatarImage
-                src={user?.avatar || "/placeholder.svg?height=24&width=24"}
+              {user?.avatar ?<AvatarImage
+                src={user?.avatar}
                 alt={user?.full_name || "You"}
-              />
-              <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>
+              /> : 
+              <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>}
             </Avatar>
             <div className="flex-1 flex gap-2">
               <Input

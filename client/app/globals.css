@@ -53,6 +53,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -63,12 +64,22 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
 }
 
 
-html{
-   font-family: "Noto Sans", sans-serif;
+html {
+  font-family: "Noto Sans", sans-serif;
+}
+
+.short_description::-webkit-scrollbar {
+  width: 4px;
+}
+
+.short_description::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
 }
