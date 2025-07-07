@@ -23,7 +23,7 @@ interface VideoPlayerProps {
 
 
 const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-  ({ videoUrl, autoPlay = false, muted = false, loop = false, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
+  ({ videoUrl, autoPlay = false, muted = false, loop = true, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -46,7 +46,11 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
       setIsLoading(true);
 
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({
+          maxBufferLength: 60, 
+          maxMaxBufferLength: 90, 
+          startFragPrefetch: true, 
+        });
         hls.loadSource(videoUrl);
         hls.attachMedia(video);
 
