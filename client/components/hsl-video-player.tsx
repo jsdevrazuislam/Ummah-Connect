@@ -20,7 +20,7 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs}`;
 };
 
-export default function HLSVideoPlayer({ src }: { src: string }) {
+export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
@@ -154,6 +154,7 @@ export default function HLSVideoPlayer({ src }: { src: string }) {
         muted={isMuted}
         playsInline
         onClick={togglePlay}
+        poster={poster}
       />
 
       <AnimatePresence>

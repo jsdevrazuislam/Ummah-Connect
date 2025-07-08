@@ -36,6 +36,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme()
+  const [background, setBackground] = useState('')
 
   const { mutate, isPending } = useMutation({
     mutationFn: create_post,
@@ -86,6 +87,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
     if (selectedFile) {
       formData.append("media", selectedFile)
     }
+    formData.append("background", background)
     formData.append("content", content)
     if (selectedLocation) {
       formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`)
@@ -104,6 +106,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   }
 
   const handleImageSelect = (imageUrl: File) => {
+    if(background) return
     setSelectedFile(imageUrl)
   }
 
@@ -129,27 +132,56 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   }, []);
 
   return (
-   <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
       <div className="sticky top-0 p-4 z-10 bg-background border-b border-border">
         <h1 className="text-xl font-semibold text-center">Create Post</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isPending && <LoadingUi title="Posting" className="absolute inset-0 bg-background/80 z-20" />}
-        
+
         <div className="flex gap-3">
           <Avatar>
-            <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
-            <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <Textarea
-            ref={textareaRef}
-            placeholder="What's on your mind?"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[100px]"
-          />
+              <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
+              <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+           <div>
+             <p>{user?.full_name}</p>
+             <span className="text-gray-400">@{user?.username}</span>
+           </div>
         </div>
+        <div className={`rounded-lg ${background} transition-colors duration-200`}>
+            <Textarea
+              ref={textareaRef}
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className={`flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px] ${background.startsWith('bg-gradient') ? 'text-white placeholder:text-white/70' : ''
+                }`}
+              style={{
+                backgroundColor: 'transparent',
+                color: background.startsWith('bg-gradient') ? 'white' : 'inherit'
+              }}
+            />
+        </div>
+
+        {
+          !selectedFile &&  <div className="flex gap-2 overflow-x-auto pb-2">
+          {[
+            'bg-white', 'bg-gray-100', 'bg-blue-50', 'bg-green-50',
+            'bg-yellow-50', 'bg-pink-50', 'bg-purple-50', 'bg-gradient-to-r from-blue-400 to-purple-500',
+            'bg-gradient-to-r from-pink-400 to-red-500', 'bg-gradient-to-r from-green-400 to-blue-500'
+          ].map((bgClass) => (
+            <button
+              key={bgClass}
+              type="button"
+              onClick={() => setBackground(bgClass)}
+              className={`w-8 h-8 rounded-full ${bgClass} border-2 ${background === bgClass ? 'border-primary' : 'border-transparent'}`}
+              aria-label={`Select ${bgClass} background`}
+            />
+          ))}
+        </div>
+        }
 
         {selectedLocation && (
           <div className="flex items-center">
@@ -165,7 +197,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
         )}
 
         {selectedFile && (
-          <div className="ml-12 relative">
+          <div className="relative">
             <div className="rounded-lg overflow-hidden border border-border">
               {selectedFile.type.startsWith('image/') ? (
                 <img
@@ -216,6 +248,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
             <ImageUpload
               onImageSelect={handleImageSelect}
               accept="image/*, video/*"
+              disabled={background ? true : false}
             />
             <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
               <Smile className="h-5 w-5" />

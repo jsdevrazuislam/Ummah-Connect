@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input"
 interface ImageUploadProps {
   onImageSelect: (imageUrl: File) => void
   accept?:string
+  disabled?:boolean
 }
 
-export function ImageUpload({ onImageSelect, accept='image/*' }: ImageUploadProps) {
+export function ImageUpload({ onImageSelect, accept='image/*', disabled}: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleButtonClick = () => {
@@ -39,7 +40,7 @@ export function ImageUpload({ onImageSelect, accept='image/*' }: ImageUploadProp
         aria-label="Upload image"
       />
 
-      <Button type="button" size="icon" variant="ghost" onClick={handleButtonClick}>
+      <Button disabled={disabled} type="button" size="icon" variant="ghost" onClick={handleButtonClick}>
         <ImageIcon className="h-5 w-5" />
         <span className="sr-only">Add image</span>
       </Button>

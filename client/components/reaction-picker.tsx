@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { react_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
 import updatePostInQueryData from "@/lib/update-post-data"
+import { motion, AnimatePresence } from "framer-motion"
 
 export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
 
@@ -19,6 +20,7 @@ interface ReactionPickerProps {
 
 export function ReactionPicker({ onReactionSelect, currentReaction, id }: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
   const queryClient = useQueryClient()
   const pickerRef = useRef<HTMLDivElement>(null)
   const { mutate } = useMutation({
@@ -57,18 +59,26 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
   }, [])
 
   const handleReactionClick = (reaction: ReactionType) => {
-    if (reaction === currentReaction) {
-      onReactionSelect(null)
-    } else {
-      onReactionSelect(reaction)
-    }
+    const newReaction = reaction === currentReaction ? null : reaction
+    onReactionSelect(newReaction)
+    
     const payload = {
-      react_type: reaction ?? '',
-      icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
+      react_type: newReaction ?? '',
+      icon: reactions.find((r) => r.type === newReaction)?.emoji ?? '',
       id
     }
     mutate(payload)
     setIsOpen(false)
+  }
+
+  const handleMainButtonClick = () => {
+    if (currentReaction) {
+      // Unlike if already reacted
+      handleReactionClick(currentReaction)
+    } else {
+      // Default like if no reaction
+      handleReactionClick("like")
+    }
   }
 
   const getCurrentReactionEmoji = () => {
@@ -100,40 +110,85 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
 
   return (
     <div className="relative" ref={pickerRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn("text-muted-foreground gap-1", currentReaction && getCurrentReactionColor())}
-        onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsOpen(true)}
-      >
-        {currentReaction ? (
-          <span className="text-lg mr-1">{getCurrentReactionEmoji()}</span>
-        ) : (
-          <ThumbsUp className="h-4 w-4" />
-        )}
-        <span>{currentReaction ? currentReaction.charAt(0).toUpperCase() + currentReaction.slice(1) : ""}</span>
-      </Button>
+      <div className="flex items-center gap-1">
+        {/* Main Like Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "text-muted-foreground gap-1 px-2",
+            currentReaction && getCurrentReactionColor()
+          )}
+          onClick={handleMainButtonClick}
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          {currentReaction ? (
+            <span className="text-lg">{getCurrentReactionEmoji()}</span>
+          ) : (
+            <ThumbsUp className="h-4 w-4" />
+          )}
+          <span className="ml-1">
+            {currentReaction ? currentReaction.charAt(0).toUpperCase() + currentReaction.slice(1) : "Like"}
+          </span>
+        </Button>
 
-      {isOpen && (
-        <div className="absolute bottom-full mb-2 left-0 bg-background border border-border rounded-full shadow-lg z-10 p-1">
-          <div className="flex">
-            {reactions.map((reaction) => (
-              <button
-                key={reaction.type}
-                className={cn(
-                  "h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full text-xl transition-transform hover:scale-125",
-                  currentReaction === reaction.type && "bg-muted scale-125",
-                )}
-                onClick={() => handleReactionClick(reaction.type)}
-                title={reaction.label}
-              >
-                {reaction.emoji}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Reaction Picker Trigger */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 p-0 text-muted-foreground"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="text-xs">▼</span>
+        </Button>
+      </div>
+
+      {/* Tooltip for main button */}
+      <AnimatePresence>
+        {showTooltip && !isOpen && (
+          <motion.div
+            className="absolute bottom-full mb-2 left-0 bg-foreground text-background text-xs px-2 py-1 rounded"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.1 }}
+          >
+            {currentReaction ? "Remove reaction" : "Like"}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reaction Picker */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="absolute bottom-full mb-2 left-0 bg-background border border-border rounded-full shadow-lg z-10 p-1"
+            initial={{ opacity: 0, y: 20, scale: 0.5 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.5 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          >
+            <div className="flex">
+              {reactions.map((reaction) => (
+                <motion.button
+                  key={reaction.type}
+                  className={cn(
+                    "h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full text-xl",
+                    currentReaction === reaction.type && "bg-muted scale-125"
+                  )}
+                  onClick={() => handleReactionClick(reaction.type)}
+                  title={reaction.label}
+                  whileHover={{ scale: 1.3 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {reaction.emoji}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

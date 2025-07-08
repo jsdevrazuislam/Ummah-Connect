@@ -28,11 +28,11 @@ import { postSchema } from "@/schemas/post.schema";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
-  const { content, location, privacy } = data;
+  const { content, location, privacy, background } = data;
   const authorId = req.user.id;
   const mediaPath = req.file?.path;
   let media_url = null;
-  let contentType: 'text' | 'video' | 'audio' = 'text';
+  let contentType: 'text' | 'video' | 'audio' | 'picture' = 'text';
 
   if (mediaPath) {
     const uploaded = await uploadFileOnCloudinary(mediaPath, 'ummah_connect/posts'); 
@@ -41,6 +41,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
     const mimeType = uploaded?.resource_type || getFileTypeFromPath(mediaPath);
     if (mimeType?.startsWith('video')) contentType = 'video';
     else if (mimeType?.startsWith('audio')) contentType = 'audio';
+    else if (mimeType?.startsWith('image')) contentType = 'picture';
     else contentType = 'text';
   }
 
@@ -50,6 +51,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
     privacy,
     media: media_url,
     authorId,
+    background,
     contentType,
   };
 
@@ -63,8 +65,6 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
 
   const postData = {
     ...newPost.toJSON(),
-    image: newPost.media,
-    timestamp: formatTimeAgo(newPost.createdAt),
     user: {
       id: authorId,
       full_name: req.user?.full_name,
@@ -104,7 +104,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (!created) {
-    await reaction.update({ react_type, icon });
+    await reaction.update({ react_type: react_type ? react_type : null, icon: icon ? icon : null });
   }
 
   const postWithStats = await Post.findOne({
@@ -240,7 +240,6 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
 
   const postData = {
     ...sharedPost.toJSON(),
-    timestamp: formatTimeAgo(sharedPost.createdAt),
     user: {
       id: req.user.id,
       full_name: req.user?.full_name,
@@ -250,16 +249,10 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     replies: [],
     isBookmarked: false,
     originalPost,
-    likes: 0,
-    comments: {
-      total: 0,
-      preview: [],
-    },
-    shares: 0,
-    reactions: {
-      counts: 0,
-      currentUserReaction: null,
-    },
+    totalReactionsCount: 0,
+    share: 0,
+    totalCommentsCount: 0,
+    currentUserReaction: null
   };
 
   await redis.keys("posts:public:*").then((keys) => {
@@ -272,7 +265,7 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     new ApiResponse(
       201,
       {
-        shares: originalPost.share,
+        share: originalPost.share,
         sharedPostId: sharedPost.id,
         postData,
       },

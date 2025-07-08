@@ -41,6 +41,7 @@ interface PostsEntity {
   createdAt?: string;
   originalPost: PostsEntity | null
   privacy: string;
+  background: string;
   isBookmarked: boolean;
   totalReactionsCount: number;
   totalCommentsCount: number;

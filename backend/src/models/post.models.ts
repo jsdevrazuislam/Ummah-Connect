@@ -6,6 +6,7 @@ class Post extends Model{
     public media!:string
     public content!:string
     public contentType!:string
+    public background!:string
     public location!:string
     public privacy!:string
     public authorId!: string
@@ -24,6 +25,7 @@ Post.init(
         media: DataTypes.STRING,
         content: DataTypes.STRING,
         location: DataTypes.STRING,
+        background: DataTypes.STRING,
         share: DataTypes.INTEGER,
         sharedPostId: {                  
             type: DataTypes.INTEGER,
