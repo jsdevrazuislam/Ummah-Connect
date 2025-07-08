@@ -5,6 +5,7 @@ class Post extends Model{
     public id!: number
     public media!:string
     public content!:string
+    public contentType!:string
     public location!:string
     public privacy!:string
     public authorId!: string
@@ -32,6 +33,10 @@ Post.init(
         privacy: {
             type: DataTypes.ENUM('public', 'friends', 'only me'),
             defaultValue: 'public'
+        },
+        contentType: {
+            type: DataTypes.ENUM('text', 'video', 'audio', 'picture'),
+            defaultValue: 'text'
         },
         authorId:{
             type: DataTypes.INTEGER,

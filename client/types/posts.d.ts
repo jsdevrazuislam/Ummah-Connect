@@ -42,15 +42,15 @@ interface PostsEntity {
   originalPost: PostsEntity | null
   privacy: string;
   isBookmarked: boolean;
-  likes: number;
   totalReactionsCount: number;
   totalCommentsCount: number;
   currentUserReaction: ReactionType;
   share: number;
-  image?: string;
+  media?: string;
   media?: string;
   location: string;
   createdAt?:string
+  contentType?: 'text' | 'video' | 'audio' | 'picture'
 }
 interface PostAuthor {
   id: number;

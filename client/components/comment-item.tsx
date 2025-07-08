@@ -116,14 +116,7 @@ function CommentItem({
   const queryClient = useQueryClient()
   const { mutate, isPending } = useMutation({
     mutationFn: reply_comment,
-    onSuccess: (newComment, variable) => {
-      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addReplyCommentToPost(oldData, variable.id, newComment.data)
-      })
-
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
-      })
+    onSuccess: () => {
       setReplyText("")
       setShowReplyForm(false)
     },

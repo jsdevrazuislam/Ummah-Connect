@@ -3,7 +3,6 @@ import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Follow, Post, Reaction, User } from "@/models";
-import { postSchema } from "@/schemas/post.schema";
 import  {
   removeOldImageOnCloudinary,
   uploadFileOnCloudinary
@@ -24,6 +23,8 @@ import {
   getUserReactionLiteral,
 } from "@/utils/sequelize-sub-query";
 import redis from "@/config/redis";
+import { getFileTypeFromPath } from "@/utils/file-format";
+import { postSchema } from "@/schemas/post.schema";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -31,12 +32,16 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const authorId = req.user.id;
   const mediaPath = req.file?.path;
   let media_url = null;
+  let contentType: 'text' | 'video' | 'audio' = 'text';
+
   if (mediaPath) {
-    const media = await uploadFileOnCloudinary(
-      mediaPath,
-      "ummah_connect/posts"
-    );
-    media_url = media?.url;
+    const uploaded = await uploadFileOnCloudinary(mediaPath, 'ummah_connect/posts'); 
+    media_url = uploaded?.url;
+
+    const mimeType = uploaded?.resource_type || getFileTypeFromPath(mediaPath);
+    if (mimeType?.startsWith('video')) contentType = 'video';
+    else if (mimeType?.startsWith('audio')) contentType = 'audio';
+    else contentType = 'text';
   }
 
   const payload = {
@@ -45,6 +50,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
     privacy,
     media: media_url,
     authorId,
+    contentType,
   };
 
   const newPost = await Post.create(payload);
@@ -72,16 +78,10 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
     },
     replies: [],
     isBookmarked: false,
-    likes: 0,
-    comments: {
-      total: 0,
-      preview: [],
-    },
-    shares: 0,
-    reactions: {
-      counts: 0,
-      currentUserReaction: null,
-    },
+    totalReactionsCount: 0,
+    share: 0,
+    totalCommentsCount: 0,
+    currentUserReaction: null
   };
 
   await redis.keys("posts:public:*").then((keys) => {

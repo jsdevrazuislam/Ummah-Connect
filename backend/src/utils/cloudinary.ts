@@ -26,8 +26,9 @@ export const uploadFileOnCloudinary = async (localFilePath: string, folderName: 
     console.log(`File is uploaded on cloudinary ${res.url}`);
     fs.unlinkSync(localFilePath);
     return {
-      url: res.url,
-      duration: res?.duration
+      url: res.resource_type === 'image' ? res.url : extractPublicId(res.url),
+      duration: res?.duration,
+      resource_type: res.resource_type
     };
   } catch (error) {
     console.log(`File Upload Error`, error);

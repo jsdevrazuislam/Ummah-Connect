@@ -35,45 +35,39 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.POST_REACT, (payload: PostReactPayload) => {
-      if (payload?.postData?.authorId !== user?.id) {
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
           return updatePostInQueryData(oldData, payload.postId, payload.postData)
         })
-      }
-
     });
 
     return () => {
       socket.off(SocketEventEnum.POST_REACT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.CREATE_COMMENT, (payload: CreateCommentPayload) => {
-      if (payload?.data?.user?.id !== user?.id) {
         queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
           return addCommentToPost(oldData, payload?.data?.postId, payload.data)
         })
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
           return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
-      }
     });
 
     return () => {
       socket.off(SocketEventEnum.CREATE_COMMENT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.REPLY_COMMENT, (payload: CreateCommentReplyPayload) => {
-      if (payload?.data?.user?.id !== user?.id) {
         queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
           return addReplyCommentToPost(oldData, payload.data.parentId, payload.data)
         })
@@ -81,29 +75,26 @@ const SocketEvents = () => {
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
           return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
         })
-      }
     });
 
     return () => {
       socket.off(SocketEventEnum.REPLY_COMMENT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.COMMENT_REACT, (payload: CommentReactPayload) => {
-      if (payload?.data?.userId !== user?.id) {
         queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
           return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, payload?.data?.totalReactionsCount ?? 0)
         })
-      }
     });
 
     return () => {
       socket.off(SocketEventEnum.COMMENT_REACT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;

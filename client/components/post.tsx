@@ -35,12 +35,12 @@ import { SharePostDialog } from "@/components/share-post-dialog"
 import EditPostModel from "@/components/edit-post-model"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
-import { addCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { formatTimeAgo } from "@/lib/utils"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { formatDistanceToNowStrict } from "date-fns"
+import HlsVideoPlayer from "@/components/hsl-video-player"
 
 
 
@@ -86,13 +86,7 @@ export function Post({ post }: PostProps) {
 
   const { mutate: mnFun, isPending } = useMutation({
     mutationFn: create_comment,
-    onSuccess: (newComment, variable) => {
-      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addCommentToPost(oldData, variable.postId, newComment.data)
-      })
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
-      })
+    onSuccess: () => {
       setCommentText("")
     },
     onError: (error) => {
@@ -251,15 +245,19 @@ export function Post({ post }: PostProps) {
 
           {showTranslation && !isEditing && <AITranslation originalText={post.content} />}
 
-          {post?.image && !isEditing && (
+          {post?.media && post?.contentType === 'picture' && !isEditing && (
             <div className="mt-3 rounded-lg overflow-hidden border border-border">
               <img
-                src={post?.image || "/placeholder.svg"}
+                src={post?.media || "/placeholder.svg"}
                 alt="Post image"
                 className="w-full h-auto max-h-[400px] object-cover"
               />
             </div>
           )}
+
+          {
+            post?.contentType === 'video' && <HlsVideoPlayer src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${post?.media}.m3u8`} />
+          }
 
           <div className="mt-4 flex justify-between">
             <div className="flex items-center gap-2">
@@ -273,7 +271,7 @@ export function Post({ post }: PostProps) {
               onClick={() => setShowComments(!showComments)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{post?.totalCommentsCount}</span>
+              <span>{post?.totalCommentsCount ?? 0}</span>
             </Button>
             <Button
               variant="ghost"

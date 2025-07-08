@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { useAuthStore } from "@/store/store"
 
 const quickShortcuts = [
   { icon: Bookmark, label: "Saved Posts", href: "/bookmarks", count: 24 },
@@ -81,6 +82,8 @@ export function LeftSidebar() {
     location: "Dhaka, BD",
   })
 
+  const { setIsOpen } = useAuthStore()
+
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -95,7 +98,7 @@ export function LeftSidebar() {
       {/* Quick Create */}
       <Card>
         <CardContent className="p-4">
-          <Button className="w-full mb-3" size="sm">
+          <Button onClick={() => setIsOpen(true)} className="w-full mb-3" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Create Post
           </Button>

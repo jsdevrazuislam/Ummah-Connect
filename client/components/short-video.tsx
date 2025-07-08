@@ -205,7 +205,7 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
                                 if (playerRef.current?.isPlaying()) setIsPlaying(true);
                                 else setIsPlaying(false);
                             }}
-                            videoUrl={`https://res.cloudinary.com/dqh3uisur/video/upload/sp_auto/v1751778607/${currentShort?.video_id}.m3u8`} />
+                            videoUrl={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${currentShort?.video_id}.m3u8`} />
 
                         <div className="absolute inset-0 z-10" onClick={handlePlayPauseClick}>
                             <AnimatePresence>

@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input"
 
 interface ImageUploadProps {
   onImageSelect: (imageUrl: File) => void
+  accept?:string
 }
 
-export function ImageUpload({ onImageSelect }: ImageUploadProps) {
+export function ImageUpload({ onImageSelect, accept='image/*' }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleButtonClick = () => {
@@ -33,7 +34,7 @@ export function ImageUpload({ onImageSelect }: ImageUploadProps) {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*"
+        accept={accept}
         className="hidden"
         aria-label="Upload image"
       />
