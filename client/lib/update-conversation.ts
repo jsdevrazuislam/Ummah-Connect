@@ -1,4 +1,3 @@
-import { formatTimeAgo } from "./utils";
 
 export const addMessageConversation = (
   oldData: QueryOldDataPayloadConversation | undefined,
@@ -107,7 +106,7 @@ export const updatedUnReadCount = (
   };
 };
 
-export const addUnReadCount = (
+export const addLastMessage = (
   oldData: QueryOldDataPayloadConversations | undefined,
   conversationId: number,
   data: ConversationMessages
@@ -125,12 +124,55 @@ export const addUnReadCount = (
         if (conversation.id === conversationId) {
           return {
             ...conversation,
-            time: formatTimeAgo(new Date(data?.sent_at), true),
             lastMessage: {
               ...conversation.lastMessage,
               content: data.content,
               sent_at: data.sent_at,
+              sender:{
+                ...data.sender
+              }
             },
+          };
+        }
+
+        return conversation;
+      });
+      return {
+        ...page,
+        data: {
+          ...page.data,
+          conversations: updateConversation,
+        },
+      };
+    }
+
+    return page;
+  });
+
+  return {
+    ...oldData,
+    pages: updatedPages,
+  };
+};
+
+
+export const addUnReadCount = (
+  oldData: QueryOldDataPayloadConversations | undefined,
+  conversationId: number,
+) => {
+  if (!oldData) return oldData;
+
+  const updatedPages = oldData.pages.map((page) => {
+    const existingConversation = page?.data?.conversations ?? [];
+    const shouldUpdateUnreadCount = existingConversation.some(
+      (c) => c.id === conversationId
+    );
+
+    if (shouldUpdateUnreadCount) {
+      const updateConversation = existingConversation?.map((conversation) => {
+        if (conversation.id === conversationId) {
+          return {
+            ...conversation,
             unreadCount: conversation.unreadCount + 1,
           };
         }

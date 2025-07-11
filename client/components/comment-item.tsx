@@ -9,16 +9,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { CommentReactionPicker } from "@/components/comment-reaction-picker"
 import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
-import { formatTimeAgo } from "@/lib/utils"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
 import { useAuthStore } from "@/store/store"
-import { addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
+import {  deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
 import { Skeleton } from "@/components//ui/skeleton"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
+import { formatDistanceToNow } from 'date-fns';
+
 
 
 interface CommentItemProps {
@@ -202,7 +203,7 @@ function CommentItem({
               <button onClick={() => router.push(`/profile/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.full_name}</button>
             </CardHoverTooltip>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{formatTimeAgo(new Date(comment.createdAt))}</span>
+              <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.createdAt))}</span>
               {isCurrentUserComment && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

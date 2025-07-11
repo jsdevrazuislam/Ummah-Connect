@@ -1,5 +1,4 @@
 import { ConversationParticipant } from "@/models";
-import { formatTimeAgo } from "@/utils/helper";
 
 export const formatConversations = (conversations: ConversationParticipant[]) => {
 
@@ -34,7 +33,6 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
       userId,
       username,
       status,
-      time: formatTimeAgo(new Date(conversation?.lastMessage?.sent_at), true),
       avatar,
       last_seen_at,
       lastMessage: conversation.lastMessage ? {
@@ -52,6 +50,7 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
       } : null,
       unreadCount: participant.unread_count,
       isMuted: participant.is_muted,
+      createdAt: conversation?.createdAt
     };
   })
 
