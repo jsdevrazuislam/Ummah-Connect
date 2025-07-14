@@ -27,11 +27,11 @@ Reaction.init(
         },
         react_type: {
             type: DataTypes.ENUM('love', 'care', 'sad', 'like', 'haha', 'wow', 'angry'),
-            allowNull: false
+            allowNull: true
         },
         icon: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         }
     },
     {

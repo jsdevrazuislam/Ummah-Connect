@@ -2,13 +2,12 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, X } from "lucide-react"
-import { EmojiPicker } from "@/components/emoji-picker"
+import { Play, Smile, Sparkles, X } from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
 import { ImageUpload } from "@/components/image-upload"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -16,8 +15,11 @@ import { create_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe, Lock, Users, User } from "lucide-react"
-import LoadingUi from "./ui-loading"
+import LoadingUi from "@/components/ui-loading"
 import { useAuthStore } from "@/store/store"
+import emojiData from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { useTheme } from "next-themes"
 
 interface CreatePostFormProps {
   onAIHelp?: () => void
@@ -25,18 +27,22 @@ interface CreatePostFormProps {
 
 export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   const [content, setContent] = useState("")
-  const [selectedImage, setSelectedImage] = useState<File | undefined>()
+  const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
   const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
-  const { user } = useAuthStore()
+  const { user, setIsOpen } = useAuthStore()
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme()
+  const [background, setBackground] = useState('')
 
   const { mutate, isPending } = useMutation({
     mutationFn: create_post,
     onSuccess: (newPost) => {
+      setIsOpen(false)
       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-
         const updatedPages = oldData?.pages?.map((page) => {
           if (page?.data?.posts?.length === 0) {
             return {
@@ -63,7 +69,7 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
         }
       })
       setContent("")
-      setSelectedImage(undefined)
+      setSelectedFile(undefined)
       setSelectedLocation(null)
     },
     onError: (error) => {
@@ -74,13 +80,14 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!content.trim() && !selectedImage) {
+    if (!content.trim() && !selectedFile) {
       return;
     }
     const formData = new FormData()
-    if (selectedImage) {
-      formData.append("media", selectedImage)
+    if (selectedFile) {
+      formData.append("media", selectedFile)
     }
+    formData.append("background", background)
     formData.append("content", content)
     if (selectedLocation) {
       formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`)
@@ -88,15 +95,6 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
     formData.append("privacy", visibility)
     mutate(formData)
 
-  }
-
-  const handleEmojiSelect = (emoji: string) => {
-    setContent((prev) => prev + emoji)
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-      const length = textareaRef.current.value.length
-      textareaRef.current.setSelectionRange(length, length)
-    }
   }
 
   const handleLocationSelect = (location: { name: string; city: string }) => {
@@ -108,131 +106,213 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
   }
 
   const handleImageSelect = (imageUrl: File) => {
-    setSelectedImage(imageUrl)
+    if(background) return
+    setSelectedFile(imageUrl)
   }
 
-  const handleImageRemove = () => {
-    setSelectedImage(undefined)
+  const handleFileRemove = () => {
+    setSelectedFile(undefined)
   }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('button[aria-label="emoji-picker"]')
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 relative">
-      {
-        isPending && <LoadingUi title="Posting" className='-top-4' />
-      }
-      <div className="flex gap-3">
-        <Avatar>
-          <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
-          <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <Textarea
-          ref={textareaRef}
-          placeholder="What's on your mind?"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-        />
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="sticky top-0 p-4 z-10 bg-background border-b border-border">
+        <h1 className="text-xl font-semibold text-center">Create Post</h1>
       </div>
 
-      {selectedLocation && (
-        <div className="flex items-center">
-          <Badge variant="outline" className="flex gap-1 ml-12">
-            <span>
-              📍 {selectedLocation.name}, {selectedLocation.city}
-            </span>
-            <button type="button" onClick={handleLocationRemove} className="ml-1">
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {isPending && <LoadingUi title="Posting" className="absolute inset-0 bg-background/80 z-20" />}
 
-      {selectedImage && (
-        <div className="ml-12">
-          <div className="relative rounded-lg overflow-hidden border border-border">
-            <img
-              src={URL.createObjectURL(selectedImage) || "/placeholder.svg"}
-              alt="Selected"
-              className="w-full h-auto max-h-[200px] object-cover"
+        <div className="flex gap-3">
+          <Avatar>
+              <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
+              <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+           <div>
+             <p>{user?.full_name}</p>
+             <span className="text-gray-400">@{user?.username}</span>
+           </div>
+        </div>
+        <div className={`rounded-lg ${background} transition-colors duration-200`}>
+            <Textarea
+              ref={textareaRef}
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className={`flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px] ${background.startsWith('bg-gradient') ? 'text-white placeholder:text-white/70' : ''
+                }`}
+              style={{
+                backgroundColor: 'transparent',
+                color: background.startsWith('bg-gradient') ? 'white' : 'inherit'
+              }}
             />
-            <Button
+        </div>
+
+        {
+          !selectedFile &&  <div className="flex gap-2 overflow-x-auto pb-2">
+          {[
+            'bg-white', 'bg-gray-100', 'bg-blue-50', 'bg-green-50',
+            'bg-yellow-50', 'bg-pink-50', 'bg-purple-50', 'bg-gradient-to-r from-blue-400 to-purple-500',
+            'bg-gradient-to-r from-pink-400 to-red-500', 'bg-gradient-to-r from-green-400 to-blue-500'
+          ].map((bgClass) => (
+            <button
+              key={bgClass}
               type="button"
-              size="icon"
-              variant="secondary"
-              className="absolute top-2 right-2 h-8 w-8 bg-background/80 backdrop-blur-sm"
-              onClick={handleImageRemove}
-            >
-              <X className="h-4 w-4" />
+              onClick={() => setBackground(bgClass)}
+              className={`w-8 h-8 rounded-full ${bgClass} border-2 ${background === bgClass ? 'border-primary' : 'border-transparent'}`}
+              aria-label={`Select ${bgClass} background`}
+            />
+          ))}
+        </div>
+        }
+
+        {selectedLocation && (
+          <div className="flex items-center">
+            <Badge variant="outline" className="flex gap-1 ml-12">
+              <span>
+                📍 {selectedLocation.name}, {selectedLocation.city}
+              </span>
+              <button type="button" onClick={handleLocationRemove} className="ml-1">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </div>
+        )}
+
+        {selectedFile && (
+          <div className="relative">
+            <div className="rounded-lg overflow-hidden border border-border">
+              {selectedFile.type.startsWith('image/') ? (
+                <img
+                  src={URL.createObjectURL(selectedFile) || "/placeholder.svg"}
+                  alt="Selected"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <Play className="h-12 w-12 text-white/80" />
+                  </div>
+                  <video
+                    src={URL.createObjectURL(selectedFile)}
+                    className="w-full h-full object-cover pointer-events-none"
+                  />
+                </div>
+              )}
+
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="absolute top-2 right-2 h-8 w-8 bg-background/80 backdrop-blur-sm"
+                onClick={handleFileRemove}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 z-10 bg-background border-t border-border p-4">
+        <div className="flex justify-between items-center">
+          <div className="flex relative gap-2">
+            {showEmojiPicker && (
+              <div ref={emojiPickerRef} className="absolute bottom-0 mb-3 left-2 z-50">
+                <Picker
+                  data={emojiData}
+                  onEmojiSelect={(emoji: EmojiPicker) => setContent(prev => prev + emoji.native)}
+                  theme={theme}
+                  previewPosition="none"
+                  searchPosition="none"
+                />
+              </div>
+            )}
+            <ImageUpload
+              onImageSelect={handleImageSelect}
+              accept="image/*, video/*"
+              disabled={background ? true : false}
+            />
+            <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
+              <Smile className="h-5 w-5" />
+            </Button>
+            <LocationPicker onLocationSelect={handleLocationSelect} />
+            <Button type="button" size="icon" variant="ghost" className="text-primary" onClick={onAIHelp}>
+              <Sparkles className="h-5 w-5" />
+              <span className="sr-only">AI Help</span>
             </Button>
           </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <ImageUpload
-            onImageSelect={handleImageSelect}
-          />
-          <EmojiPicker onEmojiSelect={handleEmojiSelect} />
-          <LocationPicker onLocationSelect={handleLocationSelect} />
-          <Button type="button" size="icon" variant="ghost" className="text-primary" onClick={onAIHelp}>
-            <Sparkles className="h-5 w-5" />
-            <span className="sr-only">AI Help</span>
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                {visibility === "public" && <Globe className="h-4 w-4" />}
-                {visibility === "friends" && <Users className="h-4 w-4" />}
-                {visibility === "private" && <Lock className="h-4 w-4" />}
-                {visibility === "only me" && <User className="h-4 w-4" />}
-                <span className="hidden sm:inline">
-                  {visibility === "public"
-                    ? "Public"
-                    : visibility === "friends"
-                      ? "Friends"
-                      : visibility === "private"
-                        ? "Private"
-                        : "Only me"}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setVisibility("public")} className="gap-2">
-                <Globe className="h-4 w-4" />
-                <div>
-                  <p className="font-medium">Public</p>
-                  <p className="text-xs text-muted-foreground">Anyone can see this post</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setVisibility("friends")} className="gap-2">
-                <Users className="h-4 w-4" />
-                <div>
-                  <p className="font-medium">Friends</p>
-                  <p className="text-xs text-muted-foreground">Only your friends can see this post</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setVisibility("private")} className="gap-2">
-                <Lock className="h-4 w-4" />
-                <div>
-                  <p className="font-medium">Private</p>
-                  <p className="text-xs text-muted-foreground">Only you and mentioned users can see this post</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setVisibility("only me")} className="gap-2">
-                <User className="h-4 w-4" />
-                <div>
-                  <p className="font-medium">Only me</p>
-                  <p className="text-xs text-muted-foreground">Only you can see this post</p>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button type="submit" disabled={!content.trim()} className="rounded-full">
-            Post
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  {visibility === "public" && <Globe className="h-4 w-4" />}
+                  {visibility === "friends" && <Users className="h-4 w-4" />}
+                  {visibility === "private" && <Lock className="h-4 w-4" />}
+                  {visibility === "only me" && <User className="h-4 w-4" />}
+                  <span className="hidden sm:inline">
+                    {visibility === "public"
+                      ? "Public"
+                      : visibility === "friends"
+                        ? "Friends"
+                        : visibility === "private"
+                          ? "Private"
+                          : "Only me"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setVisibility("public")} className="gap-2">
+                  <Globe className="h-4 w-4" />
+                  <div>
+                    <p className="font-medium">Public</p>
+                    <p className="text-xs text-muted-foreground">Anyone can see this post</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setVisibility("friends")} className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <div>
+                    <p className="font-medium">Friends</p>
+                    <p className="text-xs text-muted-foreground">Only your friends can see this post</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setVisibility("private")} className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  <div>
+                    <p className="font-medium">Private</p>
+                    <p className="text-xs text-muted-foreground">Only you and mentioned users can see this post</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setVisibility("only me")} className="gap-2">
+                  <User className="h-4 w-4" />
+                  <div>
+                    <p className="font-medium">Only me</p>
+                    <p className="text-xs text-muted-foreground">Only you can see this post</p>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button type="submit" disabled={!content.trim() && !selectedFile} className="rounded-full">
+              Post
+            </Button>
+          </div>
         </div>
       </div>
     </form>

@@ -6,19 +6,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
-export function formatTimeAgo(date: Date, isShort = false): string {
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds} ${isShort ? 's' : 'seconds ago'}`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} ${isShort ? 'm' : 'minutes ago'}`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} ${isShort ? 'h' : 'hours ago'}`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} ${isShort ? 'd' : 'days ago'}`;
-  if (seconds < 2592000) return `${Math.floor(seconds / 604800)} ${isShort ? 'w' : 'weeks ago'}`;
-  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)} ${isShort ? 'mon' : 'months ago'}`;
-  return `${Math.floor(seconds / 31536000)} ${isShort ? 'y' : 'years ago'}`;
-}
-
-
 export const validateEmail = (email:string) => {
   return String(email)
     .toLowerCase()

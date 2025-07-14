@@ -7,7 +7,7 @@ import { Router } from 'express'
 
 const router = Router()
 
-router.post("/" ,verify_auth, upload.single("media"), create_post)
+router.post("/", verify_auth, upload.single("media"), create_post)
 router.get("/" , verify_auth, get_posts)
 router.post("/react/:postId" , validateData(reactSchema), verify_auth, post_react)
 router.post("/share/:postId", verify_auth, share)

@@ -5,9 +5,8 @@ import {
   roomServiceClient,
 } from "@/config/livekit";
 import redis from "@/config/redis";
-import { REACT_ATTRIBUTE, SocketEventEnum } from "@/constants";
-import { LiveStream, LiveStreamBan, Reaction, Shorts, User } from "@/models";
-import BookmarkPost from "@/models/bookmark.models";
+import {  SocketEventEnum } from "@/constants";
+import { LiveStream, LiveStreamBan, Shorts, User } from "@/models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/ApiError";

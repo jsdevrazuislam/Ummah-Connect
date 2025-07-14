@@ -1,4 +1,4 @@
-# 🕌 Muslim Social Media Backend
+# 🕌 Muslim Social Media (Ummah Connect)
 
 A scalable, secure, and extensible social media backend built with **TypeScript**, **Express**, **Sequelize ORM**, and **PostgreSQL**. Includes full support for authentication, following system, and modular API routing. Fully containerized with Docker.
 

@@ -11,7 +11,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadFileOnCloudinary = async (localFilePath: string, folderName: string) => {
+export const uploadFileOnCloudinary = async (localFilePath: string, folderName: string, type?:string) => {
   try {
     if (!localFilePath)
       return {
@@ -26,8 +26,9 @@ export const uploadFileOnCloudinary = async (localFilePath: string, folderName: 
     console.log(`File is uploaded on cloudinary ${res.url}`);
     fs.unlinkSync(localFilePath);
     return {
-      url: res.url,
-      duration: res?.duration
+      url: res.resource_type === 'image' ? res.url : !getFileType(type ?? '').includes('video') ? res.url : res.public_id,
+      duration: res?.duration,
+      resource_type: res.resource_type
     };
   } catch (error) {
     console.log(`File Upload Error`, error);

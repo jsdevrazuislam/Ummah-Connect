@@ -4,9 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { comment_react } from "@/lib/apis/comment"
-import { addCommentReactionToPost } from "@/lib/update-post-data"
 
 
 interface CommentReactionPickerProps {
@@ -30,15 +29,9 @@ export function CommentReactionPicker({
 }: CommentReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
-  const queryClient = useQueryClient()
 
   const { mutate } = useMutation({
     mutationFn: comment_react,
-    onSuccess: (updateData, variable) => {
-      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addCommentReactionToPost(oldData, variable.id, parentId, isReply, updateData?.data?.totalReactionsCount)
-      })
-    },
     onError: (error) => {
       toast.error(error.message)
     }

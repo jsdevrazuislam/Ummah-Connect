@@ -13,9 +13,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     selectedConversation: null,
     user: null,
     isLoading: false,
+    isOpen: false,
     onlineUsers: new Map(),
     lastSeen: new Map(),
     setUser: (user) => set({ user }),
+    setIsOpen: (value) => set({ isOpen: value }),
     setSelectedConversation: (data) => {
         set({
             selectedConversation: data

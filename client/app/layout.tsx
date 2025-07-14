@@ -13,6 +13,7 @@ import { RingtonePlayer } from "@/components/ringtone-player"
 import CallRejectedModal from "@/components/call-rejected-modal"
 import WrapperLoader from "@/components/wrapper-loader"
 import { StreamEndedModal } from "@/components/live-stream-end-modal-for-viewers"
+import { GlobalModal } from "@/components/post-modal"
 
 const nato = Noto_Sans({ subsets: ["latin"], display: "swap" })
 
@@ -40,6 +41,7 @@ export default function RootLayout({
                 <StreamEndedModal />
                 {children}
                 {/* <AIAssistant /> */}
+                <GlobalModal />
                 <Toaster />
               </WrapperLoader>
             </ReactQueryProvider>

@@ -19,7 +19,7 @@ import {
     uploadFileOnCloudinary
 } from "@/utils/cloudinary";
 import { formatConversations } from "@/utils/format";
-import { formatTimeAgo, getFileType, getOrSetCache } from "@/utils/helper";
+import { getFileType, getOrSetCache } from "@/utils/helper";
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 
@@ -117,7 +117,6 @@ export const create_conversation_for_dm = asyncHandler(
             id: newConversation.id,
             type: newConversation.type,
             name: receiverUser?.full_name,
-            time: formatTimeAgo(new Date(newMessage?.sent_at), true),
             avatar: req.user.avatar,
             lastMessage: {
                 id: newMessage.id,
@@ -171,7 +170,7 @@ export const get_all_conversations = asyncHandler(
                         {
                             model: Conversation,
                             as: "conversation",
-                            attributes: ["id", "name", "type", "last_message_id"],
+                            attributes: ["id", "name", "type", "last_message_id", "createdAt"],
                             include: [
                                 {
                                     model: Message,
@@ -485,7 +484,8 @@ export const send_attachment = asyncHandler(
                 files.map(async (file) => {
                     const media = await uploadFileOnCloudinary(
                         file.path,
-                        "ummah_connect/message_attachment"
+                        "ummah_connect/message_attachment",
+                        file.mimetype
                     );
 
                     return {

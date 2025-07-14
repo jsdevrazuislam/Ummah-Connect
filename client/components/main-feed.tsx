@@ -1,18 +1,14 @@
 "use client"
-import { CreatePostForm } from "@/components/create-post-form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AIContentGenerator } from "@/components/ai-content-generator"
 import { Button } from "@/components/ui/button"
 import { get_all_posts } from "@/lib/apis/posts"
 import { RefreshCw } from "lucide-react"
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useState } from "react"
 import FollowingFeed from "@/components/following-feed"
 import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import { ErrorMessage } from "@/components/api-error"
 
 export function MainFeed() {
-  const [showContentGenerator, setShowContentGenerator] = useState(false)
   const {
     data,
     fetchNextPage,
@@ -68,14 +64,6 @@ export function MainFeed() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="for-you">
-            <div className="p-4 border-b border-border">
-              <CreatePostForm onAIHelp={() => setShowContentGenerator(!showContentGenerator)} />
-              {showContentGenerator && (
-                <div className="mt-4">
-                  <AIContentGenerator />
-                </div>
-              )}
-            </div>
             <InfiniteScrollPost loading={isLoading} hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={loadMorePosts} posts={posts} />
           </TabsContent>
           <TabsContent value="following">

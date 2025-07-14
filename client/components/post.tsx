@@ -35,12 +35,13 @@ import { SharePostDialog } from "@/components/share-post-dialog"
 import EditPostModel from "@/components/edit-post-model"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
-import { addCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
-import { formatTimeAgo } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
 import { ConfirmationModal } from "@/components/confirmation-modal"
 import { formatDistanceToNowStrict } from "date-fns"
+import { SharedPost } from "@/components/share-post"
+import { PostMedia } from "@/components/post-media"
 
 
 
@@ -86,13 +87,7 @@ export function Post({ post }: PostProps) {
 
   const { mutate: mnFun, isPending } = useMutation({
     mutationFn: create_comment,
-    onSuccess: (newComment, variable) => {
-      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return addCommentToPost(oldData, variable.postId, newComment.data)
-      })
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
-      })
+    onSuccess: () => {
       setCommentText("")
     },
     onError: (error) => {
@@ -208,35 +203,10 @@ export function Post({ post }: PostProps) {
             {post.content}
           </p>}
           {
-            post?.originalPost ? <div className="mt-2 border dark:border-gray-500 rounded-lg bg-muted/30">
-              {
-                post.originalPost?.media && <div className="overflow-hidden rounded-t-lg border border-border">
-                  <img
-                    src={post?.originalPost?.media || "/placeholder.svg"}
-                    alt="Post image"
-                    className="w-full h-auto max-h-[400px] object-cover"
-                  />
-                </div>
-              }
-
-              <div className="px-4 py-2">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    { post.originalPost?.user?.avatar ? <AvatarImage src={post.originalPost?.user?.avatar} alt={post.originalPost?.user?.full_name} /> : 
-                    <AvatarFallback>{post.originalPost?.user?.full_name?.charAt(0)}</AvatarFallback>}
-                  </Avatar>
-                  <div>
-                    <span className="font-semibold capitalize">{post.originalPost?.user?.full_name}</span>{" "}
-                    <p className="text-muted-foreground">
-                      {formatTimeAgo(new Date(post?.originalPost?.createdAt ?? ''))}
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-4">
-                  {post?.originalPost?.content}
-                </p>
-              </div>
-            </div> : <div className="mt-4 text-sm">{post.content}</div>
+            post?.originalPost ? <SharedPost 
+              post={post.originalPost} 
+              className="mt-2"
+            /> : <div className={cn(`mt-4 text-sm ${post.background && post?.background}`, {'h-56 flex rounded-md justify-center items-center text-center' : post?.background})}>{post.content}</div>
           }
           {post?.location && !isEditing && (
             <div className="mt-2">
@@ -251,15 +221,12 @@ export function Post({ post }: PostProps) {
 
           {showTranslation && !isEditing && <AITranslation originalText={post.content} />}
 
-          {post?.image && !isEditing && (
-            <div className="mt-3 rounded-lg overflow-hidden border border-border">
-              <img
-                src={post?.image || "/placeholder.svg"}
-                alt="Post image"
-                className="w-full h-auto max-h-[400px] object-cover"
-              />
-            </div>
-          )}
+           <PostMedia
+              media={post.media} 
+              contentType={post.contentType}
+              altText={`Post by ${post.user?.full_name}`}
+              className="mt-3"
+            />
 
           <div className="mt-4 flex justify-between">
             <div className="flex items-center gap-2">
@@ -273,7 +240,7 @@ export function Post({ post }: PostProps) {
               onClick={() => setShowComments(!showComments)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{post?.totalCommentsCount}</span>
+              <span>{post?.totalCommentsCount ?? 0}</span>
             </Button>
             <Button
               variant="ghost"
@@ -326,7 +293,6 @@ export function Post({ post }: PostProps) {
           )}
         </div>
       </div>
-
       <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
       <SharePostDialog
         post={post}

@@ -92,6 +92,7 @@ export function AudioPlayer({
         src={audioUrl}
         onTimeUpdate={handleTimeUpdate}
         className="hidden"
+        controlsList="nodownload"
       />
 
       <button
@@ -108,6 +109,7 @@ export function AudioPlayer({
           step={0.1}
           onValueChange={handleSeek}
           onValueCommit={handleSeekCommit}
+          thumbClassName='hidden'
         />
       </div>
 

@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
+import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,75 +35,66 @@ const SocketEvents = () => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.POST_REACT, (payload: PostReactPayload) => {
-      if (payload?.postData?.authorId !== user?.id) {
-        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-          return updatePostInQueryData(oldData, payload.postId, payload.postData)
-        })
-      }
-
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return updatePostInQueryData(oldData, payload.postId, payload.postData)
+      })
     });
 
     return () => {
       socket.off(SocketEventEnum.POST_REACT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.CREATE_COMMENT, (payload: CreateCommentPayload) => {
-      if (payload?.data?.user?.id !== user?.id) {
-        queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
-          return addCommentToPost(oldData, payload?.data?.postId, payload.data)
-        })
-        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-          return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
-        })
-      }
+      queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return addCommentToPost(oldData, payload?.data?.postId, payload.data)
+      })
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+      })
     });
 
     return () => {
       socket.off(SocketEventEnum.CREATE_COMMENT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.REPLY_COMMENT, (payload: CreateCommentReplyPayload) => {
-      if (payload?.data?.user?.id !== user?.id) {
-        queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
-          return addReplyCommentToPost(oldData, payload.data.parentId, payload.data)
-        })
+      queryClient.setQueryData(['get_comments', payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return addReplyCommentToPost(oldData, payload.data.parentId, payload.data)
+      })
 
-        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-          return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
-        })
-      }
+      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+        return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+      })
     });
 
     return () => {
       socket.off(SocketEventEnum.REPLY_COMMENT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on(SocketEventEnum.COMMENT_REACT, (payload: CommentReactPayload) => {
-      if (payload?.data?.userId !== user?.id) {
-        queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
-          return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, payload?.data?.totalReactionsCount ?? 0)
-        })
-      }
+      queryClient.setQueryData(['get_comments', payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return addCommentReactionToPost(oldData, payload?.commentId, payload?.parentId, payload?.isReply, payload?.data?.totalReactionsCount ?? 0)
+      })
     });
 
     return () => {
       socket.off(SocketEventEnum.COMMENT_REACT);
     };
-  }, [socket, user]);
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
@@ -140,7 +131,7 @@ const SocketEvents = () => {
     socket.on(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, (payload: ConversationMessages) => {
       if (payload?.sender_id !== user?.id) {
         queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
-          if (selectedConversation && selectedConversation?.conversationId === payload.conversation_id) {
+          if (selectedConversation?.conversationId === payload.conversation_id) {
             readMessageFun({
               conversationId: payload.conversation_id,
               messageId: payload.id,
@@ -149,13 +140,17 @@ const SocketEvents = () => {
           socket.emit(SocketEventEnum.MESSAGE_RECEIVED, payload.id.toString());
           return addMessageConversation(oldData, payload, payload.conversation_id)
         })
-        queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
-          const shouldIncrementUnread = selectedConversation?.conversationId !== payload.conversation_id;
-          if (shouldIncrementUnread) return addUnReadCount(oldData, payload.conversation_id, payload)
-          else return oldData
-        })
-        incrementUnreadCount(payload.conversation_id)
+        if (selectedConversation?.conversationId !== payload.conversation_id) {
+          queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+            return addUnReadCount(oldData, payload.conversation_id)
+          })
+          incrementUnreadCount(payload.conversation_id)
+        }
       }
+
+       queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+          return addLastMessage(oldData, payload.conversation_id, payload)
+        })
     });
     return () => {
       socket.off(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION);
