@@ -16,7 +16,7 @@ interface ConversationItemProps {
 const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
 
     const { socket } = useSocketStore()
-    const { getIsUserOnline, user} = useAuthStore()
+    const { getIsUserOnline, user, onlineUsers} = useAuthStore()
     const { unreadCounts } = useConversationStore();
     const unreadCount = unreadCounts[conv.id] ?? 0;
 

@@ -484,7 +484,8 @@ export const send_attachment = asyncHandler(
                 files.map(async (file) => {
                     const media = await uploadFileOnCloudinary(
                         file.path,
-                        "ummah_connect/message_attachment"
+                        "ummah_connect/message_attachment",
+                        file.mimetype
                     );
 
                     return {

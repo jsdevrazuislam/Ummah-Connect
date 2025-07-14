@@ -7,7 +7,7 @@ import  {
   removeOldImageOnCloudinary,
   uploadFileOnCloudinary
 } from "@/utils/cloudinary";
-import { formatTimeAgo, getOrSetCache } from "@/utils/helper";
+import {  getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";

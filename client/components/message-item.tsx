@@ -5,7 +5,8 @@ import { AudioPlayer } from "@/components/audio-player"
 import { FC } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { MessageVideoPlayer } from "@/components/message-video-player"
+import HLSVideoPlayer from "@/components/hsl-video-player"
+import { Eye } from "lucide-react"
 
 interface MessageItemProps {
     message: ConversationMessages | undefined
@@ -20,9 +21,10 @@ const MessageItem: FC<MessageItemProps> = ({
     const renderMessageType = (type: string, thumbnail_url?:string, url?: string, duration?: number) => {
         switch (type) {
             case 'video':
-                return <MessageVideoPlayer
-                    src={url ?? ''}
+                return <HLSVideoPlayer
+                    src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${url}.m3u8`}
                     poster={thumbnail_url}
+                    className="max-w-sm w-[384px]"
                 />
             case 'audio':
                 return <AudioPlayer audioUrl={url ?? ''} duration={String(duration)} />
@@ -61,7 +63,7 @@ const MessageItem: FC<MessageItemProps> = ({
                         </span>
                         {message?.sender_id === user?.id && (
                             <span className="text-xs text-primary-foreground/70">
-                                {message?.statuses?.[0]?.status === 'sent' ? "✓" : message?.statuses?.[0]?.status === 'delivered' ? "✓✓" : "👀"}
+                                {message?.statuses?.[0]?.status === 'sent' ? "✓" : message?.statuses?.[0]?.status === 'delivered' ? "✓✓" : <Eye className="w-3 h-3" />}
                             </span>
                         )}
                     </div>

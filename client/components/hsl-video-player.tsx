@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Hls, { Level } from 'hls.js';
-import { Play, Pause, Volume2, VolumeX, Check } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Check, Monitor, Settings, Gauge, ChevronLeft } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import {
   Popover,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
@@ -20,7 +21,7 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs}`;
 };
 
-export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:string }) {
+export default function HLSVideoPlayer({ src, poster, className }: { src: string, poster?: string, className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,9 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showPlayPauseIndicator, setShowPlayPauseIndicator] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -43,15 +47,15 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
     if (Hls.isSupported()) {
       const hls = new Hls();
       hlsRef.current = hls;
-      
+
       hls.loadSource(src);
       hls.attachMedia(video);
-      
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setDuration(video.duration);
         setLevels(hls.levels);
       });
-      
+
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
         setSelectedLevel(data.level);
         const level = hls.levels[data.level];
@@ -90,7 +94,7 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
-    
+
     if (video.paused) {
       video.play();
       setIsPlaying(true);
@@ -98,7 +102,7 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
       video.pause();
       setIsPlaying(false);
     }
-    
+
     setShowPlayPauseIndicator(true);
     setTimeout(() => setShowPlayPauseIndicator(false), 1000);
   };
@@ -147,10 +151,10 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto mt-4 bg-black rounded-lg overflow-hidden aspect-video">
+    <div className={cn(`relative w-full max-w-2xl mx-auto mt-4 bg-black rounded-lg overflow-hidden aspect-video`, className)}>
       <video
         ref={videoRef}
-        className="w-full h-full aspect-video cursor-pointer"
+        className="w-full h-full cursor-pointer"
         muted={isMuted}
         playsInline
         onClick={togglePlay}
@@ -190,7 +194,7 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
 
         <div className="flex justify-between items-center text-white text-sm px-2">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={togglePlay}
               className="p-1 hover:bg-white/20 rounded-full transition-colors"
             >
@@ -201,13 +205,13 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
               )}
             </button>
 
-            <div 
+            <div
               className="flex items-center gap-1 relative"
               ref={volumeRef}
               onMouseEnter={() => setShowVolumeSlider(true)}
               onMouseLeave={() => !showVolumeSlider && setShowVolumeSlider(false)}
             >
-              <button 
+              <button
                 onClick={toggleMute}
                 className="p-1 hover:bg-white/20 rounded-full transition-colors"
               >
@@ -217,7 +221,7 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
                   <Volume2 className="w-5 h-5" />
                 )}
               </button>
-              
+
               {showVolumeSlider && (
                 <motion.div
                   className="absolute bottom-8 left-0 bg-black/80 p-2 rounded-md shadow-lg"
@@ -245,71 +249,105 @@ export default function HLSVideoPlayer({ src, poster }: { src: string, poster?:s
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Popover>
+          <div className="absolute bottom-3 right-3">
+            <Popover open={showSettings} onOpenChange={setShowSettings}>
               <PopoverTrigger asChild>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
                 >
-                  {playbackRate}x
+                  <Settings className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-32">
-                <p className="text-xs text-muted-foreground mb-2">Playback Speed</p>
-                {[0.5, 1, 1.5, 2].map((rate) => (
-                  <Button
-                    key={rate}
-                    variant={playbackRate === rate ? 'default' : 'ghost'}
-                    size="sm"
-                    className="w-full mb-1 justify-start"
-                    onClick={() => changePlaybackRate(rate)}
-                  >
-                    {rate}x
-                    {playbackRate === rate && <Check className="ml-auto h-4 w-4" />}
-                  </Button>
-                ))}
+              <PopoverContent className="w-48 p-2">
+                <div className="relative">
+                  <Popover open={showSpeedMenu} onOpenChange={setShowSpeedMenu}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between hover:bg-muted"
+                        onClick={() => setShowQualityMenu(false)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Gauge className="h-4 w-4" />
+                          <span>Speed</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>{playbackRate}x</span>
+                          {showSpeedMenu ? (
+                            <ChevronLeft className="h-4 w-4" />
+                          ) : null}
+                        </div>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-40 p-2" side="left" align="start">
+                      <div className="space-y-1">
+                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                          <Button
+                            key={rate}
+                            variant={playbackRate === rate ? "default" : "ghost"}
+                            className="w-full justify-start"
+                            onClick={() => changePlaybackRate(rate)}
+                          >
+                            {rate}x
+                            {playbackRate === rate && <Check className="ml-auto h-4 w-4" />}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {levels.length > 0 && (
+                  <div className="relative mt-1">
+                    <Popover open={showQualityMenu} onOpenChange={setShowQualityMenu}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-between hover:bg-muted"
+                          onClick={() => setShowSpeedMenu(false)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Monitor className="h-4 w-4" />
+                            <span>Quality</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span>{selectedQuality}</span>
+                            {showQualityMenu ? (
+                              <ChevronLeft className="h-4 w-4" />
+                            ) : null}
+                          </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40 p-2" side="left" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={selectedLevel === -1 ? "default" : "ghost"}
+                            className="w-full justify-start"
+                            onClick={() => switchResolution(-1)}
+                          >
+                            Auto
+                            {selectedLevel === -1 && <Check className="ml-auto h-4 w-4" />}
+                          </Button>
+                          {levels.map((level, idx) => (
+                            <Button
+                              key={idx}
+                              variant={selectedLevel === idx ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => switchResolution(idx)}
+                            >
+                              {level.height}p
+                              {selectedLevel === idx && <Check className="ml-auto h-4 w-4" />}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
-
-            {levels.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="text-white hover:bg-white/20"
-                  >
-                    {selectedQuality}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-32">
-                  <p className="text-xs text-muted-foreground mb-2">Quality</p>
-                  <Button
-                    variant={selectedLevel === -1 ? 'default' : 'ghost'}
-                    size="sm"
-                    className="w-full mb-1 justify-start"
-                    onClick={() => switchResolution(-1)}
-                  >
-                    Auto
-                    {selectedLevel === -1 && <Check className="ml-auto h-4 w-4" />}
-                  </Button>
-                  {levels.map((lvl, idx) => (
-                    <Button
-                      key={idx}
-                      variant={selectedLevel === idx ? 'default' : 'ghost'}
-                      size="sm"
-                      className="w-full mb-1 justify-start"
-                      onClick={() => switchResolution(idx)}
-                    >
-                      {lvl.height}p
-                      {selectedLevel === idx && <Check className="ml-auto h-4 w-4" />}
-                    </Button>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
         </div>
       </div>
