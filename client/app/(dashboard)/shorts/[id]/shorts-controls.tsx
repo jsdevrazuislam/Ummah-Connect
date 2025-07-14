@@ -33,7 +33,7 @@ export default function ShortsControls({
 }) {
 
   const [showReportModal, setShowReportModal] = useState(false);
-  const { isPending, mutate } = useMutation({})
+  const { isPending } = useMutation({})
 
 
   const handleSaveShort = () => {

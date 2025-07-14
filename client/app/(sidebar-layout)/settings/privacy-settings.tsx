@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ import { updatePrivacySetting } from '@/lib/apis/auth'
 const PrivacySettings = () => {
 
     const { user, setUser } = useAuthStore()
-    const { handleSubmit, control, setValue } = useForm<PrivacyFormData>({
+    const { handleSubmit, control } = useForm<PrivacyFormData>({
         resolver: zodResolver(privacySettingsSchema),
         defaultValues: {
             active_status: user?.privacy_settings?.active_status ?? false,

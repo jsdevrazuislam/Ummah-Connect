@@ -4,7 +4,6 @@ import { Noto_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
-import { AIAssistant } from "@/components/ai-assistant"
 import ReactQueryProvider from "@/components/query-provider"
 import SocketEvents from "@/components/sockets-events"
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -40,7 +39,6 @@ export default function RootLayout({
                 <CallRejectedModal />
                 <StreamEndedModal />
                 {children}
-                {/* <AIAssistant /> */}
                 <GlobalModal />
                 <Toaster />
               </WrapperLoader>

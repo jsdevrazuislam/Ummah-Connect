@@ -4,7 +4,6 @@ import express, {
   json,
   Request,
   Response,
-  NextFunction,
 } from "express";
 import morgan from "morgan";
 import cors from "cors";
@@ -84,9 +83,7 @@ const startApp = async () => {
     });
   });
 
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.log("App error", err);
-
+  app.use((err: Error, _req: Request, res: Response) => {
     if (err instanceof ApiError) {
       res.status(err.statusCode).json(err.toJSON());
     } else {

@@ -18,11 +18,10 @@ import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import VideoPlayer, { VideoPlayerHandle } from '@/app/(dashboard)/shorts/[id]/player'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import Link from 'next/link'
 import { react_post } from '@/lib/apis/posts'
 import { toast } from 'sonner'
-import { create_comment } from '@/lib/apis/comment'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
 
@@ -49,39 +48,31 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
     const titleContainerRef = useRef<HTMLDivElement>(null)
     const titleTextRef = useRef<HTMLParagraphElement>(null)
     const [showComments, setShowComments] = useState(false)
-    const queryClient = useQueryClient()
-    const [commentText, setCommentText] = useState("")
+    // const [commentText, setCommentText] = useState("")
     const [liked, setLiked] = useState(false)
     const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
     const [overlayIconType, setOverlayIconType] = useState<'play' | 'pause' | null>(null);
-    const isThrottled = useRef(false);
 
 
     const { mutate } = useMutation({
         mutationFn: react_post,
-        onSuccess: (updateData, variable) => {
-
+        onSuccess: (updateData) => {
+            console.log(updateData)
         },
         onError: (error) => {
             toast.error(error.message)
         }
     })
 
-    const { mutate: mnFun, isPending } = useMutation({
-        mutationFn: create_comment,
-        onSuccess: (newComment, variable) => {
-            // queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-            //   return addCommentToPost(oldData, variable.postId, newComment.data)
-            // })
-            // queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-            //   return incrementDecrementCommentCount(oldData, variable.postId, newComment?.data?.totalComments)
-            // })
-            setCommentText("")
-        },
-        onError: (error) => {
-            toast.error(error.message)
-        }
-    })
+    // const { mutate: mnFun, isPending } = useMutation({
+    //     mutationFn: create_comment,
+    //     onSuccess: (newComment, variable) => {
+    //         setCommentText("")
+    //     },
+    //     onError: (error) => {
+    //         toast.error(error.message)
+    //     }
+    // })
 
 
     const handleSliderChange = (value: number[]) => {

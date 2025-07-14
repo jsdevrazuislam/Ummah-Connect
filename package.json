@@ -1,0 +1,25 @@
+{
+  "name": "full-stack-social-media-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"pnpm run backend\" \"pnpm run client\"",
+    "backend": "cd backend && pnpm dev",
+    "client": "cd client && pnpm dev",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:client": "eslint client --ext .js,.ts,.jsx,.tsx",
+    "lint:backend": "eslint backend --ext .js,.ts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "eslint": "^9.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.36.0"
+  },
+  "lint-staged": {
+    "*": "pnpm lint"
+  }
+}

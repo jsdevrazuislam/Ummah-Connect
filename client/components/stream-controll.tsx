@@ -52,8 +52,6 @@ const CustomControlBar = ({ streamId, stream }: { streamId: number, stream: Live
     const {
         saveAudioInputEnabled,
         saveVideoInputEnabled,
-        saveAudioInputDeviceId,
-        saveVideoInputDeviceId,
     } = usePersistentUserChoices({ preventSave: false });
 
     const microphoneOnChange = useCallback(

@@ -117,7 +117,7 @@ export const edit_comment = asyncHandler(async (req: Request, res: Response) => 
   const comment = await Comment.findOne({ where: { id: commentId, postId, userId } })
   if (!comment) throw new ApiError(400, 'You are not eligible edit this comment')
 
-  const [_, updatedComment] = await Comment.update(
+  const [, updatedComment] = await Comment.update(
     { content, isEdited: true },
     { where: { id: commentId }, returning: true }
   )

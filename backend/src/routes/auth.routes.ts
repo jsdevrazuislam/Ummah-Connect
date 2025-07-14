@@ -2,7 +2,7 @@ import { change_password, disable_2FA, enable_2FA, get_me, get_user_details, get
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
-import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema, userStatusSchema } from '@/schemas/auth.schema'
+import { changePasswordSchema, email2FALoginSchema, emailSchema, loginRecoverSchema, loginSchema, tokenSchema, userRegistrationSchema } from '@/schemas/auth.schema'
 import { Router } from 'express'
 
 

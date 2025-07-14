@@ -28,7 +28,7 @@ export const updateCurrentUser = async (payload: FormData): Promise<UpdateUserRe
 };
 
 export const getUserProfileDetails = async ({ page = 1, limit = 10, username = '' }): Promise<PostsResponse> => {
-  const response = await api.get<PostsResponse>(ApiStrings.USER_DETAILS(username));
+  const response = await api.get<PostsResponse>(ApiStrings.USER_DETAILS(username), { params: { page, limit}});
   return response.data;
 }
 

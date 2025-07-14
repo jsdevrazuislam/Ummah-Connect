@@ -32,6 +32,7 @@ export const useConversationStore = create<ConversationState>((set) => ({
   resetUnreadCount: (conversationId) =>
     set((state) => {
       const { [conversationId]: _, ...rest } = state.unreadCounts;
+      console.log(_)
       return { unreadCounts: { ...rest, [conversationId]: 0 } }
     }),
 

@@ -28,7 +28,7 @@ interface MessageFormProps {
     sendLoading: boolean
     stopRecording: () => void
     startRecording: () => Promise<void>
-    sendAttachmentFun: UseMutateFunction<any, Error, FormData, unknown>
+    sendAttachmentFun: UseMutateFunction<unknown, Error, FormData, unknown>
 
 }
 

@@ -12,7 +12,7 @@ interface AIContentModerationBannerProps {
   onDismiss: (postId: number) => void
 }
 
-export function AIContentModerationBanner({ postId, content, onReview, onDismiss }: AIContentModerationBannerProps) {
+export function AIContentModerationBanner({ postId, onReview, onDismiss }: AIContentModerationBannerProps) {
   const [dismissed, setDismissed] = useState(false)
 
   if (dismissed) return null

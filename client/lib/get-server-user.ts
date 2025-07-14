@@ -24,7 +24,7 @@ export async function getServerUser() {
     const { data } = await res.json();
 
     return data.user;
-  } catch (err) {
+  } catch  {
     return null;
   }
 }

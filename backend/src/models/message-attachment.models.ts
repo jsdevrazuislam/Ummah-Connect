@@ -9,7 +9,7 @@ class MessageAttachment extends Model {
   public thumbnail_url?: string;
   public duration?: number;
   public size_in_bytes?: number;
-  public metadata?: Record<string, any>;
+  public metadata?: Record<string, string>;
   public createdAt!: Date;
   public updatedAt!: Date;
 }

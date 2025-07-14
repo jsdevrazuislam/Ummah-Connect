@@ -76,11 +76,11 @@ const savedCollections = [
 ]
 
 export function LeftSidebar() {
-  const [weather, setWeather] = useState({
+  const weather = {
     temp: 24,
     condition: "Sunny",
     location: "Dhaka, BD",
-  })
+  }
 
   const { setIsOpen } = useAuthStore()
 

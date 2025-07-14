@@ -92,7 +92,7 @@ export const useCallStore = create<CallState>((set, get) => ({
             get().actions.stopRingtone();
         },
 
-        fetchToken: async (roomName, identity, callType) => {
+        fetchToken: async (roomName, identity) => {
             set({ isFetchingToken: true });
             try {
                 const { data } = await api(`/stream/get-token?roomName=${roomName}&identity=${identity}`);

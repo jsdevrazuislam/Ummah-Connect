@@ -337,7 +337,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     media_url = media?.url;
   }
 
-  const [_, updatePost] = await Post.update(
+  const [, updatePost] = await Post.update(
     { content, location, privacy, media: media_url ? media_url : post.media },
     { where: { id: postId, authorId }, returning: true }
   );
