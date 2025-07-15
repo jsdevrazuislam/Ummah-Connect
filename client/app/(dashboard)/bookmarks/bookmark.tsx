@@ -63,7 +63,7 @@ export default function BookmarksPage() {
                     ) : (
                         posts?.length > 0 ? posts?.map((post) => (
                             <Post key={post?.id} post={post?.post} />
-                        )) : <div className="text-center py-16 border rounded-lg mt-4">
+                        )) : <div className="text-center flex justify-center items-center flex-col py-16 border rounded-lg mt-4">
                             <Bookmark className="h-12 w-12 text-muted-foreground mb-4" />
                             <h4 className="font-medium mb-2">No bookmarks yet</h4>
                             <p className="text-muted-foreground mb-4">

@@ -87,7 +87,7 @@ export function AIPrayerReminder() {
     const timeUntilTimer = setInterval(updateTimeUntil, 60000)
 
     return () => clearInterval(timeUntilTimer)
-  }, [currentTime, location])
+  }, [currentTime])
 
   const formatPrayerTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })

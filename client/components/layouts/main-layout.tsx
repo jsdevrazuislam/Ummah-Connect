@@ -5,9 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Home,
-  Compass,
   Video,
-  Users,
   Bell,
   MessageCircle,
   Bookmark,
@@ -27,9 +25,7 @@ import { useConversationStore } from "@/hooks/use-conversation-store"
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/explore", icon: Compass, label: "Explore" },
   { href: "/shorts", icon: Video, label: "Shorts" },
-  { href: "/groups", icon: Users, label: "Groups" },
   { href: "/live", icon: Video, label: "Live" },
 ]
 
@@ -69,7 +65,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky px-6 lg:px-4 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-0">
+        <div >
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4 flex-1">
               <Link href="/" className="flex items-center space-x-2">

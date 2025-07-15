@@ -39,7 +39,7 @@ export default function LivePage() {
                     </Link>
                 </div>
                 <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute z-10 left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search live streams" className="pl-10" />
                 </div>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">

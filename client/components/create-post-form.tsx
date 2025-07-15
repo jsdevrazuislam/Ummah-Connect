@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Play, Smile, Sparkles, X } from "lucide-react"
+import { Play, Smile, X } from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
 import { ImageUpload } from "@/components/image-upload"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -21,11 +21,9 @@ import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
 
-interface CreatePostFormProps {
-  onAIHelp?: () => void
-}
 
-export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
+
+export function CreatePostForm() {
   const [content, setContent] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
@@ -254,10 +252,6 @@ export function CreatePostForm({ onAIHelp }: CreatePostFormProps) {
               <Smile className="h-5 w-5" />
             </Button>
             <LocationPicker onLocationSelect={handleLocationSelect} />
-            <Button type="button" size="icon" variant="ghost" className="text-primary" onClick={onAIHelp}>
-              <Sparkles className="h-5 w-5" />
-              <span className="sr-only">AI Help</span>
-            </Button>
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>

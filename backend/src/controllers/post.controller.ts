@@ -12,7 +12,7 @@ import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { Op } from "sequelize";
-import { POST_ATTRIBUTE, REACT_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
+import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import {
   getFollowerCountLiteral,
   getFollowingCountLiteral,
@@ -414,9 +414,7 @@ export const get_following_posts = asyncHandler(
           where: {
             privacy: "public",
             authorId: {
-              [Op.in]: sequelize.literal(`(
-          SELECT "followingId" FROM "follows" WHERE "followerId" = ${currentUserId}
-        )`),
+              [Op.in]: sequelize.literal(`(SELECT "followingId" FROM "follows" WHERE "followerId" = ${currentUserId})`),
             },
           },
           include: [
@@ -441,17 +439,6 @@ export const get_following_posts = asyncHandler(
               ],
             },
             {
-              model: Reaction,
-              required: false,
-              attributes: REACT_ATTRIBUTE,
-              as: "reactions",
-            },
-            {
-              model: BookmarkPost,
-              attributes: ["id", "postId", "userId"],
-              as: "bookmarks",
-            },
-            {
               model: User,
               required: false,
               as: "user",
@@ -467,6 +454,8 @@ export const get_following_posts = asyncHandler(
             include: [
               getTotalCommentsCountLiteral('"Post"'),
               getTotalReactionsCountLiteral('"Post"'),
+              getIsBookmarkedLiteral(currentUserId, '"Post"'),
+              getUserReactionLiteral(currentUserId, '"Post"'),
             ],
           },
         });
@@ -513,12 +502,6 @@ export const get_bookmark_posts = asyncHandler(
             as: "post",
             include: [
               {
-                model: Reaction,
-                required: false,
-                attributes: REACT_ATTRIBUTE,
-                as: "reactions",
-              },
-              {
                 model: User,
                 required: false,
                 as: "user",
@@ -535,6 +518,8 @@ export const get_bookmark_posts = asyncHandler(
               include: [
                 getTotalCommentsCountLiteral('"post"'),
                 getTotalReactionsCountLiteral('"post"'),
+                getIsBookmarkedLiteral(currentUserId, '"post"'),
+               getUserReactionLiteral(currentUserId, '"post"'),
               ],
             },
           },

@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["backend/dist/**", "client/types/**", "client/tailwind.config.ts", "node_modules/**", "client/.next/**", "README.md"],
+    ignores: ["backend/dist/**", "client/types/**", "node_modules/**", "client/.next/**", "README.md"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

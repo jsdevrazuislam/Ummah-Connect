@@ -22,7 +22,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { AITranslation } from "@/components/ai-translation"
 import { Badge } from "@/components/ui/badge"
 import { ReactionPicker, type ReactionType } from "@/components/reaction-picker"
 import { CommentItems, } from "@/components/comment-item"
@@ -46,7 +45,7 @@ import { PostMedia } from "@/components/post-media"
 
 
 interface PostProps {
-  post: PostsEntity | undefined
+  post: PostsEntity | undefined;
 }
 
 export function Post({ post }: PostProps) {
@@ -206,7 +205,7 @@ export function Post({ post }: PostProps) {
             post?.originalPost ? <SharedPost 
               post={post.originalPost} 
               className="mt-2"
-            /> : <div className={cn(`mt-4 text-sm ${post.background && post?.background}`, {'h-56 flex rounded-md justify-center items-center text-center' : post?.background})}>{post.content}</div>
+            /> : <div className={cn(`mt-4 text-sm ${post.background && post?.background}`, {'h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center' : post?.background})}>{post.content}</div>
           }
           {post?.location && !isEditing && (
             <div className="mt-2">
@@ -219,7 +218,6 @@ export function Post({ post }: PostProps) {
             </div>
           )}
 
-          {showTranslation && !isEditing && <AITranslation originalText={post.content} />}
 
            <PostMedia
               media={post.media} 

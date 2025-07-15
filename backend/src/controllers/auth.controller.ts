@@ -278,7 +278,7 @@ export const get_user_profile = asyncHandler(async (req: Request, res: Response)
 
   return res.json(
     new ApiResponse(200, {
-      ...user.toJSON(),
+      ...{user:user.toJSON()},
       following_count: followerCount,
       followers_count: followingCount,
       isFollowing: isFollow ? true : false
