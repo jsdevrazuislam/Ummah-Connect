@@ -15,6 +15,7 @@ interface SharePayload{
 interface CommentPayload{
     content: string
     postId: number
+    type?:string
 }
 interface EditCommentPayload{
     content: string

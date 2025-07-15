@@ -1,6 +1,6 @@
 'use client'
 
-import {  useState } from 'react'
+import { useState } from 'react'
 import {
     ArrowUp,
     ArrowDown,
@@ -98,7 +98,7 @@ export default function ShortsListView() {
                 animationDirection={animationDirection}
             />
 
-            <div className="absolute top-[30%] right-[5%] flex flex-col gap-4">
+            <div className="absolute top-[30%] right-[5%] flex-col gap-4 hidden md:flex">
                 <button
                     onClick={() => navigateShort('prev')}
                     aria-label="Previous short"

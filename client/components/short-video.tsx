@@ -24,6 +24,7 @@ import { react_post } from '@/lib/apis/posts'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
+import { create_comment } from '@/lib/apis/comment'
 
 interface VideoShortsProps {
     currentShort: ShortsEntity | null | undefined
@@ -48,7 +49,7 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
     const titleContainerRef = useRef<HTMLDivElement>(null)
     const titleTextRef = useRef<HTMLParagraphElement>(null)
     const [showComments, setShowComments] = useState(false)
-    // const [commentText, setCommentText] = useState("")
+    const [commentText, setCommentText] = useState("")
     const [liked, setLiked] = useState(false)
     const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
     const [overlayIconType, setOverlayIconType] = useState<'play' | 'pause' | null>(null);
@@ -64,15 +65,15 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
         }
     })
 
-    // const { mutate: mnFun, isPending } = useMutation({
-    //     mutationFn: create_comment,
-    //     onSuccess: (newComment, variable) => {
-    //         setCommentText("")
-    //     },
-    //     onError: (error) => {
-    //         toast.error(error.message)
-    //     }
-    // })
+    const { mutate: mnFun, isPending } = useMutation({
+        mutationFn: create_comment,
+        onSuccess: () => {
+            setCommentText("")
+        },
+        onError: (error) => {
+            toast.error(error.message)
+        }
+    })
 
 
     const handleSliderChange = (value: number[]) => {
@@ -170,6 +171,13 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
     };
 
 
+    const handleMute = () =>{
+        mnFun({
+            postId: currentShort?.id ?? 0,
+            content: commentText,
+            type: 'short'
+        })
+    }
 
     return (
         <AnimatePresence initial={false} custom={animationDirection}>
@@ -184,7 +192,7 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
                 <div className='relative'>
                     <div
                         ref={containerRef}
-                        className="relative mx-auto mt-4 max-w-[350px] h-[calc(100vh-96px)] overflow-hidden bg-black rounded-xl"
+                        className="relative mx-auto mt-4 w-full md:max-w-[350px] h-[calc(100vh-96px)] overflow-hidden bg-black rounded-xl"
                     >
                         <VideoPlayer
                             ref={playerRef}
@@ -321,14 +329,16 @@ export default function ShortVideo({ currentShort, currentShortIndex, animationD
                                         <Input
                                             placeholder="Add a comment..."
                                             className="bg-white/10 border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                                            value={commentText}
+                                            onChange={(e) => setCommentText(e.target.value)}
                                         />
-                                        <Button size="sm">Post</Button>
+                                        <Button disabled={isPending} onClick={handleMute} size="sm">Post</Button>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
-                    <div className="absolute z-30 right-[33%] bottom-20 flex flex-col items-center space-y-5">
+                    <div className="absolute z-30 right-0 bg-black/30 lg:right-[33%] bottom-20 flex flex-col items-center space-y-5">
                         <div className="flex flex-col items-center">
                             <Button onClick={handleLike} variant="ghost" size="icon" className="rounded-full bg-white/10 text-white hover:bg-white/20">
                                 <Heart className={cn("h-5 w-5", liked ? "fill-red-500 text-red-500" : "")} />

@@ -58,7 +58,7 @@ export default function NotificationsPage() {
   return (
       <>
         <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
-          <h1 className="text-xl font-bold mb-4 ml-12 lg:ml-0">Notifications</h1>
+          <h1 className="text-xl font-bold mb-4">Notifications</h1>
           <Tabs defaultValue="all" className="mt-4">
             <TabsList className="w-full">
               <TabsTrigger value="all" className="flex-1">
@@ -76,7 +76,7 @@ export default function NotificationsPage() {
 
         <div>
           {notifications.map((notification) => (
-            <div key={notification.id} className="p-4 border-b border-border hover:bg-muted/50">
+            <div key={notification.id} className="p-4 cursor-pointer border-b border-border hover:bg-muted/50">
               <div className="flex gap-3">
                 <div className="mt-1">
                   {notification.type === "like" && (

@@ -171,20 +171,19 @@ export function StorySection() {
 
   return (
     <>
-      <div className="py-4 px-2">
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="px-4 py-3 overflow-hidden">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2">
           {stories.map((story, index) => (
             <div
               key={story.id}
-              className="flex flex-col items-center space-y-1 min-w-[72px]"
+              className="flex flex-col items-center space-y-1 min-w-[72px] flex-shrink-0"
               onClick={() => handleStoryClick(index)}
             >
               <div
-                className={`rounded-full p-[2px] cursor-pointer ${
-                  story.viewed || (story.isCurrentUser && story.items.length === 0)
+                className={`rounded-full p-[2px] cursor-pointer ${story.viewed || (story.isCurrentUser && story.items.length === 0)
                     ? "bg-muted"
                     : "bg-gradient-to-tr from-amber-500 to-primary"
-                }`}
+                  }`}
               >
                 <div className="bg-background rounded-full p-[2px]">
                   <Avatar className="h-16 w-16 relative">
@@ -205,6 +204,7 @@ export function StorySection() {
           ))}
         </div>
       </div>
+
 
       {activeStoryIndex !== null && <StoryViewer story={stories[activeStoryIndex]} onClose={handleCloseStory} />}
 

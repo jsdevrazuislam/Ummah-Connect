@@ -360,12 +360,11 @@ export default function ConversationPage() {
             "w-full",
             "md:w-[calc(100%-20rem)]"
           )}>
-            <div className="md:hidden flex items-center p-2 border-b border-border">
+            <div className="md:hidden flex items-center px-4 py-1 border-b border-border">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedConversation(null)}
-                className="mr-2"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -373,6 +372,7 @@ export default function ConversationPage() {
                 selectedConversation={selectedConversation}
                 getIsUserOnline={getIsUserOnline}
                 getUserLastSeen={getUserLastSeen}
+                className="p-0"
               />
             </div>
 
@@ -384,7 +384,7 @@ export default function ConversationPage() {
               />
             </div>
 
-            <ScrollArea className="flex-1 p-4 h-[calc(100vh-180px)] md:h-[calc(100vh-140px)]">
+            <ScrollArea className="flex-1 px-6 py-4 h-[calc(100vh-180px)] md:h-[calc(100vh-140px)]">
               <InfiniteScroll
                 hasMore={messageHasNextPage}
                 isLoading={messageLoading}
@@ -424,7 +424,7 @@ export default function ConversationPage() {
             />
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center w-full">
+          <div className="hidden md:flex flex-1 items-center justify-center w-full">
             {
               messageLoading ? <Loader /> : <div className="flex justify-between items-center flex-col p-4">
                 <h3 className="font-medium">Select a conversation</h3>

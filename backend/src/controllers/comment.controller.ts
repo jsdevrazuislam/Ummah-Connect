@@ -7,22 +7,23 @@ import CommentReaction from "@/models/react.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { USER_ATTRIBUTE } from "@/constants";
 import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
+import Short from "@/models/shorts.models";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
-    const { content } = req.body;
+    const { content, type } = req.body;
     const userId = req.user.id;
     const postId = req.params.id;
 
-    const post = await Post.findOne({ where: { id: postId } });
-    if (!post) throw new ApiError(404, "Post not found");
+    if(type === 'short'){
+      const short = await Short.findOne({ where: { id: postId } });
+      if (!short) throw new ApiError(404, "Short not found");
+    } else {
+      const post = await Post.findOne({ where: { id: postId } });
+      if (!post) throw new ApiError(404, "Post not found");
+    }
 
     const comment = await Comment.create({ content, userId, postId });
-    const totalComments = await Comment.count({
-      where: {
-        postId
-      },
-    })
 
     const followerCount = await Follow.count({ where: { followingId: req.user.id } });
     const followingCount = await Follow.count({ where: { followerId: req.user.id } });
@@ -43,10 +44,9 @@ export const create_comment = asyncHandler(
         following_count: followingCount,
         isFollowing: false
       },
-      replies: [],
-      repliesCount: 0,
-      totalComments,
-      reactions: { counts: {}, currentUserReaction: null }
+      totalCommentsCount: 0,
+      totalReactionsCount: 0,
+      currentUserReaction: null
     }
 
     emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } })

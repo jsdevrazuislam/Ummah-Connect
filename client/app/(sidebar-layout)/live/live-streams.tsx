@@ -30,7 +30,7 @@ export default function LivePage() {
         <>
             <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-xl font-bold ml-12 lg:ml-0">Live</h1>
+                    <h1 className="text-xl font-bold">Live</h1>
                     <Link href="/live/create">
                         <Button size="sm" className="gap-1">
                             <Video className="h-4 w-4" />

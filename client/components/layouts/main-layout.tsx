@@ -55,7 +55,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
     router.push("/login")
   }
 
-  const shouldHideLeftSidebar =  ["/messages", "/shorts"].includes(pathname) ||  pathname.startsWith("/shorts")
+  const shouldHideLeftSidebar =  ["/messages", "/shorts"].includes(pathname) ||  pathname.startsWith("/shorts") || pathname.startsWith("/profile")
   const shouldHideRightSidebar = [
   "/messages",
   "/settings",
@@ -64,12 +64,12 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky px-6 lg:px-4 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky px-4 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div >
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4 flex-1">
               <Link href="/" className="flex items-center space-x-2">
-                <h1 className="text-xl font-bold">
+                <h1 className="text-lg md:text-xl font-bold">
                   Ummah Connect
                 </h1>
               </Link>
@@ -180,7 +180,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
         )}
 
         <main
-          className={`flex-1 pb-16 lg:pb-0 ${!shouldHideLeftSidebar && !shouldHideRightSidebar
+          className={`flex-1 overflow-hidden pb-16 lg:pb-0 ${!shouldHideLeftSidebar && !shouldHideRightSidebar
             ? "lg:px-4"
             : !shouldHideRightSidebar
               ? "xl:pr-4"

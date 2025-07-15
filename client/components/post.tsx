@@ -50,9 +50,9 @@ interface PostProps {
 
 export function Post({ post }: PostProps) {
 
-  if(!post) return
+  if (!post) return
 
-  
+
   const { user } = useAuthStore()
   const { socket } = useSocketStore()
   const [showComments, setShowComments] = useState(false)
@@ -136,11 +136,11 @@ export function Post({ post }: PostProps) {
   }, [socket, post]);
 
   return (
-    <div className="border-b border-border p-4">
+    <div className="border-b border-border px-0 md:px-4 py-4">
       <div className="flex gap-3">
         <Avatar>
-          { post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.full_name} /> : 
-          <AvatarFallback>{post?.user?.full_name?.charAt(0)}</AvatarFallback>}
+          {post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.full_name} /> :
+            <AvatarFallback>{post?.user?.full_name?.charAt(0)}</AvatarFallback>}
         </Avatar>
 
         <div className="flex-1">
@@ -197,100 +197,101 @@ export function Post({ post }: PostProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {post?.originalPost && post?.content && <p className="mt-4">
-            {post.content}
-          </p>}
-          {
-            post?.originalPost ? <SharedPost 
-              post={post.originalPost} 
-              className="mt-2"
-            /> : <div className={cn(`mt-4 text-sm ${post.background && post?.background}`, {'h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center' : post?.background})}>{post.content}</div>
-          }
-          {post?.location && !isEditing && (
-            <div className="mt-2">
-              <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">
-                <MapPin className="h-3 w-3" />
-                <span>
-                  {post?.location}
-                </span>
-              </Badge>
-            </div>
-          )}
-
-
-           <PostMedia
-              media={post.media} 
-              contentType={post.contentType}
-              altText={`Post by ${post.user?.full_name}`}
-              className="mt-3"
-            />
-
-          <div className="mt-4 flex justify-between">
-            <div className="flex items-center gap-2">
-              <ReactionPicker id={post.id} onReactionSelect={setCurrentReaction} currentReaction={currentReaction} />
-              <span className="text-sm text-muted-foreground">{post?.totalReactionsCount}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground gap-1"
-              onClick={() => setShowComments(!showComments)}
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span>{post?.totalCommentsCount ?? 0}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground gap-1"
-              onClick={() => setShowShareDialog(true)}
-            >
-              <Share className="h-4 w-4" />
-              <span>{post?.share}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={isBookmarked ? "text-primary" : "text-muted-foreground"}
-              onClick={() => bookmarkFunc(post.id)}
-              disabled={isPending}
-            >
-              <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-primary" : ""}`} />
-            </Button>
-          </div>
-
-          {showComments && (
-            <div className="mt-4 space-y-4">
-              <div className="flex gap-2">
-                <Avatar className="h-8 w-8">
-                  { user?.avatar ? <AvatarImage
-                    src={user?.avatar}
-                    alt={user?.full_name || "Your avatar"}
-                  /> : 
-                  <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>}
-                </Avatar>
-                <div className="flex-1 flex gap-2">
-                  <Input
-                    placeholder="Add a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    className="flex-1"
-                    disabled={isPending}
-                  />
-                  <Button size="sm" onClick={handleAddComment} disabled={!commentText.trim() || isPending}>
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <CommentItems
-                postId={post.id}
-                totalComment={post?.totalCommentsCount}
-              />
-            </div>
-          )}
         </div>
       </div>
+
+
+      {post?.originalPost && post?.content && <p className="mt-4 ml-2">
+        {post.content}
+      </p>}
+      {
+        post?.originalPost ? <SharedPost
+          post={post.originalPost}
+          className="mt-2"
+        /> : <div className={cn(`mt-4 ml-2 text-sm ${post.background && post?.background}`, { 'h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center': post?.background })}>{post.content}</div>
+      }
+      {post?.location && !isEditing && (
+        <div className="mt-2">
+          <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">
+            <MapPin className="h-3 w-3" />
+            <span>
+              {post?.location}
+            </span>
+          </Badge>
+        </div>
+      )}
+
+
+      <PostMedia
+        media={post.media}
+        contentType={post.contentType}
+        altText={`Post by ${post.user?.full_name}`}
+        className="mt-3"
+      />
+
+      <div className="mt-4 flex justify-between">
+        <div className="flex items-center gap-2">
+          <ReactionPicker id={post.id} onReactionSelect={setCurrentReaction} currentReaction={currentReaction} />
+          <span className="text-sm text-muted-foreground">{post?.totalReactionsCount}</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground gap-1"
+          onClick={() => setShowComments(!showComments)}
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>{post?.totalCommentsCount ?? 0}</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground gap-1"
+          onClick={() => setShowShareDialog(true)}
+        >
+          <Share className="h-4 w-4" />
+          <span>{post?.share}</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={isBookmarked ? "text-primary" : "text-muted-foreground"}
+          onClick={() => bookmarkFunc(post.id)}
+          disabled={isPending}
+        >
+          <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-primary" : ""}`} />
+        </Button>
+      </div>
+
+      {showComments && (
+        <div className="mt-4 space-y-4">
+          <div className="flex gap-2">
+            <Avatar className="h-8 w-8">
+              {user?.avatar ? <AvatarImage
+                src={user?.avatar}
+                alt={user?.full_name || "Your avatar"}
+              /> :
+                <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>}
+            </Avatar>
+            <div className="flex-1 flex gap-2">
+              <Input
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="flex-1"
+                disabled={isPending}
+              />
+              <Button size="sm" onClick={handleAddComment} disabled={!commentText.trim() || isPending}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <CommentItems
+            postId={post.id}
+            totalComment={post?.totalCommentsCount}
+          />
+        </div>
+      )}
       <EditPostModel post={post} showEditDialog={isEditing} setShowEditDialog={setIsEditing} />
       <SharePostDialog
         post={post}
@@ -298,7 +299,7 @@ export function Post({ post }: PostProps) {
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
       />
-       <ConfirmationModal
+      <ConfirmationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleDeletePost}

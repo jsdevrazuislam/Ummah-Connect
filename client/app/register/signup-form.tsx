@@ -2,7 +2,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { registerSchema, SignupFormData } from "@/validation/auth.validation"
@@ -13,6 +12,7 @@ import { useMutation } from "@tanstack/react-query"
 import { registerUser } from "@/lib/apis/auth"
 import { toast } from "sonner"
 import { LoadingOverlay } from "@/components/loading-overlay"
+import { Label } from "@/components/ui/label"
 
 const SignupForm = () => {
 
@@ -53,29 +53,23 @@ const SignupForm = () => {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="first-name">First Name</Label>
-                                <Input id="first-name" placeholder="Muhammad" {...register("first_name")} error={errors.first_name?.message} />
+                                <Input id="first-name" placeholder="muhammad" {...register("first_name")} error={errors.first_name?.message} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="last-name">Last Name</Label>
-                                <Input id="last-name" placeholder="Abdullah" {...register("last_name")} error={errors.last_name?.message} />
+                                <Input id="last-name" placeholder="abdullah" {...register("last_name")} error={errors.last_name?.message} />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
                             <Input id="username" placeholder="m_abdullah"  {...register("username")} error={errors.username?.message} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
                             <Input id="email" type="email" placeholder="m.abdullah@example.com" {...register("email")} error={errors.email?.message} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input id="password" type="password" {...register("password")} error={errors.password?.message} />
+                            <Input id="password" placeholder="password" type="password" {...register("password")} error={errors.password?.message} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="confirm-password">Confirm Password</Label>
-                            <Input id="confirm-password" type="password" {...register("confirm_password")} error={errors.confirm_password?.message} />
+                            <Input id="confirm-password" placeholder="confirm password" type="password" {...register("confirm_password")} error={errors.confirm_password?.message} />
                         </div>
                         <div className="flex items-center space-x-2">
                             <Controller

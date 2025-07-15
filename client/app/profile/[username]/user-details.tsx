@@ -59,10 +59,10 @@ export default function ProfilePage({ username, user }: { username: string, user
     }
 
     return (
-        <div className="flex min-h-screen bg-background mt-5">
+        <div className="max-w-3xl mx-auto">
             <main className="flex-1 border-x border-border">
                 <div className="relative">
-                    <div className="h-48 bg-muted w-full">
+                    <div className="h-72 bg-muted w-full">
                         <Image
                             src={user?.cover ?? '/placeholder.svg'}
                             alt="Cover"
@@ -135,11 +135,11 @@ export default function ProfilePage({ username, user }: { username: string, user
 
                             <div className="flex gap-4 mt-3 text-sm">
                                 <div>
-                                    <span className="font-semibold">{user?.following_count}</span>{" "}
+                                    <span className="font-semibold">{user?.following_count ?? 0}</span>{" "}
                                     <span className="text-muted-foreground">Following</span>
                                 </div>
                                 <div>
-                                    <span className="font-semibold">{user?.followers_count}</span>{" "}
+                                    <span className="font-semibold">{user?.followers_count ?? 0}</span>{" "}
                                     <span className="text-muted-foreground">Followers</span>
                                 </div>
                             </div>
@@ -161,9 +161,7 @@ export default function ProfilePage({ username, user }: { username: string, user
                             <div className="flex justify-between items-center px-4 border-b">
                                 <TabsList className="bg-transparent">
                                     <TabsTrigger value="posts">Posts</TabsTrigger>
-                                    <TabsTrigger value="replies">Replies</TabsTrigger>
                                     <TabsTrigger value="media">Media</TabsTrigger>
-                                    <TabsTrigger value="likes">Likes</TabsTrigger>
                                 </TabsList>
 
                                 <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
@@ -197,11 +195,13 @@ export default function ProfilePage({ username, user }: { username: string, user
                                                 key={post?.id}
                                                 className="relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer"
                                             >
-                                                {post?.image ? (
-                                                    <img
-                                                        src={post?.image || "/placeholder.svg"}
+                                                {post?.contentType === 'picture' ? (
+                                                    <Image
+                                                        src={post?.media || "/placeholder.svg"}
                                                         alt="Post"
                                                         className="w-full h-full object-cover"
+                                                        width={200}
+                                                        height={200}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -213,16 +213,16 @@ export default function ProfilePage({ username, user }: { username: string, user
                                                     <div className="flex items-center gap-4 text-white text-sm">
                                                         <div className="flex items-center gap-1">
                                                             <Heart className="h-4 w-4 fill-white" />
-                                                            <span>{post?.likes}</span>
+                                                            <span>{post?.totalReactionsCount}</span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <MessageCircle className="h-4 w-4 fill-white" />
-                                                            <span>{post?.comments?.total}</span>
+                                                            <span>{post?.totalCommentsCount}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {!post?.image && (
+                                                {!post?.media && (
                                                     <div className="absolute top-2 right-2">
                                                         <div className="w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
                                                             <span className="text-white text-xs">T</span>
@@ -234,44 +234,45 @@ export default function ProfilePage({ username, user }: { username: string, user
                                     </div>
                                 )}
                             </TabsContent>
-
-                            <TabsContent value="replies">
-                                <div className="p-8 text-center text-muted-foreground">No replies yet</div>
-                            </TabsContent>
-
                             <TabsContent value="media">
                                 <div className="grid grid-cols-3 gap-1 p-1">
                                     {posts
-                                        ?.filter((post) => post?.image)
+                                        ?.filter((post) => post?.media)
                                         ?.map((post) => (
                                             <div
                                                 key={post?.id}
                                                 className="relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer"
                                             >
-                                                <img
-                                                    src={post?.image || "/placeholder.svg"}
+                                               {
+                                                post?.contentType === 'picture' ?  <Image
+                                                    src={post?.media || "/placeholder.svg"}
                                                     alt="Media post"
                                                     className="w-full h-full object-cover"
+                                                    width={200}
+                                                    height={200}
+                                                /> :  <Image
+                                                    src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/w_300,h_200,c_thumb,q_auto,f_jpg/${post?.media}.png`}
+                                                    alt="Media post"
+                                                    className="w-full h-full object-cover"
+                                                    width={200}
+                                                    height={200}
                                                 />
+                                               }
                                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                                     <div className="flex items-center gap-4 text-white text-sm">
                                                         <div className="flex items-center gap-1">
                                                             <Heart className="h-4 w-4 fill-white" />
-                                                            <span>{post?.likes}</span>
+                                                            <span>{post?.totalReactionsCount}</span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <MessageCircle className="h-4 w-4 fill-white" />
-                                                            <span>{post?.comments?.total}</span>
+                                                            <span>{post?.totalCommentsCount}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
                                 </div>
-                            </TabsContent>
-
-                            <TabsContent value="likes">
-                                <div className="p-8 text-center text-muted-foreground">No liked posts yet</div>
                             </TabsContent>
                         </Tabs>
                     )}

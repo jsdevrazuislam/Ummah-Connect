@@ -111,14 +111,14 @@ export default function CreateLiveStreamPage() {
 
     return (
         <>
-            <div className="mb-6 mt-6">
+            <div className="px-6 mt-4">
                 <Link href="/live" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Live
                 </Link>
             </div>
 
-            <h1 className="text-2xl font-bold mb-6">Go Live</h1>
+            <h1 className="text-2xl font-bold px-6 mb-6">Go Live</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-8">
                 <div className="md:col-span-2">

@@ -38,6 +38,7 @@ export const PostMedia = ({
         <HlsVideoPlayer 
           src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${media}.m3u8`}
           poster={poster}
+          className="w-full max-w-full"
         />
       </div>
     )
