@@ -1,14 +1,15 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import SibApiV3Sdk from "sib-api-v3-sdk";
 import ApiError from "@/utils/ApiError";
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
-let apiKey = defaultClient.authentications["api-key"];
+const apiKey = defaultClient.authentications["api-key"];
 
 apiKey.apiKey = process.env.SMTP_TOKEN;
 
-let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
 
 /**
  * Sends an email using the configured API instance.

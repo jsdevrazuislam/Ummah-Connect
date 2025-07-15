@@ -30,7 +30,7 @@ export default function LivePage() {
         <>
             <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-xl font-bold ml-12 lg:ml-0">Live</h1>
+                    <h1 className="text-xl font-bold">Live</h1>
                     <Link href="/live/create">
                         <Button size="sm" className="gap-1">
                             <Video className="h-4 w-4" />
@@ -39,7 +39,7 @@ export default function LivePage() {
                     </Link>
                 </div>
                 <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute z-10 left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search live streams" className="pl-10" />
                 </div>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">

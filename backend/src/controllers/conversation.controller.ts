@@ -39,7 +39,8 @@ export const create_conversation_for_dm = asyncHandler(
             case "nobody":
                 throw new ApiError(403, `This user does not accept direct messages.`);
 
-            case "followers":
+            case "followers": {
+
                 const isFollowing = await Follow.findOne({
                     where: {
                         followerId: creatorId,
@@ -54,6 +55,7 @@ export const create_conversation_for_dm = asyncHandler(
                     );
                 }
                 break;
+            }
 
             case "everyone":
                 break;

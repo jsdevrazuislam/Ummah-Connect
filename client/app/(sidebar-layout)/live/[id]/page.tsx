@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         images: [data?.thumbnail || '/live.webp'],
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'Error | Ummah Connect',
       description: 'An error occurred while loading stream information',

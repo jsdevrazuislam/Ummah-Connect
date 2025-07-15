@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 // Prayer times calculation would normally use a proper algorithm
 // This is a simplified mock version
-const calculateMockPrayerTimes = (date: Date, latitude: number, longitude: number) => {
+const calculateMockPrayerTimes = (date: Date) => {
   // Mock prayer times - in a real app, these would be calculated based on location and date
   return {
     fajr: new Date(date.setHours(5, 12)),
@@ -25,7 +25,7 @@ export function AIPrayerReminder() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: Date } | null>(null)
   const [timeUntilNextPrayer, setTimeUntilNextPrayer] = useState<string>("")
-  const [location, setLocation] = useState({ latitude: 3.139, longitude: 101.6869, name: "Kuala Lumpur" }) // Default to Kuala Lumpur
+  const location = { latitude: 3.139, longitude: 101.6869, name: "Kuala Lumpur" }
 
   useEffect(() => {
     // Update current time every minute
@@ -38,7 +38,7 @@ export function AIPrayerReminder() {
 
   useEffect(() => {
     // Calculate prayer times based on location
-    const prayerTimes = calculateMockPrayerTimes(new Date(), location.latitude, location.longitude)
+    const prayerTimes = calculateMockPrayerTimes(new Date())
 
     // Determine next prayer
     const prayers = [
@@ -64,7 +64,7 @@ export function AIPrayerReminder() {
     if (!nextPrayerInfo) {
       const tomorrow = new Date()
       tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowPrayerTimes = calculateMockPrayerTimes(tomorrow, location.latitude, location.longitude)
+      const tomorrowPrayerTimes = calculateMockPrayerTimes(tomorrow)
       nextPrayerInfo = { name: "Fajr", time: tomorrowPrayerTimes.fajr }
     }
 
@@ -87,7 +87,7 @@ export function AIPrayerReminder() {
     const timeUntilTimer = setInterval(updateTimeUntil, 60000)
 
     return () => clearInterval(timeUntilTimer)
-  }, [currentTime, location])
+  }, [currentTime])
 
   const formatPrayerTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
@@ -100,7 +100,7 @@ export function AIPrayerReminder() {
     const currentPrayerIndex = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"].indexOf(nextPrayer.name)
     const previousPrayerIndex = currentPrayerIndex > 0 ? currentPrayerIndex - 1 : 5
 
-    const prayerTimes = calculateMockPrayerTimes(new Date(), location.latitude, location.longitude)
+    const prayerTimes = calculateMockPrayerTimes(new Date())
     const prayerTimesArray = [
       prayerTimes.fajr,
       prayerTimes.sunrise,
@@ -115,7 +115,7 @@ export function AIPrayerReminder() {
       // Previous prayer was yesterday
       const yesterday = new Date()
       yesterday.setDate(yesterday.getDate() - 1)
-      const yesterdayPrayerTimes = calculateMockPrayerTimes(yesterday, location.latitude, location.longitude)
+      const yesterdayPrayerTimes = calculateMockPrayerTimes(yesterday)
       previousPrayerTime = [
         yesterdayPrayerTimes.fajr,
         yesterdayPrayerTimes.sunrise,

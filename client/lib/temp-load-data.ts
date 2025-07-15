@@ -24,7 +24,7 @@ export const loadTempDataForMessage = ({
 
       const fileType = getFileType(file.type || '')
 
-      let duration = 0;
+      const duration = 0;
 
 
       return {

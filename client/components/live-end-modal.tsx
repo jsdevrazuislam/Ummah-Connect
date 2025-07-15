@@ -9,7 +9,6 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertTriangle, PhoneOff, X } from "lucide-react";
-import { useState } from "react";
 
 interface EndStreamConfirmationProps {
     onConfirm: () => void

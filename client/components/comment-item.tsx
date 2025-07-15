@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Sparkles, MoreHorizontal, Send, Pencil, Trash, Check, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CommentReactionPicker } from "@/components/comment-reaction-picker"
-import { AITranslation } from "@/components/ai-translation"
 import { Textarea } from "@/components/ui/textarea"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
@@ -250,12 +249,7 @@ function CommentItem({
           )}
         </div>
 
-        {showTranslation && !isEditing && (
-          <div className="mt-2">
-            <AITranslation originalText={comment.content} />
-          </div>
-        )}
-
+        
         <div className="flex gap-4 mt-1 ml-2 items-center">
           <div className="flex items-center gap-1">
             <CommentReactionPicker isReply={isReply} postId={postId} parentId={comment.parentId} id={comment.id} onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />

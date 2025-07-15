@@ -1,13 +1,11 @@
 "use client"
 import { useCallStore, useCallActions } from '@/hooks/use-call-store';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const CallRejectedModal = () => {
 
-    const router = useRouter();
     const { incomingCall, rejectedCallInfo, callStatus } = useCallStore();
     const { setCallStatus } = useCallActions();
 

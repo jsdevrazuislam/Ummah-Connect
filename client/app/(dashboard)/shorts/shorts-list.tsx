@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import {
     ArrowUp,
     ArrowDown,
@@ -18,7 +18,6 @@ import ShortVideo from '@/components/short-video'
 export default function ShortsListView() {
     const [currentShortIndex, setCurrentShortIndex] = useState(0);
     const [animationDirection, setAnimationDirection] = useState<'next' | 'prev'>('next');
-    const shortContainerRef = useRef<HTMLDivElement>(null);
 
     const {
         data,
@@ -99,7 +98,7 @@ export default function ShortsListView() {
                 animationDirection={animationDirection}
             />
 
-            <div className="absolute top-[30%] right-[5%] flex flex-col gap-4">
+            <div className="absolute top-[30%] right-[5%] flex-col gap-4 hidden md:flex">
                 <button
                     onClick={() => navigateShort('prev')}
                     aria-label="Previous short"

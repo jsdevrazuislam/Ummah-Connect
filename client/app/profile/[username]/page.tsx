@@ -31,7 +31,7 @@ async function fetchUser(username: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
   const user = await fetchUser(username) as ProfileUser
-  const userData = user?.data
+  const userData = user?.data?.user
 
   if (!user) {
     notFound()
@@ -71,7 +71,7 @@ export default async function UserProfilePage({ params }: Props) {
 
   return (
     <MainLayout>
-      <ProfilePage username={username} user={userData} />
+      <ProfilePage username={username} user={userData.user} />
     </MainLayout>
   )
 }

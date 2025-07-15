@@ -3,7 +3,7 @@
 import type React from "react"
 import { useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, X } from "lucide-react"
+import { ImageIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 interface ImageUploadProps {

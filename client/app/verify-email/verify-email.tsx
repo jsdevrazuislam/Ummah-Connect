@@ -64,7 +64,7 @@ export default function VerifyEmailPage() {
                     description: error.message || "Please try again later",
                 })
             }
-        } catch (error) {
+        } catch {
             toast.error("Network error", {
                 description: "Please check your connection and try again",
             })

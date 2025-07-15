@@ -22,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { UserProfileFormData, userProfileSchema } from "@/validation/auth.validation"
 import { Controller, useForm } from "react-hook-form"
 import { ImageUpload } from "@/components/image-upload"
-import { Camera, X } from "lucide-react"
+import { Camera } from "lucide-react"
 import ProfileLoading from "@/app/profile/[username]/loading"
 import Image from "next/image"
 

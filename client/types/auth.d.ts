@@ -5,7 +5,9 @@ interface UserResponse {
   success: boolean;
 }
 interface ProfileUser{
-  data: User
+  data: {
+    user: User
+  }
 }
 interface UpdateUserResponse {
   statusCode: number;

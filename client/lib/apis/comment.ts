@@ -3,7 +3,7 @@ import ApiStrings from "@/lib/apis/api-strings";
 
 
 export const create_comment = async (payload: CommentPayload) => {
-    const response = await api.post(ApiStrings.CREATE_COMMENT(payload.postId), { content: payload.content });
+    const response = await api.post(ApiStrings.CREATE_COMMENT(payload.postId), { content: payload.content, type: payload.type });
     return response.data;
 }
 

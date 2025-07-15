@@ -13,9 +13,6 @@ declare global {
   }
 
   namespace Multer{
-    interface File{
-
-    }
     interface FieldStorage {
       files?: UploadedFiles;
     }

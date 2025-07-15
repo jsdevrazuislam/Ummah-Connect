@@ -4,7 +4,6 @@ import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { LiveStream, LiveStreamBan, Report } from "@/models";
 import {uploadFileOnCloudinary} from "@/utils/cloudinary";
-import { sendEmail } from "@/utils/send-email";
 import redis from "@/config/redis";
 import { SocketEventEnum } from "@/constants";
 
@@ -26,7 +25,7 @@ export const create_report = asyncHandler(
     }
 
 
-    let attachments: string[] = [];
+    const attachments: string[] = [];
 
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {

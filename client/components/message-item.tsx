@@ -24,7 +24,7 @@ const MessageItem: FC<MessageItemProps> = ({
                 return <HLSVideoPlayer
                     src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${url}.m3u8`}
                     poster={thumbnail_url}
-                    className="max-w-sm w-[384px]"
+                    className="max-w-sm w-full lg:w-[384px]"
                 />
             case 'audio':
                 return <AudioPlayer audioUrl={url ?? ''} duration={String(duration)} />

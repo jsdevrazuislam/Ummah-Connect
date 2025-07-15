@@ -278,7 +278,7 @@ export const get_user_profile = asyncHandler(async (req: Request, res: Response)
 
   return res.json(
     new ApiResponse(200, {
-      ...user.toJSON(),
+      ...{user:user.toJSON()},
       following_count: followerCount,
       followers_count: followingCount,
       isFollowing: isFollow ? true : false
@@ -362,7 +362,7 @@ export const update_privacy_settings = asyncHandler(async (req: Request, res: Re
 
   const { active_status, private_account, read_receipts, location_share, post_see, message } = req.body
 
-  const [_, updateData] = await User.update(
+  const [, updateData] = await User.update(
     {
       privacy_settings: {
         active_status,
@@ -390,7 +390,7 @@ export const update_notification_preferences = asyncHandler(async (req: Request,
 
   const { push_notification, email_notification, prayer_time_notification, like_post, comment_post, mention, new_follower, dm, islamic_event } = req.body
 
-  const [_, updateData] = await User.update(
+  const [, updateData] = await User.update(
     {
       notification_preferences: {
         push_notification,
@@ -508,7 +508,7 @@ export const recover_2FA = asyncHandler(async (req: Request, res: Response) => {
 
   let matchCode = null
 
-  for (const rc of user?.recoveryCodes) {
+  for (const rc of user.recoveryCodes) {
     const isMatch = await compareRecoveryCode(recoveryCode, rc.code_hash)
     if (isMatch) {
       matchCode = rc

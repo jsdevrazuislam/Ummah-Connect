@@ -47,7 +47,7 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
     try {
       const auth = socket.handshake.auth as SocketAuth;
 
-      let token: string | undefined = auth.token;
+      const token: string | undefined = auth.token;
 
       let user: User | null = null;
 

@@ -75,18 +75,16 @@ export default function LoginPage() {
                     <CardContent className="my-4">
                         <form onSubmit={handleSubmit(onSubmit)}>
                             <div className="my-4">
-                                <Label htmlFor="email">Email or Username</Label>
-                                <Input id="email" type="text" {...register("emailOrUsername")} error={errors.emailOrUsername?.message} />
+                                <Input placeholder="email or username" id="email" type="text" {...register("emailOrUsername")} error={errors.emailOrUsername?.message} />
                             </div>
                             <div className="my-4">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Password</Label>
+                                <Input id="password" placeholder="password" type="password" {...register("password")} error={errors.password?.message} />
+                            </div>
+                            <div className="flex items-end justify-end mb-2">
                                     <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
                                         Forgot password?
                                     </Link>
                                 </div>
-                                <Input id="password" type="password" {...register("password")} error={errors.password?.message} />
-                            </div>
                             <div className="flex items-center gap-2 mt-4">
                                 <Checkbox id="remember" />
                                 <Label

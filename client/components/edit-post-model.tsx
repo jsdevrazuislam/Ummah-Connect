@@ -29,7 +29,7 @@ const EditPostModel = ({
 }: EditPostModelProps) => {
 
     const [editText, setEditText] = useState(post.content)
-    const [selectedImage, setSelectedImage] = useState(post.image)
+    const [selectedImage, setSelectedImage] = useState(post.media)
     const [newImage, setNewImage] = useState<File | undefined>()
     const [selectedLocation, setSelectedLocation] = useState(post.location)
     const [mode, setMode] = useState(post.privacy)
