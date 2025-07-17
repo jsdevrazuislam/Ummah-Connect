@@ -15,9 +15,11 @@ import { formatTime, parseFormattedTime } from "@/lib/utils";
 export function AudioPlayer({
   audioUrl,
   duration,
+  isOwnMessage
 }: {
   audioUrl: string;
   duration: string;
+  isOwnMessage?: boolean
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,6 +112,7 @@ export function AudioPlayer({
           onValueChange={handleSeek}
           onValueCommit={handleSeekCommit}
           thumbClassName='hidden'
+          trackClassName={isOwnMessage ? '' : `bg-primary`}
         />
       </div>
 

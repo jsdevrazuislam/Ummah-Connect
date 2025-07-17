@@ -55,12 +55,26 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
     router.push("/login")
   }
 
-  const shouldHideLeftSidebar =  ["/messages", "/shorts"].includes(pathname) ||  pathname.startsWith("/shorts") || pathname.startsWith("/profile")
-  const shouldHideRightSidebar = [
-  "/messages",
-  "/settings",
-  "/prayer-times",
-].includes(pathname) || pathname.startsWith("/live") ||  pathname.startsWith("/profile") ||  pathname.startsWith("/shorts");
+  const RESERVED_ROUTES = [
+  "login", "register", "messages", "settings", 
+  "prayer-times", "live", "shorts", "profile", "notifications", "bookmarks"
+]
+
+  const isUsernameProfile = () => {
+    if (pathname === "/") return false
+  const pathSegments = pathname.replace(/^\/+/, "").split("/")
+
+  return (
+    pathSegments.length === 1 &&
+    !RESERVED_ROUTES.includes(pathSegments[0])
+  )
+}
+
+const shouldHideLeftSidebar =
+  isUsernameProfile() || ["/messages", "/shorts"].includes(pathname) || pathname.startsWith("/shorts") || pathname.startsWith("/profile")
+
+const shouldHideRightSidebar =
+  isUsernameProfile() || ["/messages", "/settings", "/prayer-times"].includes(pathname) || pathname.startsWith("/live") || pathname.startsWith("/profile") || pathname.startsWith("/shorts")
 
   return (
     <div className="min-h-screen bg-background">

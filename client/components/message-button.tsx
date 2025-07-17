@@ -9,7 +9,6 @@ import { create_conversation } from '@/lib/apis/conversation'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { addedConversation } from '@/lib/update-conversation'
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 type Message = {
@@ -50,7 +49,7 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
     }
   }
 
-  const { disabled, reason } = getDisabledState()
+  const { disabled } = getDisabledState()
 
 
   const { mutate, isPending } = useMutation({
@@ -124,10 +123,7 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
 
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex">
-             <Button
+      <Button
             size="sm"
             onClick={openChatWindow}
             className="flex items-center gap-2"
@@ -136,12 +132,6 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
             <MessageSquare className="h-4 w-4" />
             Message
           </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{reason}</p>
-        </TooltipContent>
-      </Tooltip>
 
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
         {chatWindows.map((window, index) => (

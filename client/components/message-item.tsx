@@ -18,7 +18,7 @@ const MessageItem: FC<MessageItemProps> = ({
     user
 }) => {
 
-    const renderMessageType = (type: string, thumbnail_url?:string, url?: string, duration?: number) => {
+    const renderMessageType = (type: string, thumbnail_url?:string, url?: string, duration?: number, isOwnMessage?:boolean) => {
         switch (type) {
             case 'video':
                 return <HLSVideoPlayer
@@ -27,7 +27,7 @@ const MessageItem: FC<MessageItemProps> = ({
                     className="max-w-sm w-full lg:w-[384px]"
                 />
             case 'audio':
-                return <AudioPlayer audioUrl={url ?? ''} duration={String(duration)} />
+                return <AudioPlayer isOwnMessage={isOwnMessage} audioUrl={url ?? ''} duration={String(duration)} />
             case 'image':
                 return <Image width={285} height={200} src={url ?? ''} alt={user?.full_name ?? ''} className="w-[285px] h-[200px] object-cover self-end rounded-lg" />
             default:
@@ -51,7 +51,7 @@ const MessageItem: FC<MessageItemProps> = ({
                     {
                         message?.attachments?.length === 0 ? renderMessageType('text') : message?.attachments?.map((attachment) => (
                             <React.Fragment key={attachment.id}>
-                                {renderMessageType(attachment?.file_type, attachment?.thumbnail_url, attachment?.file_url, attachment?.duration)}
+                                {renderMessageType(attachment?.file_type, attachment?.thumbnail_url, attachment?.file_url, attachment?.duration, user?.id === message?.sender_id)}
                             </React.Fragment>
                         ))
                     }

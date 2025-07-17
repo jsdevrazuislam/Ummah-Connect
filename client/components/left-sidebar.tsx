@@ -4,13 +4,9 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
   Bookmark,
-  TrendingUp,
   Cloud,
   Zap,
   BarChart3,
-  Heart,
-  Share,
-  Eye,
   Plus,
   ChevronRight,
   MapPin,
@@ -18,19 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { useAuthStore } from "@/store/store"
-
-const quickShortcuts = [
-  { icon: Bookmark, label: "Saved Posts", href: "/bookmarks", count: 24 },
-]
-
-const myStats = {
-  posts: 156,
-  followers: 1248,
-  following: 892,
-  likes: 5420,
-}
 
 
 export function LeftSidebar() {
@@ -40,9 +24,12 @@ export function LeftSidebar() {
     location: "Dhaka, BD",
   }
 
-  const { setIsOpen } = useAuthStore()
+  const { setIsOpen, hijriDate, user } = useAuthStore()
 
   const [currentTime, setCurrentTime] = useState(new Date())
+  const quickShortcuts = [
+  { icon: Bookmark, label: "Saved Posts", href: "/bookmarks", count: user?.totalBookmarks },
+]
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,28 +61,21 @@ export function LeftSidebar() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{myStats.posts}</div>
+              <div className="text-lg font-bold text-blue-600">{user?.totalPosts}</div>
               <div className="text-xs text-muted-foreground">Posts</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{myStats.followers.toLocaleString()}</div>
+              <div className="text-lg font-bold text-green-600">{user?.followers_count}</div>
               <div className="text-xs text-muted-foreground">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-purple-600">{myStats.following}</div>
+              <div className="text-lg font-bold text-purple-600">{user?.following_count}</div>
               <div className="text-xs text-muted-foreground">Following</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{myStats.likes.toLocaleString()}</div>
+              <div className="text-lg font-bold text-red-600">{user?.totalLikes}</div>
               <div className="text-xs text-muted-foreground">Likes</div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>Profile Completion</span>
-              <span>85%</span>
-            </div>
-            <Progress value={85} className="h-2" />
           </div>
         </CardContent>
       </Card>
@@ -158,42 +138,10 @@ export function LeftSidebar() {
                   weekday: "long",
                   month: "short",
                   day: "numeric",
-                })}
+                })} <br />
+                {hijriDate?.hijri?.day}, {hijriDate?.hijri?.weekday?.en}, {hijriDate?.hijri?.month?.en}, {hijriDate?.hijri?.year}
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Stats */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-sm">
-            <TrendingUp className="h-4 w-4 mr-2 text-emerald-600" />
-            Today's Impact
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Eye className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">Profile Views</span>
-            </div>
-            <span className="text-sm font-semibold">+23</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Heart className="h-4 w-4 text-red-500" />
-              <span className="text-sm">Likes Received</span>
-            </div>
-            <span className="text-sm font-semibold">+45</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Share className="h-4 w-4 text-green-500" />
-              <span className="text-sm">Shares</span>
-            </div>
-            <span className="text-sm font-semibold">+12</span>
           </div>
         </CardContent>
       </Card>

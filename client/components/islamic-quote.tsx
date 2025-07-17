@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Quote } from "lucide-react"
 
-// Array of Islamic quotes
 const quotes = [
   {
     text: "The best among you are those who have the best manners and character",
@@ -29,19 +28,16 @@ const quotes = [
 ]
 
 export function IslamicQuote() {
-  // Use state to store the random quote, initialized to null
   const [currentQuote, setCurrentQuote] = useState({
     text: "The best among you are those who have the best manners and character",
     source: "Prophet Muhammad ﷺ (Bukhari)",
   });
 
   useEffect(() => {
-    // This code runs ONLY on the client after the component has mounted
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     setCurrentQuote(randomQuote);
-  }, []); // The empty dependency array ensures this effect runs only once after the initial render
+  }, []); 
 
-  // Render a loading state or nothing until the client-side effect sets the quote
   if (!currentQuote) {
     return (
       <Card>

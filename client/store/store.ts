@@ -3,14 +3,17 @@ import Cookies from "js-cookie";
 import { REFRESH_TOKEN, ACCESS_TOKEN } from "@/constants";
 import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
+import { getCurrentLocation, getPrayerTimes } from "@/lib/prayer";
 
 const storeResetFns = new Set<() => void>()
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     accessToken: Cookies.get(ACCESS_TOKEN) || null,
     refreshToken: Cookies.get(REFRESH_TOKEN) || null,
+    prayerTime: null,
     isAuthenticated: !!Cookies.get(ACCESS_TOKEN),
     selectedConversation: null,
+    hijriDate: null,
     user: null,
     isLoading: false,
     isOpen: false,
@@ -45,10 +48,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     initialLoading: async () => {
         if (get().accessToken) {
-            const { data } = await api.get(ApiStrings.ME)
-            set({
-                user: data?.data?.user
-            })
+            try {
+                const { data } = await api.get(ApiStrings.ME)
+                const coords = await getCurrentLocation()
+                const { date, timings} = await getPrayerTimes(coords.latitude, coords.longitude)
+                const user = data?.data?.user
+                
+                set({ 
+                    prayerTime: timings,
+                    hijriDate: date,
+                })
+                set({
+                    user
+                })
+            } catch (error) {
+                console.log("initialLoading Error", error)
+            }
         }
     },
 
@@ -73,7 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     markUserOffline: (userId: number) => {
         set(state => {
             const newOnlineUsers = new Map(state.onlineUsers);
-            newOnlineUsers.set(userId, false); 
+            newOnlineUsers.set(userId, false);
             return { onlineUsers: newOnlineUsers };
         });
     },
@@ -81,7 +96,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     updateLastSeen: (userId: number, date: number) => {
         set(state => {
             const newLastSeen = new Map(state.lastSeen);
-            newLastSeen.set(userId, date); 
+            newLastSeen.set(userId, date);
             return { lastSeen: newLastSeen };
         });
     },

@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Follow, Otp, Post, RecoveryCodes, User } from "@/models";
+import { Follow, Otp, Post, Reaction, RecoveryCodes, User } from "@/models";
 import { Op } from "sequelize";
 import {
   compare_password,
@@ -20,6 +20,7 @@ import { getIsBookmarkedLiteral, getTotalCommentsCountLiteral, getTotalReactions
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
+import BookmarkPost from "@/models/bookmark.models";
 
 
 const options = {
@@ -46,13 +47,13 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     role: "user",
     is_verified: false,
     privacy_settings: {
-        active_status: true,
-        private_account: false,
-        read_receipts: true,
-        location_share: true,
-        post_see:'everyone',
-        message: 'everyone'
-      }
+      active_status: true,
+      private_account: false,
+      read_receipts: true,
+      location_share: true,
+      post_see: 'everyone',
+      message: 'everyone'
+    }
   };
 
   const newUser = await User.create(payload);
@@ -176,8 +177,11 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const get_me = asyncHandler(async (req: Request, res: Response) => {
-  const followerCount = await Follow.count({ where: { followingId: req.user.id } });
-  const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+
+  const userId = req.user.id
+
+  const followerCount = await Follow.count({ where: { followingId: userId } });
+  const followingCount = await Follow.count({ where: { followerId: userId } });
   const user = await User.findOne({
     where: { id: req.user.id }, attributes: {
       exclude: ['password', 'two_factor_secret']
@@ -186,12 +190,35 @@ export const get_me = asyncHandler(async (req: Request, res: Response) => {
 
   if (!user) throw new ApiError(404, 'Not found user')
 
+
+  const totalPosts = await Post.count({
+    where: { authorId: userId },
+  });
+
+  const totalLikes = await Reaction.count({
+    include: [
+      {
+        model: Post,
+        as: "post",
+        where: { authorId: userId },
+        attributes: [],
+      },
+    ],
+  });
+
+  const totalBookmarks = await BookmarkPost.count({
+    where: { userId },
+  });
+
   return res.json(
     new ApiResponse(200, {
       user: {
         ...user?.toJSON(),
         following_count: followerCount,
-        followers_count: followingCount
+        followers_count: followingCount,
+        totalPosts,
+        totalLikes,
+        totalBookmarks,
       }
     }, "Fetching User Success")
   );
@@ -235,12 +262,12 @@ export const update_current_user_info = asyncHandler(async (req: Request, res: R
     website,
     full_name,
     location,
-    ...(avatar_url && {avatar: avatar_url}),
+    ...(avatar_url && { avatar: avatar_url }),
     email,
     bio,
     username,
     gender,
-    ...(cover_url && {cover: cover_url})
+    ...(cover_url && { cover: cover_url })
   };
 
 
@@ -278,7 +305,7 @@ export const get_user_profile = asyncHandler(async (req: Request, res: Response)
 
   return res.json(
     new ApiResponse(200, {
-      ...{user:user.toJSON()},
+      ...{ user: user.toJSON() },
       following_count: followerCount,
       followers_count: followingCount,
       isFollowing: isFollow ? true : false

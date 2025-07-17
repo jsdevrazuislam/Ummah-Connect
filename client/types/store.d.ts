@@ -20,4 +20,6 @@ interface AuthState {
   getIsUserOnline: (userId: number) => boolean;
   getUserLastSeen: (userId: number) => number;
   setIsOpen: (value:boolean) => void
+  prayerTime: null | Timings
+  hijriDate: null | PrayerDate
 }

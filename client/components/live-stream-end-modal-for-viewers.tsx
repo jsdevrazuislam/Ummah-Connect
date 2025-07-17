@@ -41,7 +41,7 @@ export function StreamEndedModal() {
                             className="flex-1"
                             onClick={() => {
                                 setShowEndModal(false)
-                                router.push(`/profile/${hostUsername}`);
+                                router.push(`/${hostUsername}`);
                             }}
                         >
                             Visit Host Profile

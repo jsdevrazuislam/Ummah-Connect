@@ -23,7 +23,7 @@ import { UserProfileFormData, userProfileSchema } from "@/validation/auth.valida
 import { Controller, useForm } from "react-hook-form"
 import { ImageUpload } from "@/components/image-upload"
 import { Camera } from "lucide-react"
-import ProfileLoading from "@/app/profile/[username]/loading"
+import ProfileLoading from "@/app/[...username]/loading"
 import Image from "next/image"
 
 const AccountForm = () => {

@@ -2,6 +2,7 @@ const ApiStrings = {
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
   ME: "/auth/me",
+  STATS: "/auth/stats",
   USER_DETAILS: (username:string) => `/auth/${username}/details`,
   LOGOUT: "/auth/logout",
   PRIVACY_SETTING: "/auth/privacy-settings",

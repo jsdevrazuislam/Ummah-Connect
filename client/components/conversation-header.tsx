@@ -57,7 +57,7 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
     return (
         <>
             <div className={cn(`p-4 md:border-b md:border-border w-full flex justify-between items-center`, className)}>
-                <Link href={`/profile/${selectedConversation?.username}`} className="flex items-center gap-3 cursor-pointer">
+                <Link href={`/${selectedConversation?.username}`} className="flex items-center gap-3 cursor-pointer">
                     <Avatar>
                         <AvatarImage src={selectedConversation?.avatar} alt={selectedConversation?.full_name} />
                         <AvatarFallback>{selectedConversation?.full_name?.charAt(0)}</AvatarFallback>

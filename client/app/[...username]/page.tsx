@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import ProfilePage from '@/app/profile/[username]/user-details';
+import ProfilePage from '@/app/[...username]/user-details';
 import { notFound } from 'next/navigation'
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN } from '@/constants';
@@ -69,9 +69,13 @@ export default async function UserProfilePage({ params }: Props) {
   const user = await fetchUser(username) as ProfileUser
   const userData = user?.data
 
+  if (!user) {
+    notFound()
+  }
+
   return (
     <MainLayout>
-      <ProfilePage username={username} user={userData.user} />
+      <ProfilePage username={username} user={userData?.user} />
     </MainLayout>
   )
 }

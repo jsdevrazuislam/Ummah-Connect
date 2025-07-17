@@ -199,7 +199,7 @@ function CommentItem({
         <div className="bg-muted rounded-lg px-3 py-2">
           <div className="flex justify-between items-center">
             <CardHoverTooltip user={comment.user}>
-              <button onClick={() => router.push(`/profile/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.full_name}</button>
+              <button onClick={() => router.push(`/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.full_name}</button>
             </CardHoverTooltip>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.createdAt))}</span>

@@ -147,7 +147,7 @@ export function Post({ post }: PostProps) {
           <div className="flex justify-between items-start">
             <div>
               <CardHoverTooltip user={post.user}>
-                <button onClick={() => router.push(`/profile/${post?.user?.username}`)} className="font-semibold capitalize cursor-pointer hover:underline">{post?.user?.full_name}</button>
+                <button onClick={() => router.push(`/${post?.user?.username}`)} className="font-semibold capitalize cursor-pointer hover:underline">{post?.user?.full_name}</button>
               </CardHoverTooltip>
               <span className="text-muted-foreground">
                 @{post?.user?.username} · {formatDistanceToNowStrict(new Date(post?.createdAt ?? ''), { addSuffix: true })}

@@ -3,36 +3,31 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock } from "lucide-react"
+import { useAuthStore } from "@/store/store"
 
-// Mock data for prayer times
-const mockPrayerTimes = {
-  fajr: "5:12 AM",
-  sunrise: "6:43 AM",
-  dhuhr: "12:30 PM",
-  asr: "3:45 PM",
-  maghrib: "6:32 PM",
-  isha: "8:00 PM",
-}
 
 export function PrayerTimesWidget() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [nextPrayer, setNextPrayer] = useState<string>("")
+  const { prayerTime } = useAuthStore()
+  
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 60000)
 
-    // Determine next prayer (simplified logic for demo)
     const hour = currentTime.getHours()
-    if (hour < 5) setNextPrayer("fajr")
-    else if (hour < 12) setNextPrayer("dhuhr")
-    else if (hour < 15) setNextPrayer("asr")
-    else if (hour < 18) setNextPrayer("maghrib")
-    else setNextPrayer("isha")
+    if (hour < 5) setNextPrayer("Fajr")
+    else if (hour < 12) setNextPrayer("Dhuhr")
+    else if (hour < 15) setNextPrayer("Asr")
+    else if (hour < 18) setNextPrayer("Maghrib")
+    else setNextPrayer("Isha")
 
     return () => clearInterval(timer)
   }, [currentTime])
+
+  if(!prayerTime) return
 
   return (
     <Card>
@@ -43,7 +38,7 @@ export function PrayerTimesWidget() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {Object.entries(mockPrayerTimes).map(([prayer, time]) => (
+        {Object.entries(prayerTime).map(([prayer, time]) => (
           <div
             key={prayer}
             className={`flex justify-between text-sm ${nextPrayer === prayer ? "font-bold text-primary" : ""}`}

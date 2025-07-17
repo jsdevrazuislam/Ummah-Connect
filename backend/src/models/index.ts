@@ -54,6 +54,8 @@ Post.hasMany(Reaction, { foreignKey: 'postId', as: 'reactions'});
 Comment.hasMany(Reaction, { foreignKey: 'commentId', as: 'reactions' });
 Reaction.belongsTo(Post);
 Reaction.belongsTo(Comment);
+Reaction.belongsTo(Post, { as: "post", foreignKey: "postId" });
+
 
 // Bookmark associations
 Post.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})

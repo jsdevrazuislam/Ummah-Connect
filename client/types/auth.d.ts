@@ -47,6 +47,9 @@ interface User {
   is_saved_backup_codes:boolean
   isFollowing: boolean
   status?: string
+  totalPosts: number;
+  totalLikes: number;
+  totalBookmarks: number;
 }
 
 interface JwtResponsePayload {
@@ -76,4 +79,12 @@ interface PrivacySettings {
   read_receipts: boolean;
   location_share: boolean;
   private_account: boolean;
+}
+
+ interface UserStats {
+  totalPosts: number;
+  followers_count:number
+  following_count:number
+  totalLikes: number;
+  totalBookmarks: number;
 }
