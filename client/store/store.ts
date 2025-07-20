@@ -19,6 +19,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     isOpen: false,
     onlineUsers: new Map(),
     lastSeen: new Map(),
+     totalUnread: 0,
     setUser: (user) => set({ user }),
     setIsOpen: (value) => set({ isOpen: value }),
     setSelectedConversation: (data) => {
@@ -108,6 +109,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getUserLastSeen: (userId: number) => {
         return get().lastSeen.get(userId) ?? 0;
     },
-
-
+    setTotalUnread: (count) => set({ totalUnread: count }),
+    decrementUnread: () => set((state) => ({ totalUnread: Math.max(0, state.totalUnread - 1) })),
 }));

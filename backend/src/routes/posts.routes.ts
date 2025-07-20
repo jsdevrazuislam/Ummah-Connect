@@ -1,4 +1,4 @@
-import { bookmarked_post, create_post, delete_post, delete_post_image, edit_post, get_bookmark_posts, get_following_posts, get_posts, post_react, share } from '@/controllers/post.controller'
+import { bookmarked_post, create_post, delete_post, delete_post_image, edit_post, get_bookmark_posts, get_following_posts, get_posts, get_single_post, post_react, share } from '@/controllers/post.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
@@ -9,6 +9,7 @@ const router = Router()
 
 router.post("/", verify_auth, upload.single("media"), create_post)
 router.get("/" , verify_auth, get_posts)
+router.get("/post-details/:id" , verify_auth, get_single_post)
 router.post("/react/:postId" , validateData(reactSchema), verify_auth, post_react)
 router.post("/share/:postId", verify_auth, share)
 router.post("/bookmark/:postId", verify_auth, bookmarked_post)

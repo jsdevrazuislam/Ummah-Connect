@@ -51,6 +51,8 @@ const ApiStrings = {
   // report
   REPORT:'/report/',
   BAN_USER: (id:number) => `/report/ban/${id}`,
+  // Notification
+  GET_ALL_NOTIFICATION: '/notification'
 };
 
 export default ApiStrings;

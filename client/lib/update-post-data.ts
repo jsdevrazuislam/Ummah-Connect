@@ -243,16 +243,22 @@ export function deleteCommentToPost(
 export function incrementDecrementCommentCount(
   oldData: QueryOldDataPayload | undefined,
   postId: number | undefined,
-  amount: number
+  amount: number,
+  actions: "inc" | "dec" = "inc"
 ) {
+  if (!oldData || !postId) return oldData
 
-  const updatedPages = oldData?.pages?.map((page) => {
-
+  const updatedPages = oldData.pages?.map((page) => {
     const updatedPosts = page?.data?.posts?.map((post) => {
       if (post.id === postId) {
+        const newCount =
+          actions === "inc"
+            ? post.totalCommentsCount + amount
+            : post.totalCommentsCount - amount
+
         return {
           ...post,
-          totalCommentsCount: amount
+          totalCommentsCount: Math.max(newCount, 0),
         }
       }
 
@@ -263,14 +269,14 @@ export function incrementDecrementCommentCount(
       ...page,
       data: {
         ...page.data,
-        posts: updatedPosts
-      }
+        posts: updatedPosts,
+      },
     }
   })
 
   return {
     ...oldData,
-    pages: updatedPages
+    pages: updatedPages,
   }
 }
 

@@ -54,7 +54,7 @@ const SocketEvents = () => {
         return addCommentToPost(oldData, payload?.data?.postId, payload.data)
       })
       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+        return incrementDecrementCommentCount(oldData, payload?.data?.postId, 1, "inc")
       })
     });
 
@@ -73,7 +73,7 @@ const SocketEvents = () => {
       })
 
       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, payload?.data?.postId, payload?.data?.totalComments ?? 0)
+        return incrementDecrementCommentCount(oldData, payload?.data?.postId, 1, 'inc')
       })
     });
 
@@ -117,7 +117,7 @@ const SocketEvents = () => {
         return deleteCommentToPost(oldData, payload.id, payload.parentId, payload.isReply)
       })
       queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, payload?.postId, payload?.totalComments ?? 0)
+        return incrementDecrementCommentCount(oldData, payload?.postId, 1, 'dec')
       })
     });
     return () => {

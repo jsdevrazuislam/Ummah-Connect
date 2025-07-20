@@ -87,6 +87,10 @@ interface QueryOldDataPayload {
   pageParams: number[];
   pages: PostsResponse[];
 }
+interface QueryOldNotificationDataPayload {
+  pageParams: number[];
+  pages: NotificationResponse[];
+}
 interface QueryOldDataPayloadConversation {
   pageParams: number[];
   pages: ConversationMessagesResponse[];

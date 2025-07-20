@@ -2,31 +2,47 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, Comment, User, Follow } from "@/models";
+import { Post, Comment, User, Follow, Notification } from "@/models";
 import CommentReaction from "@/models/react.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { USER_ATTRIBUTE } from "@/constants";
 import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 import Short from "@/models/shorts.models";
+import redis from "@/config/redis";
+import { REDIS_KEY } from "@/controllers/notification.controller";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
     const { content, type } = req.body;
     const userId = req.user.id;
     const postId = req.params.id;
+    let receiver_id = null
 
-    if(type === 'short'){
+    if (type === 'short') {
       const short = await Short.findOne({ where: { id: postId } });
+      receiver_id = short?.userId
       if (!short) throw new ApiError(404, "Short not found");
     } else {
       const post = await Post.findOne({ where: { id: postId } });
+      receiver_id = post?.authorId
       if (!post) throw new ApiError(404, "Post not found");
     }
 
     const comment = await Comment.create({ content, userId, postId });
 
-    const followerCount = await Follow.count({ where: { followingId: req.user.id } });
-    const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+    const followerCount = await Follow.count({ where: { followingId: userId } });
+    const followingCount = await Follow.count({ where: { followerId: userId } });
+
+    await Notification.create({
+      sender_id: userId,
+      receiver_id: receiver_id,
+      type: 'comment',
+      message: comment.content,
+      post_id: postId || null,
+    });
+
+    const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
+    if (keys.length > 0) await redis.del(...keys);
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
@@ -255,8 +271,8 @@ export const get_comments = asyncHandler(async (req: Request, res: Response) => 
             ]
           }
         ],
-        attributes:{
-          include:[
+        attributes: {
+          include: [
             ...comment_attribute,
             getCommentTotalReactionsCountLiteral('"Comment"'),
             getCommentUserReactionLiteral(userId, '"Comment"'),

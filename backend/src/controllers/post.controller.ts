@@ -3,11 +3,11 @@ import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
 import { Follow, Post, Reaction, User } from "@/models";
-import  {
+import {
   removeOldImageOnCloudinary,
   uploadFileOnCloudinary
 } from "@/utils/cloudinary";
-import {  getOrSetCache } from "@/utils/helper";
+import { getOrSetCache } from "@/utils/helper";
 import sequelize from "@/config/db";
 import BookmarkPost from "@/models/bookmark.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
@@ -35,7 +35,7 @@ export const create_post = asyncHandler(async (req: Request, res: Response) => {
   let contentType: 'text' | 'video' | 'audio' | 'picture' = 'text';
 
   if (mediaPath) {
-    const uploaded = await uploadFileOnCloudinary(mediaPath, 'ummah_connect/posts'); 
+    const uploaded = await uploadFileOnCloudinary(mediaPath, 'ummah_connect/posts');
     media_url = uploaded?.url;
 
     const mimeType = uploaded?.resource_type || getFileTypeFromPath(mediaPath);
@@ -207,6 +207,80 @@ export const get_posts = asyncHandler(async (req: Request, res: Response) => {
     new ApiResponse(200, responseData, "Posts retrieved successfully")
   );
 });
+
+export const get_single_post = asyncHandler(async (req: Request, res: Response) => {
+
+  const postId = req.params.id
+  const post = await Post.findOne({
+    where: { id: postId }
+  })
+
+  if (!post) throw new ApiError(404, 'Post not found')
+
+  const currentUserId = req.user?.id;
+  const cacheKey = `posts:public:user=${currentUserId}:postId=${post.id}`;
+
+  const responseData = await getOrSetCache(
+    cacheKey,
+    async () => {
+      const post = await Post.findOne({
+        where: { privacy: "public", id: postId },
+        include: [
+          {
+            model: Post,
+            as: "originalPost",
+            attributes: POST_ATTRIBUTE,
+            include: [
+              {
+                model: User,
+                as: "user",
+                attributes: [
+                  ...USER_ATTRIBUTE,
+                  getFollowerCountLiteral('"originalPost->user"."id"'),
+                  getFollowingCountLiteral('"originalPost->user"."id"'),
+                  getIsFollowingLiteral(
+                    currentUserId,
+                    '"originalPost->user"."id"'
+                  ),
+                ],
+              },
+            ],
+          },
+          {
+            model: User,
+            required: false,
+            as: "user",
+            attributes: [
+              ...USER_ATTRIBUTE,
+              ...USER_ATTRIBUTE,
+              getFollowerCountLiteral('"Post"."authorId"'),
+              getFollowingCountLiteral('"Post"."authorId"'),
+              getIsFollowingLiteral(currentUserId, '"Post"."authorId"'),
+            ],
+          },
+        ],
+        attributes: {
+          include: [
+            getTotalCommentsCountLiteral('"Post"'),
+            getTotalReactionsCountLiteral('"Post"'),
+            getIsBookmarkedLiteral(currentUserId, '"Post"'),
+            getUserReactionLiteral(currentUserId, '"Post"'),
+          ],
+        },
+      });
+
+      return {
+        post
+      };
+    },
+    60
+  );
+
+  return res.json(
+    new ApiResponse(200, responseData, "Posts retrieved successfully")
+  );
+
+})
 
 export const share = asyncHandler(async (req: Request, res: Response) => {
   const postId = Number(req.params.postId);
@@ -519,7 +593,7 @@ export const get_bookmark_posts = asyncHandler(
                 getTotalCommentsCountLiteral('"post"'),
                 getTotalReactionsCountLiteral('"post"'),
                 getIsBookmarkedLiteral(currentUserId, '"post"'),
-               getUserReactionLiteral(currentUserId, '"post"'),
+                getUserReactionLiteral(currentUserId, '"post"'),
               ],
             },
           },

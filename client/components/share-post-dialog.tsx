@@ -48,7 +48,7 @@ export function SharePostDialog({
                 if (data?.data?.postData?.originalPost?.id === variable.postId) {
                   return {
                     ...post,
-                    shares: post.shares + 1
+                    share: post.share + 1
                   }
                 }
                 return post

@@ -42,7 +42,7 @@ interface SocialMediaLayoutProps {
 
 export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const pathname = usePathname()
-  const { logout, user } = useAuthStore()
+  const { logout, user, totalUnread: notificationUnReadCount } = useAuthStore()
   const router = useRouter()
   const queryClient = useQueryClient()
   const totalUnread = useConversationStore((state) =>
@@ -114,9 +114,9 @@ const shouldHideRightSidebar =
                 <Link href="/notifications">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
-                      3
-                    </Badge>
+                    {notificationUnReadCount > 0  && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                      {notificationUnReadCount}
+                    </Badge> }
                   </Button>
                 </Link>
 
@@ -144,7 +144,7 @@ const shouldHideRightSidebar =
                         <span>{item.label}</span>
                         {(item.label === "Notifications" || item.label === "Messages") && (
                           <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
-                            {item.label === "Notifications" ? "3" : "2"}
+                            {item.label === "Notifications" ? notificationUnReadCount : totalUnread}
                           </Badge>
                         )}
                       </Link>

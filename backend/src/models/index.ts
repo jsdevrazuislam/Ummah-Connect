@@ -17,6 +17,7 @@ import StreamChatConversation from '@/models/stream-chat.models'
 import Report from '@/models/report.models'
 import LiveStreamBan from '@/models/livestream-ban-models'
 import Shorts from '@/models/shorts.models'
+import Notification from '@/models/notification.models'
 
 // follows associations
 User.belongsToMany(User, {
@@ -113,6 +114,8 @@ Shorts.hasMany(Reaction, { foreignKey: 'postId', as: 'reactions'});
 Shorts.hasMany(BookmarkPost, {foreignKey:'postId', as: 'bookmarks'})
 
 
+Notification.belongsTo(User, { foreignKey: "sender_id", as: "sender" });
+Notification.belongsTo(User, { foreignKey: "receiver_id", as: "receiver" });
 
-export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan, Shorts};
-export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan, Shorts};
+export { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp, Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan, Shorts, Notification};
+export default { User, Follow, Post, Reaction, Comment, RecoveryCodes, Otp,  Conversation, ConversationParticipant, Message, MessageReaction, MessageStatus, LiveStream, StreamChatConversation, Report, LiveStreamBan, Shorts, Notification};
