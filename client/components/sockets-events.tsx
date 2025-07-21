@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
+import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addNotification, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useAuthStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -310,6 +310,19 @@ const SocketEvents = () => {
     });
     return () => {
       socket.off(SocketEventEnum.BAN_VIEWER_FROM_MY_LIVE_STREAM);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.NOTIFY_USER, (payload: NotificationsEntity) => {
+      console.log(payload)
+      queryClient.setQueryData(['getNotifications'], (oldData: QueryOldNotificationDataPayload) => {
+        return addNotification(oldData, payload)
+      })
+    });
+    return () => {
+      socket.off(SocketEventEnum.NOTIFY_USER);
     };
   }, [socket]);
 

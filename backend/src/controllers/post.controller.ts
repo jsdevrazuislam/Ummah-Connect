@@ -2,7 +2,7 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Follow, Post, Reaction, User } from "@/models";
+import { Follow, Notification, Post, Reaction, User } from "@/models";
 import {
   removeOldImageOnCloudinary,
   uploadFileOnCloudinary
@@ -25,6 +25,9 @@ import {
 import redis from "@/config/redis";
 import { getFileTypeFromPath } from "@/utils/file-format";
 import { postSchema } from "@/schemas/post.schema";
+import { REDIS_KEY } from "@/controllers/notification.controller";
+import { createAndInvalidateNotification } from "@/utils/notification";
+import { NotificationType } from "@/models/notification.models";
 
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
@@ -118,6 +121,48 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (!postWithStats) throw new ApiError(404, 'Post not found');
+  const receiverId = postWithStats.authorId;
+
+  if (userId !== Number(receiverId)) {
+    let notification = await Notification.findOne({
+      where: {
+        sender_id: userId,
+        receiver_id: receiverId,
+        post_id: postId,
+        type: 'like',
+      },
+    });
+
+
+    if (notification) {
+      await notification.update({
+        icon,
+        is_read: false,
+        updatedAt: new Date(),
+      });
+    } else {
+      notification = await Notification.create({
+        sender_id: userId,
+        receiver_id: receiverId,
+        type: 'like',
+        icon,
+        post_id: postId,
+      });
+    }
+
+    emitSocketEvent({
+      req,
+      roomId: `user:${receiverId}`,
+      event: SocketEventEnum.NOTIFY_USER,
+      payload: {
+        ...notification.toJSON(),
+        sender: {
+          avatar: req.user?.avatar,
+          full_name: req.user.full_name,
+        },
+      },
+    });
+  }
 
   const postData = postWithStats.toJSON();
 
@@ -131,6 +176,9 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
   await redis.keys("posts:public:*").then((keys) => {
     if (keys.length > 0) redis.del(...keys);
   });
+
+  const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
+  if (keys.length > 0) await redis.del(...keys);
 
   return res.json(new ApiResponse(200, postData, "React Successfully"));
 });
@@ -384,7 +432,18 @@ export const bookmarked_post = asyncHandler(
       await removeRedisKey()
       return res.json(new ApiResponse(200, null, "Bookmarked remove Post"));
     } else {
+      const receiverId = Number(post.authorId)
       await BookmarkPost.create({ userId, postId });
+       if (userId !== receiverId) {
+            await createAndInvalidateNotification({
+              req,
+              senderId: userId,
+              receiverId,
+              type: NotificationType.BOOKMARK,
+              postId: postId || null,
+            });
+          }
+      
       await removeRedisKey()
       return res.json(new ApiResponse(200, null, "Bookmarked Post"));
     }

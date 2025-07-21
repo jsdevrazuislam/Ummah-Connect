@@ -8,15 +8,14 @@ import { ErrorMessage } from "@/components/api-error"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDistanceToNow } from 'date-fns';
 import {
-    getNotificationTitle,
-    getNotificationIcon,
-    getNotificationColorClasses
+    getNotificationTitle
 } from "@/lib/notification";
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useEffect } from "react"
 import { useAuthStore } from "@/store/store"
+import Image from "next/image"
 
 
 export default function NotificationsPage() {
@@ -83,6 +82,12 @@ export default function NotificationsPage() {
         if (!id) return
         mutate(id)
     }
+
+    useEffect(() => {
+    if (data?.pages?.[0]?.data?.unreadCount !== undefined) {
+      setTotalUnread(data.pages[0].data.unreadCount);
+    }
+  }, [data, setTotalUnread]);
 
     if (isError) {
         return (
@@ -153,12 +158,6 @@ export default function NotificationsPage() {
         )
     }
 
-   useEffect(() => {
-    if (data?.pages?.[0]?.data?.unreadCount !== undefined) {
-      setTotalUnread(data.pages[0].data.unreadCount);
-    }
-  }, [data, setTotalUnread]);
-
     return (
         <>
             <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
@@ -182,22 +181,20 @@ export default function NotificationsPage() {
             >
                 <div>
                     {notifications.map((notification) => {
-                        const IconComponent = getNotificationIcon(notification?.type);
-                        const { bg, text } = getNotificationColorClasses(notification?.type);
                         return (
                             <div key={notification?.id} className="p-4 cursor-pointer border-b border-border hover:bg-muted/50">
                                 <div className="flex gap-3">
-                                    <div className="mt-1">
-                                        <div className={`${bg} p-2 rounded-full`}>
-                                            <IconComponent className={`h-4 w-4 ${text}`} />
+                                    <div className="mt-1 relative">
+                                        <Avatar className="h-14 w-14">
+                                                {notification?.sender?.avatar ? <AvatarImage src={notification?.sender?.avatar} alt={notification?.sender?.full_name} /> :
+                                                    <AvatarFallback>{notification?.sender?.full_name?.charAt(0)}</AvatarFallback>}
+                                            </Avatar>
+                                        <div className="w-4 h-4 absolute bottom-0.5 right-2 rounded-full border-2 border-white flex justify-center items-center">
+                                            <Image className="w-3 h-3 rounded-full object-contain" src={notification?.icon ?? "/emoji/like.png"} alt="Icon" width={20} height={20} />
                                         </div>
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <Avatar className="h-6 w-6">
-                                                {notification?.sender?.avatar ? <AvatarImage src={notification?.sender?.avatar} alt={notification?.sender?.full_name} /> :
-                                                    <AvatarFallback>{notification?.sender?.full_name?.charAt(0)}</AvatarFallback>}
-                                            </Avatar>
                                             <span className="font-medium">{notification?.sender?.full_name}</span>
                                             <span className="text-muted-foreground">{getNotificationTitle(notification?.type)}</span>
                                         </div>

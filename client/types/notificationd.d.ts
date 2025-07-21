@@ -21,6 +21,7 @@ interface NotificationsEntity {
     is_read: boolean;
     createdAt: string;
     updatedAt: string;
+    icon: string;
     sender: NotificationSender;
 }
 interface NotificationSender {

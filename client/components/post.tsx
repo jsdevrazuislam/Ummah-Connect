@@ -63,6 +63,7 @@ export function Post({ post }: PostProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [totalComment, setTotalComment] = useState(Number(post?.totalCommentsCount) || 0)
   const isCurrentUserPost = user && post?.user?.username === user?.username
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -241,7 +242,7 @@ export function Post({ post }: PostProps) {
           onClick={() => setShowComments(!showComments)}
         >
           <MessageCircle className="h-4 w-4" />
-          <span>{post?.totalCommentsCount ?? 0}</span>
+          <span>{totalComment ?? 0}</span>
         </Button>
         <Button
           variant="ghost"
@@ -289,6 +290,7 @@ export function Post({ post }: PostProps) {
           <CommentItems
             postId={post.id}
             totalComment={post?.totalCommentsCount}
+            setTotalComment={setTotalComment}
           />
         </div>
       )}

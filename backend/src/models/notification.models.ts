@@ -17,6 +17,7 @@ export class Notification extends Model {
   public post_id?: number;
   public type!: NotificationType;
   public message!: string;
+  public icon!: string;
   public is_read!: boolean;
 
   public readonly createdAt!: Date;
@@ -48,7 +49,11 @@ Notification.init(
     },
     message: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+    },
+    icon: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     is_read: {
       type: DataTypes.BOOLEAN,

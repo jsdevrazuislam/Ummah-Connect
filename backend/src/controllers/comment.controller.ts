@@ -2,14 +2,14 @@ import ApiError from "@/utils/ApiError";
 import ApiResponse from "@/utils/ApiResponse";
 import asyncHandler from "@/utils/async-handler";
 import { Request, Response } from "express";
-import { Post, Comment, User, Follow, Notification } from "@/models";
+import { Post, Comment, User, Follow } from "@/models";
 import CommentReaction from "@/models/react.models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { USER_ATTRIBUTE } from "@/constants";
 import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 import Short from "@/models/shorts.models";
-import redis from "@/config/redis";
-import { REDIS_KEY } from "@/controllers/notification.controller";
+import { createAndInvalidateNotification } from "@/utils/notification";
+import { NotificationType } from "@/models/notification.models";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -32,17 +32,18 @@ export const create_comment = asyncHandler(
 
     const followerCount = await Follow.count({ where: { followingId: userId } });
     const followingCount = await Follow.count({ where: { followerId: userId } });
+    const receiverId = Number(receiver_id)
 
-    await Notification.create({
-      sender_id: userId,
-      receiver_id: receiver_id,
-      type: 'comment',
-      message: comment.content,
-      post_id: postId || null,
-    });
-
-    const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
-    if (keys.length > 0) await redis.del(...keys);
+    if (userId !== receiverId) {
+      await createAndInvalidateNotification({
+        req,
+        senderId: userId,
+        receiverId,
+        type: NotificationType.COMMENT,
+        message: comment.content,
+        postId: postId || null,
+      });
+    }
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
@@ -92,6 +93,19 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
       postId
     }
   })
+
+  const receiverId = Number(post?.authorId)
+
+  if (userId !== receiverId) {
+      await createAndInvalidateNotification({
+        req,
+        senderId: userId,
+        receiverId,
+        type: NotificationType.REPLY,
+        message: comment.content,
+        postId: postId || null,
+      });
+    }
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;
