@@ -1,4 +1,4 @@
-import { bookmarked_post, create_post, delete_post, delete_post_image, edit_post, get_bookmark_posts, get_following_posts, get_posts, get_single_post, post_react, share } from '@/controllers/post.controller'
+import { bookmarked_post, create_post, delete_post, delete_post_image, edit_post, get_bookmark_posts, get_following_posts, get_posts, get_single_post, post_react, share, user_suggestion } from '@/controllers/post.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
@@ -18,6 +18,7 @@ router.put("/edit/:postId", verify_auth,  upload.single("media"),  edit_post)
 router.delete("/delete/:postId", verify_auth, delete_post)
 router.delete("/delete/media/:postId", verify_auth, delete_post_image)
 router.get("/following/posts", verify_auth, get_following_posts)
+router.get("/suggest", verify_auth, user_suggestion)
 
 
 export const basePath = '/post';

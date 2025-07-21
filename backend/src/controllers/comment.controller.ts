@@ -10,6 +10,7 @@ import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, ge
 import Short from "@/models/shorts.models";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { NotificationType } from "@/models/notification.models";
+import { Op } from "sequelize";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -35,14 +36,35 @@ export const create_comment = asyncHandler(
     const receiverId = Number(receiver_id)
 
     if (userId !== receiverId) {
-      await createAndInvalidateNotification({
-        req,
-        senderId: userId,
-        receiverId,
-        type: NotificationType.COMMENT,
-        message: comment.content,
-        postId: postId || null,
-      });
+      const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
+
+      if (mentionUsernames?.length > 0) {
+        const mentionedUsers = await User.findAll({
+          where: {
+            username: { [Op.in]: mentionUsernames }
+          }
+        });
+
+        for (const user of mentionedUsers) {
+          await createAndInvalidateNotification({
+            req,
+            senderId: userId,
+            receiverId: user.id,
+            type: NotificationType.MENTION,
+            message: comment.content,
+            postId: postId || null,
+          });
+        }
+      } else {
+        await createAndInvalidateNotification({
+          req,
+          senderId: userId,
+          receiverId,
+          type: NotificationType.COMMENT,
+          message: comment.content,
+          postId: postId || null,
+        });
+      }
     }
 
     const commentJSON = comment.toJSON();
@@ -97,6 +119,25 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
   const receiverId = Number(post?.authorId)
 
   if (userId !== receiverId) {
+    const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
+    if (mentionUsernames?.length > 0) {
+      const mentionedUsers = await User.findAll({
+        where: {
+          username: { [Op.in]: mentionUsernames }
+        }
+      });
+
+      for (const user of mentionedUsers) {
+        await createAndInvalidateNotification({
+          req,
+          senderId: userId,
+          receiverId: user.id,
+          type: NotificationType.MENTION,
+          message: comment.content,
+          postId: postId || null,
+        });
+      }
+    } else {
       await createAndInvalidateNotification({
         req,
         senderId: userId,
@@ -106,6 +147,8 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
         postId: postId || null,
       });
     }
+
+  }
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;

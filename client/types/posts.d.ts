@@ -120,3 +120,19 @@ interface RepliesEntity {
 interface Counts {
   love: number;
 }
+
+
+ interface SuggestionUsers {
+  statusCode: number;
+  data?: (SuggestionEntity)[] | null;
+  message: string;
+  success: boolean;
+}
+ interface SuggestionEntity {
+  id: number;
+  username: string;
+  avatar?: null;
+  full_name: string;
+  follower_count: string;
+  is_following: boolean;
+}

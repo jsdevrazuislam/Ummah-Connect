@@ -18,7 +18,26 @@ import { InfiniteScroll } from "@/components/infinite-scroll"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from 'date-fns';
+import Link from "next/link"
 
+function parseMentions(content: string): React.ReactNode[] {
+  const parts = content.split(/(@\w+)/g); // splits on @username
+  return parts.map((part, index) => {
+    if (part.startsWith("@")) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/${username}`}
+          className="text-blue-500 hover:underline font-medium"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
 
 
 interface CommentItemProps {
@@ -246,7 +265,7 @@ function CommentItem({
               </div>
             </div>
           ) : (
-            <p className="text-sm mt-1">{comment.content}</p>
+            <p className="text-sm mt-1">{parseMentions(comment.content)}</p>
           )}
         </div>
 

@@ -24,6 +24,7 @@ const ApiStrings = {
   REACTPOST: (id:number) => `/post/react/${id}`,
   SHAREPOST: (id:number) => `/post/share/${id}`,
   BOOKMARK_POST: (id:number) => `/post/bookmark/${id}`,
+  USER_SUGGESTION: `/post/suggest`,
   // comments
   CREATE_COMMENT:(id:number) =>  `/comment/${id}`,
   EDIT_COMMENT:(id:number) =>  `/comment/edit/${id}`,

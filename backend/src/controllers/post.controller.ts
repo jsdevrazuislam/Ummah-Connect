@@ -434,16 +434,16 @@ export const bookmarked_post = asyncHandler(
     } else {
       const receiverId = Number(post.authorId)
       await BookmarkPost.create({ userId, postId });
-       if (userId !== receiverId) {
-            await createAndInvalidateNotification({
-              req,
-              senderId: userId,
-              receiverId,
-              type: NotificationType.BOOKMARK,
-              postId: postId || null,
-            });
-          }
-      
+      if (userId !== receiverId) {
+        await createAndInvalidateNotification({
+          req,
+          senderId: userId,
+          receiverId,
+          type: NotificationType.BOOKMARK,
+          postId: postId || null,
+        });
+      }
+
       await removeRedisKey()
       return res.json(new ApiResponse(200, null, "Bookmarked Post"));
     }
@@ -669,3 +669,54 @@ export const get_bookmark_posts = asyncHandler(
     return res.json(new ApiResponse(200, responseData, "Fetch bookmarked posts"));
   }
 );
+
+export const user_suggestion = asyncHandler(async (req: Request, res: Response) => {
+  const q = req.query.q?.toString().toLowerCase();
+  const currentUserId = req.user?.id;
+
+   const users = await User.findAll({
+      where: {
+        username: {
+          [Op.iLike]: `${q}%`,
+        },
+        id: {
+          [Op.ne]: currentUserId 
+        }
+      },
+      limit: 10,
+      attributes: [
+        "id",
+        "username",
+        "avatar",
+        "full_name",
+        [
+          sequelize.literal(`(
+            SELECT COUNT(*) 
+            FROM "follows" 
+            WHERE "followingId" = "User"."id"
+          )`),
+          "follower_count"
+        ],
+        [
+          sequelize.literal(`(
+            SELECT EXISTS (
+              SELECT 1 
+              FROM "follows" 
+              WHERE "followerId" = ${currentUserId} 
+              AND "followingId" = "User"."id"
+            )
+          )`),
+          "is_following"
+        ]
+      ],
+      order: [
+        [sequelize.literal('is_following'), 'DESC'],
+        [sequelize.literal('follower_count'), 'DESC'],
+        ['username', 'ASC']
+      ]
+    });
+
+    return res.json(
+      new ApiResponse(200, users, 'Users fetched successfully')
+    );
+});
