@@ -22,4 +22,7 @@ interface AuthState {
   setIsOpen: (value:boolean) => void
   prayerTime: null | Timings
   hijriDate: null | PrayerDate
+  totalUnread: number;
+  setTotalUnread: (count: number) => void;
+  decrementUnread: () => void;
 }

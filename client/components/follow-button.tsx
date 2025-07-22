@@ -5,15 +5,40 @@ import { useMutation } from "@tanstack/react-query"
 import { followUnFollow } from "@/lib/apis/follow"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useAuthStore } from '@/store/store'
+import { useSocketStore } from '@/hooks/use-socket'
+import SocketEventEnum from '@/constants/socket-event'
 
 const FollowButton = ({ isFollowing, id }: { isFollowing: boolean, id: number }) => {
 
     const [follow, setFollow] = useState(isFollowing)
+    const { user, setUser } = useAuthStore()
+    const { socket } = useSocketStore()
 
     const { mutate } = useMutation({
         mutationFn: followUnFollow,
         onSuccess: () => {
-            setFollow(!follow)
+            setFollow(prev => !prev)
+
+            if (user) {
+                const updatedFollowersCount = follow
+                    ? Math.max(0, user.following_count - 1)
+                    : user.following_count + 1;
+
+                socket?.emit(follow ? SocketEventEnum.UNFOLLOW_USER : SocketEventEnum.FOLLOW_USER, {
+                    toUserId: id,
+                    fromUser: {
+                        id: user.id,
+                        username: user.username,
+                        avatar: user.avatar
+                    }
+                })
+
+                setUser({
+                    ...user,
+                    following_count: updatedFollowersCount
+                });
+            }
         },
         onError: (error) => {
             toast.error(error.message)

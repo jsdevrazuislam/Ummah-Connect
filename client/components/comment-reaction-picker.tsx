@@ -6,6 +6,9 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useMutation } from "@tanstack/react-query"
 import { comment_react } from "@/lib/apis/comment"
+import { motion, AnimatePresence } from "framer-motion"
+import { ThumbsUp } from "lucide-react"
+
 
 
 interface CommentReactionPickerProps {
@@ -38,13 +41,13 @@ export function CommentReactionPicker({
   })
 
   const reactions = [
-    { type: "like", emoji: "👍", label: "Like" },
-    { type: "love", emoji: "❤️", label: "Love" },
-    { type: "haha", emoji: "😂", label: "Haha" },
-    { type: "care", emoji: "🥰", label: "Care" },
-    { type: "sad", emoji: "😢", label: "Sad" },
-    { type: "wow", emoji: "😮", label: "Wow" },
-    { type: "angry", emoji: "😡", label: "Angry" },
+    { type: "like", emoji: "/emoji/like.png", label: "Like" },
+    { type: "love", emoji: "/emoji/love.png", label: "Love" },
+    { type: "haha", emoji: "/emoji/haha.png", label: "Haha" },
+    { type: "care", emoji: "/emoji/care.png", label: "Care" },
+    { type: "sad", emoji: "/emoji/sad.png", label: "Sad" },
+    { type: "wow", emoji: "/emoji/wow.png", label: "Wow" },
+    { type: "angry", emoji: "/emoji/angry.png", label: "Angry" },
   ] as const
 
   useEffect(() => {
@@ -71,11 +74,19 @@ export function CommentReactionPicker({
       icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
       id,
       postId,
-      parentId, 
+      parentId,
       isReply
     }
     mutate(payload)
     setIsOpen(false)
+  }
+
+  const handleMainButtonClick = () => {
+    if (currentReaction) {
+      handleReactionClick(currentReaction)
+    } else {
+      handleReactionClick("like")
+    }
   }
 
   const getCurrentReactionEmoji = () => {
@@ -106,7 +117,8 @@ export function CommentReactionPicker({
   }
 
   return (
-    <div className="relative -mt-[2px]" ref={pickerRef}>
+    <div className="relative -mt-[2px]" ref={pickerRef} onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}>
       <Button
         variant="ghost"
         size={size === "sm" ? "sm" : "default"}
@@ -115,35 +127,45 @@ export function CommentReactionPicker({
           size === "sm" ? "text-xs" : "text-sm",
           currentReaction && getCurrentReactionColor(),
         )}
-        onClick={() => setIsOpen(!isOpen)}
         onMouseEnter={() => setIsOpen(true)}
+        onClick={handleMainButtonClick}
       >
         {currentReaction ? (
-          <span className={cn("mr-1", size === "sm" ? "text-sm" : "text-base")}>{getCurrentReactionEmoji()}</span>
+          <img src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
         ) : (
-          "Like"
+          <ThumbsUp className="h-4 w-4 mt-1" />
         )}
       </Button>
 
-      {isOpen && (
-        <div className="absolute bottom-full mb-2 left-0 bg-background border border-border rounded-full shadow-lg z-10 p-1">
-          <div className="flex">
-            {reactions.map((reaction) => (
-              <button
-                key={reaction.type}
-                className={cn(
-                  "h-8 w-8 flex items-center justify-center hover:bg-muted rounded-full text-lg transition-transform hover:scale-125",
-                  currentReaction === reaction.type && "bg-muted scale-125",
-                )}
-                onClick={() => handleReactionClick(reaction.type)}
-                title={reaction.label}
-              >
-                {reaction.emoji}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="absolute bottom-full mb-2 left-0 bg-background border border-border rounded-full shadow-lg z-10 p-1"
+            initial={{ opacity: 0, y: 20, scale: 0.5 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.5 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          >
+            <div className="flex">
+              {reactions.map((reaction) => (
+                <motion.button
+                  key={reaction.type}
+                  className={cn(
+                    "h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full",
+                    currentReaction === reaction.type && "bg-muted scale-110"
+                  )}
+                  onClick={() => handleReactionClick(reaction.type)}
+                  title={reaction.label}
+                  whileHover={{ scale: 1.3 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <img src={reaction.emoji} alt={reaction.label} className="h-6 w-6" />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

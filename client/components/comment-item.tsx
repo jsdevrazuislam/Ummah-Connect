@@ -12,22 +12,43 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
 import { useAuthStore } from "@/store/store"
-import {  deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data"
+import {  editCommentToPost } from "@/lib/update-post-data"
 import { Skeleton } from "@/components//ui/skeleton"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import CardHoverTooltip from "./card-hover-tooltip"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from 'date-fns';
+import Link from "next/link"
 
+function parseMentions(content: string): React.ReactNode[] {
+  const parts = content.split(/(@\w+)/g); // splits on @username
+  return parts.map((part, index) => {
+    if (part.startsWith("@")) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/${username}`}
+          className="text-blue-500 hover:underline font-medium"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
 
 
 interface CommentItemProps {
   comment: CommentPreview
   isReply?: boolean
   postId: number
+  setTotalComment?: React.Dispatch<React.SetStateAction<number>>
+
 }
 
-export const CommentItems = ({ postId, totalComment }: { postId: number, totalComment: number | undefined }) => {
+export const CommentItems = ({ postId, totalComment, setTotalComment }: { postId: number, totalComment: number | undefined, setTotalComment?: React.Dispatch<React.SetStateAction<number>> }) => {
 
   const {
     data,
@@ -80,6 +101,7 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
               key={comment.id}
               comment={comment}
               postId={postId}
+              setTotalComment={setTotalComment}
             />
           ))}
         </div>
@@ -100,7 +122,8 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
 function CommentItem({
   comment,
   isReply = false,
-  postId
+  postId,
+  setTotalComment
 }: CommentItemProps) {
   const { user } = useAuthStore()
   const [showReplyForm, setShowReplyForm] = useState(false)
@@ -140,13 +163,10 @@ function CommentItem({
 
   const { mutate: deleteMuFunc } = useMutation({
     mutationFn: delete_comment,
-    onSuccess: (updatedData, variable) => {
-      queryClient.setQueryData(['get_comments', postId], (oldData: QueryOldDataCommentsPayload) => {
-        return deleteCommentToPost(oldData, variable.commentId, variable.parentId, isReply)
-      })
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
-        return incrementDecrementCommentCount(oldData, postId, updatedData?.data)
-      })
+    onSuccess: () =>{
+      if(setTotalComment){
+        setTotalComment((prev) => prev - 1)
+      }
     },
     onError: (error) => {
       toast.error(error.message)
@@ -245,7 +265,7 @@ function CommentItem({
               </div>
             </div>
           ) : (
-            <p className="text-sm mt-1">{comment.content}</p>
+            <p className="text-sm mt-1">{parseMentions(comment.content)}</p>
           )}
         </div>
 

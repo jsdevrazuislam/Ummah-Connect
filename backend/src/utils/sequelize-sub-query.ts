@@ -40,7 +40,6 @@ export const getFollowingCountLiteral = (targetUserIdSqlColumn: string): [Litera
  * @returns [sequelize.literal, string]
  */
 export const getIsFollowingLiteral = (currentUserId: number | undefined, targetUserIdSqlColumn: string): [Literal, string] => {
-  // Ensure NULL is correctly represented in SQL if currentUserId is undefined
   const followerIdValue = currentUserId !== undefined && currentUserId !== null ? currentUserId : 'NULL';
 
   return [

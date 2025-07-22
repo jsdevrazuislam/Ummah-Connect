@@ -3,6 +3,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
     MapPin,
+    Pencil,
+    Plus,
     User,
     Users,
 } from "lucide-react"
@@ -14,6 +16,9 @@ import {
 } from "@/components/ui/tooltip"
 import FollowButton from "@/components/follow-button"
 import MessageButton from "@/components/message-button"
+import { useAuthStore } from "@/store/store"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 
 interface CardHoverTooltipProps {
@@ -22,6 +27,8 @@ interface CardHoverTooltipProps {
 }
 
 const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
+
+    const { user: currentUser } = useAuthStore()
 
     return (
         <div>
@@ -34,10 +41,9 @@ const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
                         <div className="space-y-3">
                             <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-20 rounded-t-lg relative">
                                 <Avatar className="absolute -bottom-8 left-4 border-4 border-background w-16 h-16">
-                                    {user?.avatar && <AvatarImage src={user?.avatar} />}
-                                    <AvatarFallback>
+                                    {user?.avatar ? <AvatarImage src={user?.avatar} /> : <AvatarFallback>
                                         {user?.full_name?.charAt(0)}
-                                    </AvatarFallback>
+                                    </AvatarFallback>}
                                 </Avatar>
                             </div>
 
@@ -70,8 +76,24 @@ const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 p-4 border-t">
-                                <MessageButton user={user} />
-                                <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
+                                {
+                                    currentUser?.id === user?.id ? <>
+                                        <Button>
+                                            <Plus />
+                                            Add Story
+                                        </Button>
+                                        <Link href="/settings">
+                                            <Button>
+                                                <Pencil />
+                                                Edit Profile
+                                            </Button>
+                                        </Link>
+
+                                    </> : <>
+                                        <MessageButton user={user} />
+                                        <FollowButton isFollowing={user?.isFollowing ?? false} id={user?.id} />
+                                    </>
+                                }
                             </div>
                         </div>
                     </TooltipContent>

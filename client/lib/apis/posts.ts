@@ -78,3 +78,7 @@ export const bookmark_post = async (id:number) => {
     return response.data;
 }
 
+export const user_suggestion = async (query:string): Promise<SuggestionUsers> => {
+    const response = await api.get(`${ApiStrings.USER_SUGGESTION}?q=${query}`);
+    return response.data;
+}

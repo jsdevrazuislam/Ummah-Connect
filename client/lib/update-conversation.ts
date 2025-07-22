@@ -69,6 +69,30 @@ export const addedConversation = (
   };
 };
 
+
+export const addNotification = (
+  oldData: QueryOldNotificationDataPayload | undefined,
+  data: NotificationsEntity
+) => {
+  if (!oldData) return oldData;
+
+  const updatedPages = oldData.pages.map((page) => {
+    const existingConversation = page?.data?.notifications ?? [];
+      return {
+        ...page,
+        data: {
+          ...page.data,
+          notifications: [...existingConversation, data],
+        },
+      };
+  });
+
+  return {
+    ...oldData,
+    pages: updatedPages,
+  };
+};
+
 export const updatedUnReadCount = (
   oldData: QueryOldDataPayloadConversations | undefined,
   conversationId: number

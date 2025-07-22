@@ -42,7 +42,7 @@ interface SocialMediaLayoutProps {
 
 export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const pathname = usePathname()
-  const { logout, user } = useAuthStore()
+  const { logout, user, totalUnread: notificationUnReadCount } = useAuthStore()
   const router = useRouter()
   const queryClient = useQueryClient()
   const totalUnread = useConversationStore((state) =>
@@ -114,9 +114,9 @@ const shouldHideRightSidebar =
                 <Link href="/notifications">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
-                      3
-                    </Badge>
+                    {notificationUnReadCount > 0  && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                      {notificationUnReadCount}
+                    </Badge> }
                   </Button>
                 </Link>
 
@@ -144,7 +144,7 @@ const shouldHideRightSidebar =
                         <span>{item.label}</span>
                         {(item.label === "Notifications" || item.label === "Messages") && (
                           <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
-                            {item.label === "Notifications" ? "3" : "2"}
+                            {item.label === "Notifications" ? notificationUnReadCount : totalUnread}
                           </Badge>
                         )}
                       </Link>
@@ -212,25 +212,6 @@ const shouldHideRightSidebar =
           </aside>
         )}
       </div>
-
-      {/* <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t lg:hidden">
-        <div className="grid grid-cols-5 h-16">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      </nav> */}
     </div>
   )
 }

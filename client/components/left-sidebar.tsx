@@ -40,7 +40,6 @@ export function LeftSidebar() {
 
   return (
     <div className="w-64 space-y-4 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto">
-      {/* Quick Create */}
       <Card>
         <CardContent className="py-4 px-2">
           <Button onClick={() => setIsOpen(true)} className="w-full" size="sm">
@@ -50,7 +49,6 @@ export function LeftSidebar() {
         </CardContent>
       </Card>
 
-      {/* Personal Stats */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-sm">
@@ -80,7 +78,6 @@ export function LeftSidebar() {
         </CardContent>
       </Card>
 
-      {/* Quick Shortcuts */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-sm">
@@ -110,7 +107,6 @@ export function LeftSidebar() {
         </CardContent>
       </Card>
 
-      {/* Weather & Time Widget */}
       <Card>
         <CardContent className="p-4">
           <div className="space-y-3">

@@ -30,7 +30,7 @@ export function CreatePostForm() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
   const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
-  const { user, setIsOpen } = useAuthStore()
+  const { user, setIsOpen, setUser } = useAuthStore()
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme()
@@ -69,6 +69,7 @@ export function CreatePostForm() {
       setContent("")
       setSelectedFile(undefined)
       setSelectedLocation(null)
+      if(user) setUser({...user, totalPosts: user?.totalPosts + 1})
     },
     onError: (error) => {
       toast.error(error.message)

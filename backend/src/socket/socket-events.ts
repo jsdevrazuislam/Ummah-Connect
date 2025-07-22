@@ -158,4 +158,11 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
       socket.leave(userId.toString());
     }
   });
+
+  socket.on(SocketEventEnum.FOLLOW_USER, ({ toUserId, fromUser }) => {
+    io.to(`user:${toUserId}`).emit(SocketEventEnum.FOLLOW_USER, fromUser);
+  });
+  socket.on(SocketEventEnum.UNFOLLOW_USER, ({ toUserId, fromUser }) => {
+    io.to(`user:${toUserId}`).emit(SocketEventEnum.UNFOLLOW_USER, fromUser);
+  });
 };

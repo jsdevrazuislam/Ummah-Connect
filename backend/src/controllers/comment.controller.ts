@@ -8,25 +8,64 @@ import { emitSocketEvent, SocketEventEnum } from "@/socket";
 import { USER_ATTRIBUTE } from "@/constants";
 import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 import Short from "@/models/shorts.models";
+import { createAndInvalidateNotification } from "@/utils/notification";
+import { NotificationType } from "@/models/notification.models";
+import { Op } from "sequelize";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
     const { content, type } = req.body;
     const userId = req.user.id;
     const postId = req.params.id;
+    let receiver_id = null
 
-    if(type === 'short'){
+    if (type === 'short') {
       const short = await Short.findOne({ where: { id: postId } });
+      receiver_id = short?.userId
       if (!short) throw new ApiError(404, "Short not found");
     } else {
       const post = await Post.findOne({ where: { id: postId } });
+      receiver_id = post?.authorId
       if (!post) throw new ApiError(404, "Post not found");
     }
 
     const comment = await Comment.create({ content, userId, postId });
 
-    const followerCount = await Follow.count({ where: { followingId: req.user.id } });
-    const followingCount = await Follow.count({ where: { followerId: req.user.id } });
+    const followerCount = await Follow.count({ where: { followingId: userId } });
+    const followingCount = await Follow.count({ where: { followerId: userId } });
+    const receiverId = Number(receiver_id)
+
+    if (userId !== receiverId) {
+      const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
+
+      if (mentionUsernames?.length > 0) {
+        const mentionedUsers = await User.findAll({
+          where: {
+            username: { [Op.in]: mentionUsernames }
+          }
+        });
+
+        for (const user of mentionedUsers) {
+          await createAndInvalidateNotification({
+            req,
+            senderId: userId,
+            receiverId: user.id,
+            type: NotificationType.MENTION,
+            message: comment.content,
+            postId: postId || null,
+          });
+        }
+      } else {
+        await createAndInvalidateNotification({
+          req,
+          senderId: userId,
+          receiverId,
+          type: NotificationType.COMMENT,
+          message: comment.content,
+          postId: postId || null,
+        });
+      }
+    }
 
     const commentJSON = comment.toJSON();
     delete commentJSON.userId;
@@ -76,6 +115,40 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
       postId
     }
   })
+
+  const receiverId = Number(post?.authorId)
+
+  if (userId !== receiverId) {
+    const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
+    if (mentionUsernames?.length > 0) {
+      const mentionedUsers = await User.findAll({
+        where: {
+          username: { [Op.in]: mentionUsernames }
+        }
+      });
+
+      for (const user of mentionedUsers) {
+        await createAndInvalidateNotification({
+          req,
+          senderId: userId,
+          receiverId: user.id,
+          type: NotificationType.MENTION,
+          message: comment.content,
+          postId: postId || null,
+        });
+      }
+    } else {
+      await createAndInvalidateNotification({
+        req,
+        senderId: userId,
+        receiverId,
+        type: NotificationType.REPLY,
+        message: comment.content,
+        postId: postId || null,
+      });
+    }
+
+  }
 
   const commentJSON = comment.toJSON();
   delete commentJSON.userId;
@@ -255,8 +328,8 @@ export const get_comments = asyncHandler(async (req: Request, res: Response) => 
             ]
           }
         ],
-        attributes:{
-          include:[
+        attributes: {
+          include: [
             ...comment_attribute,
             getCommentTotalReactionsCountLiteral('"Comment"'),
             getCommentUserReactionLiteral(userId, '"Comment"'),
