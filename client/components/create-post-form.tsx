@@ -141,8 +141,8 @@ export function CreatePostForm() {
 
         <div className="flex gap-3">
           <Avatar>
-              <AvatarImage src={`${user?.avatar}?height=40&width=40`} alt={user?.full_name} />
-              <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback>
+              {user?.avatar ? <AvatarImage src={user?.avatar} alt={user?.full_name} /> : 
+              <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback> }
             </Avatar>
            <div>
              <p>{user?.full_name}</p>

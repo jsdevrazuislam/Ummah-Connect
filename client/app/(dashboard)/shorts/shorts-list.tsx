@@ -1,24 +1,17 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import {
-    ArrowUp,
-    ArrowDown,
-    VideoOff
-} from 'lucide-react'
+import { useState, useRef, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { ChevronUp, ChevronDown, VideoOff } from "lucide-react"
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { get_shorts } from '@/lib/apis/stream'
 import { ErrorMessage } from '@/components/api-error'
 import ShortLoading from '@/app/(dashboard)/shorts/loading'
 import ShortVideo from '@/components/short-video'
 
-
-
-
-export default function ShortsListView() {
-    const [currentShortIndex, setCurrentShortIndex] = useState(0);
-    const [animationDirection, setAnimationDirection] = useState<'next' | 'prev'>('next');
-
+export default function ShortsPage() {
+    const [activeIndex, setActiveIndex] = useState(0)
+    const containerRef = useRef<HTMLDivElement>(null)
     const {
         data,
         fetchNextPage,
@@ -38,9 +31,27 @@ export default function ShortsListView() {
         gcTime: 1000 * 60 * 5,
     });
 
-
     const shorts = data?.pages.flatMap(page => page?.data?.shorts) ?? [];
-    const currentShort = shorts[currentShortIndex];
+
+
+    const scrollToVideo = (direction: "up" | "down") => {
+        const container = containerRef.current
+        if (!container) return
+
+        const currentIndex = activeIndex
+        let newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
+
+        if (newIndex < 0) newIndex = 0
+        if (newIndex >= shorts.length) newIndex = shorts.length - 1
+
+        const targetScrollTop = newIndex * container.clientHeight
+        container.scrollTo({
+            top: targetScrollTop,
+            behavior: "smooth",
+        })
+    }
+
+
 
     const loadMorePosts = () => {
         if (hasNextPage && !isFetchingNextPage) {
@@ -48,23 +59,26 @@ export default function ShortsListView() {
         }
     };
 
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
+        const handleScroll = () => {
+            const scrollTop = container.scrollTop;
+            const itemHeight = container.clientHeight;
+            const index = Math.round(scrollTop / itemHeight);
+            setActiveIndex(Math.max(0, Math.min(index, shorts.length - 1)));
 
-
-    const navigateShort = (direction: 'next' | 'prev') => {
-        setAnimationDirection(direction);
-        if (direction === 'next') {
-            if (currentShortIndex < shorts.length - 1) {
-                setCurrentShortIndex(prevIndex => prevIndex + 1);
-            } else if (hasNextPage) {
+            if (index >= shorts.length - 3 && hasNextPage && !isFetchingNextPage) {
                 loadMorePosts();
             }
-        } else if (direction === 'prev') {
-            if (currentShortIndex > 0) {
-                setCurrentShortIndex(prevIndex => prevIndex - 1);
-            }
-        }
-    };
+        };
+
+        container.addEventListener("scroll", handleScroll);
+        return () => {
+            container.removeEventListener("scroll", handleScroll);
+        };
+    }, [shorts.length, hasNextPage, isFetchingNextPage]);
 
     if (isLoading) {
         return (
@@ -88,34 +102,42 @@ export default function ShortsListView() {
         );
     }
 
-
     return (
-        <>
-            <ShortVideo
-                currentShort={currentShort}
-                currentShortIndex={currentShortIndex}
-                navigateShort={navigateShort}
-                animationDirection={animationDirection}
-            />
+        <div className="flex min-h-screen bg-background">
+            <main className="flex-1 relative">
+                <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-30 hidden md:flex flex-col gap-4">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full bg-white/10 w-10 h-10 shadow-lg"
+                        onClick={() => scrollToVideo("up")}
+                        disabled={activeIndex === 0}
+                    >
+                        <ChevronUp className="h-5 w-5" />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full bg-white/10 w-10 h-10 shadow-lg"
+                        onClick={() => scrollToVideo("down")}
+                        disabled={activeIndex === shorts?.length - 1}
+                    >
+                        <ChevronDown className="h-5 w-5" />
+                    </Button>
+                </div>
 
-            <div className="absolute top-[30%] right-[5%] flex-col gap-4 hidden md:flex">
-                <button
-                    onClick={() => navigateShort('prev')}
-                    aria-label="Previous short"
+                <div
+                    ref={containerRef}
+                    className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                    <div className="bg-white/10 rounded-full p-2">
-                        <ArrowUp />
-                    </div>
-                </button>
-                <button
-                    onClick={() => navigateShort('next')}
-                    aria-label="Next short"
-                >
-                    <div className="bg-white/10 rounded-full p-2">
-                        <ArrowDown />
-                    </div>
-                </button>
-            </div>
-        </>
+                    {shorts?.map((short, index) => (
+                        <div key={short?.id} className="h-screen w-full snap-start flex items-center justify-center p-4">
+                            <ShortVideo currentShort={short} isActive={index === activeIndex} />
+                        </div>
+                    ))}
+                </div>
+            </main>
+        </div>
     )
 }
