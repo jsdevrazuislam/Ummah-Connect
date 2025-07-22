@@ -212,25 +212,6 @@ const shouldHideRightSidebar =
           </aside>
         )}
       </div>
-
-      {/* <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t lg:hidden">
-        <div className="grid grid-cols-5 h-16">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      </nav> */}
     </div>
   )
 }

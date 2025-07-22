@@ -17,7 +17,7 @@ const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
-  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen } = useAuthStore()
+  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen, setUser } = useAuthStore()
   const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall, setShowEndModal, setHostUsername } = useCallActions();
   const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
@@ -148,9 +148,9 @@ const SocketEvents = () => {
         }
       }
 
-       queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
-          return addLastMessage(oldData, payload.conversation_id, payload)
-        })
+      queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+        return addLastMessage(oldData, payload.conversation_id, payload)
+      })
     });
     return () => {
       socket.off(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION);
@@ -325,6 +325,32 @@ const SocketEvents = () => {
       socket.off(SocketEventEnum.NOTIFY_USER);
     };
   }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.FOLLOW_USER, () => {
+      if (user) setUser({
+        ...user,
+        followers_count: user.followers_count + 1
+      });
+    });
+    return () => {
+      socket.off(SocketEventEnum.FOLLOW_USER);
+    };
+  }, [socket, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.UNFOLLOW_USER, () => {
+      if (user) setUser({
+        ...user,
+        followers_count: Math.max(0, user.followers_count - 1)
+      });
+    });
+    return () => {
+      socket.off(SocketEventEnum.UNFOLLOW_USER);
+    };
+  }, [socket, user]);
 
   return null
 }

@@ -5,6 +5,7 @@ import { Request, Response } from "express";
 import { Follow } from "@/models";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { NotificationType } from "@/models/notification.models";
+import { DELETE_POST_CACHE } from "@/controllers/post.controller";
 
 
 export const followUnFollow = asyncHandler(async(req:Request, res:Response) =>{
@@ -42,6 +43,7 @@ export const followUnFollow = asyncHandler(async(req:Request, res:Response) =>{
           });
         }
     
+    await DELETE_POST_CACHE()
 
     return res.json(
         new ApiResponse(200, follow, 'Followed Successfully')

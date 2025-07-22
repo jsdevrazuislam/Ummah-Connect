@@ -180,8 +180,8 @@ export const get_me = asyncHandler(async (req: Request, res: Response) => {
 
   const userId = req.user.id
 
-  const followerCount = await Follow.count({ where: { followingId: userId } });
-  const followingCount = await Follow.count({ where: { followerId: userId } });
+  const followerCount = await Follow.count({ where: {  followerId: userId } });
+  const followingCount = await Follow.count({ where: { followingId: userId } });
   const user = await User.findOne({
     where: { id: req.user.id }, attributes: {
       exclude: ['password', 'two_factor_secret']

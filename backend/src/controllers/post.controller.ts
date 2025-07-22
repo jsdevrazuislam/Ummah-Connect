@@ -29,6 +29,14 @@ import { REDIS_KEY } from "@/controllers/notification.controller";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { NotificationType } from "@/models/notification.models";
 
+export const DELETE_POST_CACHE = async () =>{
+  await redis.keys("posts:public:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
+}
+
 export const create_post = asyncHandler(async (req: Request, res: Response) => {
   const data = postSchema.parse(req.body);
   const { content, location, privacy, background } = data;
@@ -173,9 +181,7 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
     payload: { postData, postId: Number(postId) },
   });
 
-  await redis.keys("posts:public:*").then((keys) => {
-    if (keys.length > 0) redis.del(...keys);
-  });
+  await DELETE_POST_CACHE()
 
   const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
   if (keys.length > 0) await redis.del(...keys);
@@ -377,11 +383,7 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
     currentUserReaction: null
   };
 
-  await redis.keys("posts:public:*").then((keys) => {
-    if (keys.length > 0) {
-      redis.del(...keys);
-    }
-  });
+  await DELETE_POST_CACHE()
 
   return res.json(
     new ApiResponse(
@@ -409,11 +411,7 @@ export const bookmarked_post = asyncHandler(
     });
 
     const removeRedisKey = async () => {
-      await redis.keys("posts:public:*").then((keys) => {
-        if (keys.length > 0) {
-          redis.del(...keys);
-        }
-      });
+      await DELETE_POST_CACHE()
 
       await redis.keys("posts:bookmark:*").then((keys) => {
         if (keys.length > 0) {
@@ -475,11 +473,7 @@ export const edit_post = asyncHandler(async (req: Request, res: Response) => {
     { where: { id: postId, authorId }, returning: true }
   );
 
-  await redis.keys("posts:public:*").then((keys) => {
-    if (keys.length > 0) {
-      redis.del(...keys);
-    }
-  });
+  await DELETE_POST_CACHE()
 
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
@@ -520,11 +514,7 @@ export const delete_post = asyncHandler(async (req: Request, res: Response) => {
     where: { id: postId, authorId },
   });
 
-  await redis.keys("posts:public:*").then((keys) => {
-    if (keys.length > 0) {
-      redis.del(...keys);
-    }
-  });
+  await DELETE_POST_CACHE()
 
   res.json(new ApiResponse(200, null, "Post delete successfully"));
 });

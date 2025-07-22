@@ -83,7 +83,7 @@ export function SharePostDialog({
   })
 
   const handleCopyLink = () => {
-    const postUrl = `https://ummahconnect.com/post/${post.id}`
+    const postUrl = `${window.location.href}share/${post.id}`
     navigator.clipboard
       .writeText(postUrl)
       .then(() => {
@@ -117,7 +117,7 @@ export function SharePostDialog({
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex items-center gap-2">
-            <Input value={`https://ummahconnect.com/post/${post.id}`} readOnly className="flex-1" />
+            <Input value={`${window.location.href}share/${post.id}`} readOnly className="flex-1" />
             <Button onClick={handleCopyLink}>
               <Link2 className="h-4 w-4 mr-2" />
               Copy
