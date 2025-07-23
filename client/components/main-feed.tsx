@@ -46,7 +46,7 @@ export function MainFeed() {
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
+      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 ">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">Home</h1>
           <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading} className="h-9 w-9">

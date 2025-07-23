@@ -190,9 +190,9 @@ export default function CreateLiveStreamPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-2 ">
                                     <Label>Stream Settings</Label>
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 mt-4">
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <Label htmlFor="enableChat">Enable Chat</Label>
