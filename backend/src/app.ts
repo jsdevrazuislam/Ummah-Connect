@@ -16,16 +16,17 @@ import cookieParser from "cookie-parser";
 import swagger from "@/config/swagger";
 import { initializeSocketIO } from "@/socket";
 import { connectRedis } from "@/config/redis";
-import { load_routes } from "./utils/load-routes";
+import { load_routes } from "@/utils/load-routes";
 
 
 const app: Application = express();
 const httpServer = createServer(app);
+const origin = ["http://localhost:5173", "http://localhost:3000", "https://ummah-connect-client.vercel.app"]
 
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin,
     credentials: true,
   },
 });
@@ -64,7 +65,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin,
     credentials: true,
   })
 );
