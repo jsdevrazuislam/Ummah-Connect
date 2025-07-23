@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock } from "lucide-react"
 import { useAuthStore } from "@/store/store"
+import { to12HourFormat } from "@/lib/utils"
 
 
 export function PrayerTimesWidget() {
@@ -44,7 +45,7 @@ export function PrayerTimesWidget() {
             className={`flex justify-between text-sm ${nextPrayer === prayer ? "font-bold text-primary" : ""}`}
           >
             <span className="capitalize">{prayer}</span>
-            <span>{time}</span>
+            <span>{(to12HourFormat(time))}</span>
           </div>
         ))}
       </CardContent>

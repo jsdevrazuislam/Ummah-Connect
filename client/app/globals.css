@@ -89,6 +89,10 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  .no-scroll {
+    @apply overflow-hidden fixed w-full h-full
+  }
 }
 
 

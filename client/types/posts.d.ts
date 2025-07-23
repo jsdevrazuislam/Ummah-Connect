@@ -136,3 +136,72 @@ interface Counts {
   follower_count: string;
   is_following: boolean;
 }
+
+
+  interface StoryResponse {
+  statusCode: number;
+  data?: (DataEntity)[] | null;
+  message: string;
+  success: boolean;
+}
+ interface StoryEntity {
+  id: number;
+  username: string;
+  avatar?: null;
+  full_name: string;
+  stories: StoriesEntity[];
+}
+ interface StoriesEntity {
+  id: number;
+  userId: number;
+  mediaUrl: string;
+  caption: string;
+  createdAt: string;
+  updatedAt: string;
+  type: "image" | "text"
+  background: string
+  textColor: string
+}
+
+
+interface CreateStoryResponse {
+  statusCode: number;
+  data: StoryEntity;
+  message: string;
+  success: boolean;
+}
+
+ interface LocationResponse {
+  type: string;
+  query?: (number)[] | null;
+  features: FeaturesEntity[];
+  attribution: string;
+}
+ interface FeaturesEntity {
+  id: string;
+  type: string;
+  place_type?: (string)[] | null;
+  relevance: number;
+  properties: Properties;
+  text: string;
+  place_name: string;
+  bbox?: (number)[] | null;
+  center?: (number)[] | null;
+  geometry: Geometry;
+  context: ContextEntity[];
+}
+ interface Properties {
+  mapbox_id: string;
+  wikidata: string;
+}
+ interface Geometry {
+  type: string;
+  coordinates?: (number)[] | null;
+}
+ interface ContextEntity {
+  id: string;
+  mapbox_id: string;
+  wikidata: string;
+  text: string;
+  short_code?: string | null;
+}

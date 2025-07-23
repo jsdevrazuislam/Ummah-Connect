@@ -28,7 +28,6 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
 
   const [showComments, setShowComments] = useState(true)
   const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.currentUserReaction ?? null)
-  const [totalComment, setTotalComment] = useState(Number(post?.totalCommentsCount) || 0)
   const { socket } = useSocketStore()
 
 
@@ -51,8 +50,8 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12 ring-2 ring-primary/10">
                 {
-                  post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.avatar} /> : <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
-                    {post?.user?.full_name?.charAt(2)}
+                  post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.avatar} /> : <AvatarFallback>
+                    {post?.user?.full_name?.charAt(0)}
                   </AvatarFallback>
                 }
               </Avatar>
@@ -112,7 +111,7 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
               onClick={() => setShowComments(!showComments)}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{totalComment}</span>
+              <span>{post?.totalCommentsCount}</span>
             </Button>
             <ShareButton post={post} />
             <BookmarkButton post={post} />
@@ -123,11 +122,10 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
           {
             showComments && <div className="w-full space-y-4">
               <h4 className="font-semibold text-foreground">Comments</h4>
-              <CommentInput setTotalComment={setTotalComment} post={post} />
+              <CommentInput post={post} />
               <CommentItems
                 postId={post.id}
                 totalComment={post?.totalCommentsCount}
-                setTotalComment={setTotalComment}
               />
             </div>
           }

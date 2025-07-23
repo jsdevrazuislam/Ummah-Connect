@@ -16,9 +16,6 @@ async function fetchUser(username: string) {
   const cookie = await cookies();
   const token = cookie.get(ACCESS_TOKEN)?.value;
 
-  const ignoredUsernames = ['favicon.ico', '.well-known', 'robots.txt', 'sitemap.xml', 'nul'];
-  if (!username || ignoredUsernames.includes(username)) return
-
   if (!token) return null;
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/${username}/profile`, {
     headers: {

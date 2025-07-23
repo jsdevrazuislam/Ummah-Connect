@@ -73,12 +73,28 @@ export const share_post = async (payload: SharePayload) => {
     return response.data;
 }
 
-export const bookmark_post = async (id:number) => {
+export const bookmark_post = async (id: number) => {
     const response = await api.post(ApiStrings.BOOKMARK_POST(id));
     return response.data;
 }
 
-export const user_suggestion = async (query:string): Promise<SuggestionUsers> => {
-    const response = await api.get(`${ApiStrings.USER_SUGGESTION}?q=${query}`);
+export const user_suggestion = async (query: string): Promise<SuggestionUsers> => {
+    const response = await api.get<SuggestionUsers>(`${ApiStrings.USER_SUGGESTION}?q=${query}`);
+    return response.data;
+}
+
+export const get_stories = async (): Promise<StoryResponse> => {
+    const response = await api.get<StoryResponse>(ApiStrings.GET_STORIES);
+    return response.data;
+}
+
+export const create_story = async (payload: FormData): Promise<CreateStoryResponse> => {
+    const response = await api.post<CreateStoryResponse>(ApiStrings.CREATE_STORY, payload, {
+        headers: {
+            ...(payload instanceof FormData
+                ? { "Content-Type": "multipart/form-data" }
+                : {}),
+        },
+    });
     return response.data;
 }

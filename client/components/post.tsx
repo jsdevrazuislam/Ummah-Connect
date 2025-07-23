@@ -37,8 +37,6 @@ export function Post({ post }: PostProps) {
   const { socket } = useSocketStore()
   const [showComments, setShowComments] = useState(false)
   const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.currentUserReaction ?? null)
-  const [totalComment, setTotalComment] = useState(Number(post?.totalCommentsCount) || 0)
-
   const router = useRouter()
 
 
@@ -114,7 +112,7 @@ export function Post({ post }: PostProps) {
           onClick={() => setShowComments(!showComments)}
         >
           <MessageCircle className="h-4 w-4" />
-          <span>{totalComment ?? 0}</span>
+          <span>{post?.totalCommentsCount ?? 0}</span>
         </Button>
         <ShareButton post={post} />
         <BookmarkButton post={post} />
@@ -123,11 +121,10 @@ export function Post({ post }: PostProps) {
       {showComments && (
         <div className="mt-4 space-y-4">
           <h4 className="font-semibold text-foreground">Comments</h4>
-          <CommentInput setTotalComment={setTotalComment} post={post} />
+          <CommentInput post={post} />
           <CommentItems
             postId={post.id}
             totalComment={post?.totalCommentsCount}
-            setTotalComment={setTotalComment}
           />
         </div>
       )}

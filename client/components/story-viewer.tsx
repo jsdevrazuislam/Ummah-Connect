@@ -2,34 +2,32 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { X, ChevronLeft, ChevronRight, Heart, Send } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Heart, Send, MoreVertical, Trash2, Flag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-
-interface StoryItem {
-  id: string
-  type: "image" | "text"
-  src?: string
-  caption?: string
-  timestamp: string
-}
-
-interface User {
-  id: string
-  name: string
-  username: string
-  avatar: string
-}
-
-interface Story {
-  id: string
-  user: User
-  items: StoryItem[]
-  viewed: boolean
-}
+import Image from "next/image"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { ReportModal } from "@/components/report-modal"
+import { useAuthStore } from "@/store/store"
+import { useMutation } from "@tanstack/react-query"
 
 interface StoryViewerProps {
-  story: Story
+  story: StoryEntity
   onClose: () => void
 }
 
@@ -37,17 +35,22 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const { user } = useAuthStore()
 
-  const storyDuration = 5000 // 5 seconds per story
+  const storyDuration = 5000
+
+  const { isPending } = useMutation({})
 
   const goToNextItem = useCallback(() => {
-    if (currentItemIndex < story.items.length - 1) {
+    if (currentItemIndex < story?.stories?.length - 1) {
       setCurrentItemIndex(currentItemIndex + 1)
       setProgress(0)
     } else {
       onClose()
     }
-  }, [currentItemIndex, story.items.length, onClose])
+  }, [currentItemIndex, story?.stories?.length, onClose])
 
   const goToPrevItem = () => {
     if (currentItemIndex > 0) {
@@ -55,6 +58,10 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
       setProgress(0)
     }
   }
+
+  const handleDeleteStory = () => { }
+  const handleReportSubmit = () => { }
+
 
   useEffect(() => {
     if (isPaused) return
@@ -74,6 +81,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
     return () => clearInterval(interval)
   }, [currentItemIndex, isPaused, goToNextItem])
 
+
   const handleTouchStart = () => {
     setIsPaused(true)
   }
@@ -87,7 +95,14 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
   }
 
-  const currentItem = story.items[currentItemIndex]
+  const currentItem = story?.stories[currentItemIndex]
+
+  useEffect(() => {
+    document.body.classList.add('no-scroll')
+    return () => {
+      document.body.classList.remove('no-scroll')
+    }
+  }, [])
 
   if (!currentItem) return null
 
@@ -100,21 +115,32 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
         onMouseDown={handleTouchStart}
         onMouseUp={handleTouchEnd}
       >
-        {/* Story content */}
         <div className="relative h-full w-full bg-black">
-          {currentItem.type === "image" && currentItem.src && (
-            <img src={currentItem.src || "/placeholder.svg"} alt="Story" className="h-full w-full object-contain" />
+          {currentItem.type === "image" && currentItem.mediaUrl && (
+            <div className="w-full h-full">
+              {currentItem?.caption && <div className="absolute inset-0 flex items-center justify-center p-8">
+                <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 max-w-full border border-white/20">
+                  <p
+                    className="text-center text-2xl font-semibold break-words leading-relaxed"
+                    style={{ color: currentItem.textColor }}
+                  >
+                    {currentItem.caption}
+                  </p>
+                </div>
+              </div>}
+              <Image src={currentItem.mediaUrl} width={200} height={150} alt="Story" className="h-full w-full object-contain" />
+
+            </div>
           )}
           {currentItem.type === "text" && (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-primary to-primary-foreground p-8">
-              <p className="text-2xl text-white text-center font-medium">{currentItem.caption}</p>
+            <div className="h-full w-full flex items-center justify-center p-8" style={{ background: currentItem?.background }}>
+              <p className="text-2xl text-center font-medium" style={{ color: currentItem.textColor }}>{currentItem.caption}</p>
             </div>
           )}
         </div>
 
-        {/* Progress bar */}
         <div className="absolute top-0 left-0 right-0 p-2 flex gap-1 z-10">
-          {story.items.map((_, index) => (
+          {story?.stories?.map((_, index) => (
             <div key={index} className="h-1 bg-white/30 rounded-full flex-1">
               {index === currentItemIndex ? (
                 <Progress value={progress} className="h-full" />
@@ -125,33 +151,59 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           ))}
         </div>
 
-        {/* Header */}
         <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={story.user.avatar || "/placeholder.svg"} alt={story.user.name} />
-              <AvatarFallback>{story.user.name.charAt(0)}</AvatarFallback>
+              {story?.avatar ? <AvatarImage src={story?.avatar} alt={story?.full_name} /> :
+                <AvatarFallback>{story?.full_name?.charAt(0)}</AvatarFallback>}
             </Avatar>
             <div>
-              <p className="text-white text-sm font-medium">{story.user.name}</p>
-              <p className="text-white/70 text-xs">{formatTimestamp(currentItem.timestamp)}</p>
+              <p className="text-white text-sm font-medium">{story?.full_name}</p>
+              <p className="text-white/70 text-xs">{formatTimestamp(currentItem?.createdAt)}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-white">
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2 relative z-50">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-white/10 cursor-pointer"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {story.id === user?.id && (
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setShowReportModal(true)}
+                  >
+                    <Flag className="mr-2 h-4 w-4" />
+                    Report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-white hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
-        {/* Caption */}
-        {currentItem.caption && (
-          <div className="absolute bottom-20 left-0 right-0 p-4 z-10">
-            <p className="text-white text-sm">{currentItem.caption}</p>
-          </div>
-        )}
-
-        {/* Navigation buttons */}
         <button
-          className="absolute top-1/2 left-2 transform -translate-y-1/2 h-full w-1/4 flex items-center justify-start z-10"
+          className="absolute top-1/2 left-2 cursor-pointer transform -translate-y-1/2 w-fit flex items-center justify-start z-10"
           onClick={(e) => {
             e.stopPropagation()
             goToPrevItem()
@@ -160,7 +212,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           <ChevronLeft className="h-8 w-8 text-white/50" />
         </button>
         <button
-          className="absolute top-1/2 right-2 transform -translate-y-1/2 h-full w-1/4 flex items-center justify-end z-10"
+          className="absolute cursor-pointer top-1/2 right-2 transform -translate-y-1/2 w-fit flex items-center justify-end z-10"
           onClick={(e) => {
             e.stopPropagation()
             goToNextItem()
@@ -169,7 +221,6 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           <ChevronRight className="h-8 w-8 text-white/50" />
         </button>
 
-        {/* Interaction buttons */}
         <div className="absolute bottom-4 left-0 right-0 p-4 flex items-center gap-4 z-10">
           <input
             type="text"
@@ -184,6 +235,34 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this story?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your story.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteStory}
+              disabled={isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={isPending}
+      />
     </div>
   )
 }

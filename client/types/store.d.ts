@@ -25,4 +25,6 @@ interface AuthState {
   totalUnread: number;
   setTotalUnread: (count: number) => void;
   decrementUnread: () => void;
+  stories: StoryEntity[] | null;
+  addStory: (newStory: Story) => void;
 }
