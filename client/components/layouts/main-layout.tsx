@@ -46,8 +46,8 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const totalUnread = useConversationStore((state) =>
-  Object.values(state.unreadCounts).reduce((acc, count) => acc + count, 0)
-);
+    Object.values(state.unreadCounts).reduce((acc, count) => acc + count, 0)
+  );
 
   const handleLogout = () => {
     queryClient.clear()
@@ -56,25 +56,25 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   }
 
   const RESERVED_ROUTES = [
-  "login", "register", "messages", "settings", 
-  "prayer-times", "live", "shorts", "profile", "notifications", "bookmarks"
-]
+    "login", "register", "messages", "settings",
+    "prayer-times", "live", "shorts", "profile", "notifications", "bookmarks"
+  ]
 
   const isUsernameProfile = () => {
     if (pathname === "/") return false
-  const pathSegments = pathname.replace(/^\/+/, "").split("/")
+    const pathSegments = pathname.replace(/^\/+/, "").split("/")
 
-  return (
-    pathSegments.length === 1 &&
-    !RESERVED_ROUTES.includes(pathSegments[0])
-  )
-}
+    return (
+      pathSegments.length === 1 &&
+      !RESERVED_ROUTES.includes(pathSegments[0])
+    )
+  }
 
-const shouldHideLeftSidebar =
-  isUsernameProfile() || ["/messages", "/shorts", "/story/create"].includes(pathname) || pathname.startsWith("/shorts") || pathname.startsWith("/profile")
+  const shouldHideLeftSidebar =
+    isUsernameProfile() || ["/messages", "/shorts", "/story/create"].includes(pathname) || pathname.startsWith("/shorts") || pathname.startsWith("/profile")
 
-const shouldHideRightSidebar =
-  isUsernameProfile() || ["/messages", "/settings", "/prayer-times", "/story/create"].includes(pathname) || pathname.startsWith("/live") || pathname.startsWith("/profile") || pathname.startsWith("/shorts")
+  const shouldHideRightSidebar =
+    isUsernameProfile() || ["/messages", "/settings", "/prayer-times", "/story/create"].includes(pathname) || pathname.startsWith("/live") || pathname.startsWith("/profile") || pathname.startsWith("/shorts")
 
   return (
     <div className="bg-background">
@@ -114,16 +114,16 @@ const shouldHideRightSidebar =
                 <Link href="/notifications">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
-                    {notificationUnReadCount > 0  && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                    {notificationUnReadCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
                       {notificationUnReadCount}
-                    </Badge> }
+                    </Badge>}
                   </Button>
                 </Link>
 
                 <Link href="/messages">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <MessageCircle className="h-5 w-5" />
-                    {totalUnread > 0 && <Badge  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                    {totalUnread > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
                       {totalUnread}
                     </Badge>}
                   </Button>
@@ -142,11 +142,12 @@ const shouldHideRightSidebar =
                       <Link href={item.href} className="flex items-center">
                         <item.icon className="h-4 w-4 mr-3" />
                         <span>{item.label}</span>
-                        {(item.label === "Notifications" || item.label === "Messages") && (
+                        {(item.label === "Notifications" && notificationUnReadCount > 0) ||
+                          (item.label === "Messages" && totalUnread > 0) ? (
                           <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
                             {item.label === "Notifications" ? notificationUnReadCount : totalUnread}
                           </Badge>
-                        )}
+                        ) : null}
                       </Link>
                     </DropdownMenuItem>
                   ))}

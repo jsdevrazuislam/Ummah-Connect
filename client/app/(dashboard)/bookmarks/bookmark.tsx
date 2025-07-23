@@ -46,7 +46,7 @@ export default function BookmarksPage() {
 
     return (
         <>
-            <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
+            <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 ">
                 <h1 className="text-xl font-bold mb-4">Bookmarks</h1>
             </div>
 
@@ -55,7 +55,7 @@ export default function BookmarksPage() {
                 isLoading={isFetchingNextPage}
                 onLoadMore={loadMorePosts}
             >
-                <div>
+                <div className="">
                     {isLoading ? (
                         Array(10).fill(10).map((_, index) => (
                             <PostSkeleton key={index} />
@@ -63,7 +63,7 @@ export default function BookmarksPage() {
                     ) : (
                         posts?.length > 0 ? posts?.map((post) => (
                             <Post key={post?.id} post={post?.post} />
-                        )) : <div className="text-center flex justify-center items-center flex-col py-16 border rounded-lg mt-4">
+                        )) : <div className="text-center flex justify-center items-center flex-col py-16  rounded-lg mt-28 ">
                             <Bookmark className="h-12 w-12 text-muted-foreground mb-4" />
                             <h4 className="font-medium mb-2">No bookmarks yet</h4>
                             <p className="text-muted-foreground mb-4">
