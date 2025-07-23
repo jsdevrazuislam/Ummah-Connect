@@ -5,6 +5,8 @@ import asyncHandler from "@/utils/async-handler";
 import cloudinary from "@/utils/cloudinary";
 import { Request, Response } from "express";
 import { Op } from "sequelize";
+import fs from "fs";
+
 
 const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
 
@@ -22,6 +24,7 @@ export const uploadStory = asyncHandler(async (req: Request, res: Response) => {
         });
 
         mediaUrl = uploaded.url
+        fs.unlinkSync(file.path);
     }
 
     const story = await Story.create({ userId, mediaUrl, caption, background, type, textColor });

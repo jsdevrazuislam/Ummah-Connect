@@ -6,6 +6,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
+export function to12HourFormat(time: string): string {
+  const [hourStr, minute] = time.split(":");
+  let hour = parseInt(hourStr, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+
+  hour = hour % 12 || 12;
+  return `${hour}:${minute} ${ampm}`;
+}
+
 export const validateEmail = (email:string) => {
   return String(email)
     .toLowerCase()
