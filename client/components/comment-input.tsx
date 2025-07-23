@@ -11,12 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
 
 interface CommentInputProps{
-    setTotalComment: React.Dispatch<React.SetStateAction<number>>
     post: PostsEntity
 }
 
 const CommentInput = ({
-    setTotalComment,
     post
 }: CommentInputProps) => {
 
@@ -40,7 +38,6 @@ const CommentInput = ({
     const { mutate: mnFun, isPending: isLoading } = useMutation({
         mutationFn: create_comment,
         onSuccess: () => {
-            setTotalComment((prev) => prev + 1)
             setComment("")
         },
         onError: (error) => {

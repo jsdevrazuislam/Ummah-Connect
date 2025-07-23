@@ -1,9 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import type React from "react"
-
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 
 interface InfiniteScrollProps {
   hasMore: boolean
@@ -11,21 +9,40 @@ interface InfiniteScrollProps {
   onLoadMore: () => void
   threshold?: number
   children: React.ReactNode
-  className?:string
+  className?: string
 }
 
-export function InfiniteScroll({ hasMore, isLoading, onLoadMore, threshold = 100, children, className }: InfiniteScrollProps) {
+export function InfiniteScroll({ 
+  hasMore, 
+  isLoading, 
+  onLoadMore, 
+  threshold = 100, 
+  children, 
+  className 
+}: InfiniteScrollProps) {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
+  const [isLoadingInternal, setIsLoadingInternal] = useState(false)
+
+  const debouncedLoadMore = useCallback(() => {
+    if (!isLoadingInternal && hasMore && !isLoading) {
+      setIsLoadingInternal(true)
+      onLoadMore()
+      const timer = setTimeout(() => {
+        setIsLoadingInternal(false)
+      }, 1000) 
+      return () => clearTimeout(timer)
+    }
+  }, [hasMore, isLoading, onLoadMore])
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [target] = entries
-      if (target.isIntersecting && hasMore && !isLoading) {
-        onLoadMore()
+      if (target.isIntersecting) {
+        debouncedLoadMore()
       }
     },
-    [hasMore, isLoading, onLoadMore],
+    [debouncedLoadMore]
   )
 
   useEffect(() => {

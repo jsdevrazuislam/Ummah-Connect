@@ -71,13 +71,13 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 }
 
 const shouldHideLeftSidebar =
-  isUsernameProfile() || ["/messages", "/shorts"].includes(pathname) || pathname.startsWith("/shorts") || pathname.startsWith("/profile")
+  isUsernameProfile() || ["/messages", "/shorts", "/story/create"].includes(pathname) || pathname.startsWith("/shorts") || pathname.startsWith("/profile")
 
 const shouldHideRightSidebar =
-  isUsernameProfile() || ["/messages", "/settings", "/prayer-times"].includes(pathname) || pathname.startsWith("/live") || pathname.startsWith("/profile") || pathname.startsWith("/shorts")
+  isUsernameProfile() || ["/messages", "/settings", "/prayer-times", "/story/create"].includes(pathname) || pathname.startsWith("/live") || pathname.startsWith("/profile") || pathname.startsWith("/shorts")
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <header className="sticky px-4 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div >
           <div className="flex h-16 items-center justify-between">

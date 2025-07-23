@@ -18,6 +18,7 @@ class User extends Model {
     public gender!: string;
     public bio!: string;
     public is_verified!: boolean;
+    public verified_identity!: boolean;
     public privacy_settings!: {
         message:string
     }
@@ -93,6 +94,10 @@ User.init(
             allowNull: false,
         },
         is_verified: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
+        verified_identity: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },

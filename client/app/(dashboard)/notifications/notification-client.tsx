@@ -8,6 +8,8 @@ import { ErrorMessage } from "@/components/api-error"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDistanceToNow } from 'date-fns';
 import {
+    getNotificationColorClasses,
+    getNotificationIcon,
     getNotificationTitle
 } from "@/lib/notification";
 import { InfiniteScroll } from "@/components/infinite-scroll"
@@ -15,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useEffect } from "react"
 import { useAuthStore } from "@/store/store"
-import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 
 export default function NotificationsPage() {
@@ -31,7 +33,7 @@ export default function NotificationsPage() {
         isError,
     } = useInfiniteQuery<NotificationResponse>({
         queryKey: ['getNotifications'],
-        queryFn: ({ pageParam = 1 }) => getNotifications({ page: Number(pageParam) }),
+        queryFn: ({ pageParam = 1 }) => getNotifications({ page: Number(pageParam), limit: 10 }),
         getNextPageParam: (lastPage) => {
             const nextPage = (lastPage?.data?.page ?? 0) + 1;
             return nextPage <= (lastPage?.data?.total ?? 1) ? nextPage : undefined;
@@ -181,6 +183,9 @@ export default function NotificationsPage() {
             >
                 <div>
                     {notifications.map((notification) => {
+                            const Icon = getNotificationIcon(notification?.type);
+                            const { bg, text} = getNotificationColorClasses(notification?.type);
+
                         return (
                             <div key={notification?.id} className="p-4 cursor-pointer border-b border-border hover:bg-muted/50">
                                 <div className="flex gap-3">
@@ -189,8 +194,8 @@ export default function NotificationsPage() {
                                                 {notification?.sender?.avatar ? <AvatarImage src={notification?.sender?.avatar} alt={notification?.sender?.full_name} /> :
                                                     <AvatarFallback>{notification?.sender?.full_name?.charAt(0)}</AvatarFallback>}
                                             </Avatar>
-                                        <div className="w-4 h-4 absolute bottom-0.5 right-2 rounded-full border-2 border-white flex justify-center items-center">
-                                            <Image className="w-3 h-3 rounded-full object-contain" src={notification?.icon ?? "/emoji/like.png"} alt="Icon" width={20} height={20} />
+                                        <div className={cn(`w-6 h-6 absolute bottom-0 right-0 rounded-full flex justify-center items-center`, bg)}>
+                                             {Icon && <Icon className={cn(`w-4 h-4`, text)} />}
                                         </div>
                                     </div>
                                     <div className="flex-1">

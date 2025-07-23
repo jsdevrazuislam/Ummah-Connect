@@ -15,11 +15,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     selectedConversation: null,
     hijriDate: null,
     user: null,
+    stories: null,
     isLoading: false,
     isOpen: false,
     onlineUsers: new Map(),
     lastSeen: new Map(),
-     totalUnread: 0,
+    totalUnread: 0,
     setUser: (user) => set({ user }),
     setIsOpen: (value) => set({ isOpen: value }),
     setSelectedConversation: (data) => {
@@ -51,13 +52,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (get().accessToken) {
             try {
                 const { data } = await api.get(ApiStrings.ME)
+                const { data: storiesData } = await api.get<StoryResponse>(ApiStrings.GET_STORIES)
                 const coords = await getCurrentLocation()
-                const { date, timings} = await getPrayerTimes(coords.latitude, coords.longitude)
+                const { date, timings } = await getPrayerTimes(coords.latitude, coords.longitude)
                 const user = data?.data?.user
-                
-                set({ 
+
+                set({
                     prayerTime: timings,
                     hijriDate: date,
+                    stories: storiesData?.data
                 })
                 set({
                     user
@@ -111,4 +114,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     setTotalUnread: (count) => set({ totalUnread: count }),
     decrementUnread: () => set((state) => ({ totalUnread: Math.max(0, state.totalUnread - 1) })),
+    addStory: (newStory) => set((state) => {
+        if (!state.user) return state;
+
+        const userId = state.user.id;
+        const safeStories = state?.stories ?? []
+        const existingUserStoryIndex = safeStories.findIndex(story => story.id === userId);
+
+        if (existingUserStoryIndex >= 0) {
+            const updatedStories = [...safeStories];
+            updatedStories[existingUserStoryIndex] = {
+                ...updatedStories[existingUserStoryIndex],
+                stories: [
+                    newStory,
+                    ...(updatedStories[existingUserStoryIndex].stories || [])
+                ]
+            };
+            return { stories: updatedStories };
+        } else {
+            const newStoryEntity: StoryEntity = {
+                id: userId,
+                username: state.user.username,
+                avatar: state.user.avatar,
+                full_name: state.user.full_name,
+                stories: [newStory]
+            };
+            return { stories: [newStoryEntity, ...safeStories] };
+        }
+    }),
 }));

@@ -39,7 +39,7 @@ export const SharedPost = ({
                         </p>
                     </div>
                 </div>
-                {post?.content && <p className="mt-4">{post?.content}</p>}
+                {post?.content && <p className={cn(`mt-4 ${post.background && post?.background}`, { 'h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center': post?.background })}>{post?.content}</p>}
                 {post?.location && (
                     <div className="mt-2">
                         <Badge variant="outline" className="flex w-fit items-center gap-1 text-xs">

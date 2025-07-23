@@ -1,4 +1,5 @@
-import { Bell, Bookmark, Heart, MessageCircle, UserPlus } from "lucide-react";
+import { Bookmark, Heart, MessageCircle, UserPlus, AtSign } from "lucide-react";
+
 
 enum NotificationType {
     FOLLOW = "follow",
@@ -8,8 +9,6 @@ enum NotificationType {
     BOOKMARK = "bookmark",
     MENTION = "mention",
 }
-
-
 
 export const getNotificationTitle = (type: NotificationType | undefined): string => {
     switch (type) {
@@ -30,29 +29,29 @@ export const getNotificationTitle = (type: NotificationType | undefined): string
     }
 };
 
-export const getNotificationIcon = (type: NotificationType | undefined) => {
-    switch (type) {
-        case NotificationType.LIKE:
-            return Heart;
-        case NotificationType.FOLLOW:
-            return UserPlus;
-        case NotificationType.COMMENT:
-        case NotificationType.REPLY:
-            return MessageCircle;
-        case NotificationType.MENTION:
-            return Bell;
-        case NotificationType.BOOKMARK:
-            return Bookmark;
-        default:
-            return Bell;
-    }
-};
+export function getNotificationIcon(type: NotificationType | undefined) {
+  switch (type) {
+    case "follow":
+      return UserPlus;
+    case "like":
+      return Heart;
+    case "comment":
+    case "reply":
+      return MessageCircle;
+    case "bookmark":
+      return Bookmark;
+    case "mention":
+      return AtSign;
+    default:
+      return null;
+  }
+}
 
 export const getNotificationColorClasses = (type: NotificationType | undefined) => {
     switch (type) {
         case NotificationType.LIKE:
             return {
-                bg: "bg-red-100 dark:bg-red-900/20",
+                bg: "bg-red-100 dark:bg-red-900",
                 text: "text-red-500",
             };
         case NotificationType.FOLLOW:
@@ -63,17 +62,17 @@ export const getNotificationColorClasses = (type: NotificationType | undefined) 
         case NotificationType.COMMENT:
         case NotificationType.REPLY:
             return {
-                bg: "bg-blue-100 dark:bg-blue-900/20",
+                bg: "bg-blue-100 dark:bg-blue-900",
                 text: "text-blue-500",
             };
         case NotificationType.MENTION:
             return {
-                bg: "bg-amber-100 dark:bg-amber-900/20",
+                bg: "bg-amber-100 dark:bg-amber-900",
                 text: "text-amber-500",
             };
         case NotificationType.BOOKMARK:
             return {
-                bg: "bg-purple-100 dark:bg-purple-900/20",
+                bg: "bg-purple-100 dark:bg-purple-900",
                 text: "text-purple-500",
             };
         default:

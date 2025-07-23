@@ -78,10 +78,12 @@ const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
                             <div className="grid grid-cols-2 gap-2 p-4 border-t">
                                 {
                                     currentUser?.id === user?.id ? <>
+                                        <Link href='/story/create'>
                                         <Button>
                                             <Plus />
                                             Add Story
                                         </Button>
+                                        </Link>
                                         <Link href="/settings">
                                             <Button>
                                                 <Pencil />

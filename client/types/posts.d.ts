@@ -136,3 +136,37 @@ interface Counts {
   follower_count: string;
   is_following: boolean;
 }
+
+
+  interface StoryResponse {
+  statusCode: number;
+  data?: (DataEntity)[] | null;
+  message: string;
+  success: boolean;
+}
+ interface StoryEntity {
+  id: number;
+  username: string;
+  avatar?: null;
+  full_name: string;
+  stories: StoriesEntity[];
+}
+ interface StoriesEntity {
+  id: number;
+  userId: number;
+  mediaUrl: string;
+  caption: string;
+  createdAt: string;
+  updatedAt: string;
+  type: "image" | "text"
+  background: string
+  textColor: string
+}
+
+
+interface CreateStoryResponse {
+  statusCode: number;
+  data: StoryEntity;
+  message: string;
+  success: boolean;
+}

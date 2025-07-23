@@ -253,8 +253,8 @@ export function incrementDecrementCommentCount(
       if (post.id === postId) {
         const newCount =
           actions === "inc"
-            ? post.totalCommentsCount + amount
-            : post.totalCommentsCount - amount
+            ? Number(post.totalCommentsCount) + amount
+            : Number(post.totalCommentsCount) - amount
 
         return {
           ...post,

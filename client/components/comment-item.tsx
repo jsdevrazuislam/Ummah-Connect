@@ -44,11 +44,10 @@ interface CommentItemProps {
   comment: CommentPreview
   isReply?: boolean
   postId: number
-  setTotalComment?: React.Dispatch<React.SetStateAction<number>>
 
 }
 
-export const CommentItems = ({ postId, totalComment, setTotalComment }: { postId: number, totalComment: number | undefined, setTotalComment?: React.Dispatch<React.SetStateAction<number>> }) => {
+export const CommentItems = ({ postId, totalComment }: { postId: number, totalComment: number | undefined }) => {
 
   const {
     data,
@@ -101,7 +100,6 @@ export const CommentItems = ({ postId, totalComment, setTotalComment }: { postId
               key={comment.id}
               comment={comment}
               postId={postId}
-              setTotalComment={setTotalComment}
             />
           ))}
         </div>
@@ -123,7 +121,6 @@ function CommentItem({
   comment,
   isReply = false,
   postId,
-  setTotalComment
 }: CommentItemProps) {
   const { user } = useAuthStore()
   const [showReplyForm, setShowReplyForm] = useState(false)
@@ -163,11 +160,6 @@ function CommentItem({
 
   const { mutate: deleteMuFunc } = useMutation({
     mutationFn: delete_comment,
-    onSuccess: () =>{
-      if(setTotalComment){
-        setTotalComment((prev) => prev - 1)
-      }
-    },
     onError: (error) => {
       toast.error(error.message)
     }
