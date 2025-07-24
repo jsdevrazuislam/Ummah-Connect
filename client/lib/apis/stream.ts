@@ -47,6 +47,17 @@ export const report_user = async (payload: FormData) => {
   return response.data;
 };
 
+export const upload_shorts = async (payload: FormData) => {
+  const response = await api.post(ApiStrings.UPLOAD_SHORT, payload, {
+    headers: {
+      ...(payload instanceof FormData
+        ? { "Content-Type": "multipart/form-data" }
+        : {}),
+    },
+  });
+  return response.data;
+};
+
 export const get_stream_messages = async ({
   page = 1,
   limit = 50,

@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/tooltip'
 import { ReportModal } from '@/components/report-modal'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 
 export default function ShortsControls({
   isPlaying,
@@ -33,7 +32,6 @@ export default function ShortsControls({
 }) {
 
   const [showReportModal, setShowReportModal] = useState(false);
-  const { isPending } = useMutation({})
 
 
   const handleSaveShort = () => {
@@ -47,10 +45,6 @@ export default function ShortsControls({
 
   const handleReport = () => {
     setShowReportModal(true)
-  }
-
-  const handleReportSubmit = () => {
-
   }
 
   return (
@@ -93,21 +87,33 @@ export default function ShortsControls({
                     <MoreVertical className="h-5 w-5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-32">
-                  <DropdownMenuItem onClick={handleSaveShort}>
-                    <Bookmark className="mr-2 h-4 w-4" />
-                    Save Short
+                <DropdownMenuContent className="w-64">
+                  <DropdownMenuItem onClick={handleSaveShort} className="flex items-start gap-3">
+                    <Bookmark className="mt-0.5 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Save Short</span>
+                      <span className="text-xs text-muted-foreground">Bookmark this short for later</span>
+                    </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCopyLink}>
-                    <Link className="mr-2 h-4 w-4" />
-                    Copy Link
+
+                  <DropdownMenuItem onClick={handleCopyLink} className="flex items-start gap-3">
+                    <Link className="mt-0.5 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Copy Link</span>
+                      <span className="text-xs text-muted-foreground">Share or save the short’s link</span>
+                    </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleReport}>
-                    <Bug className="mr-2 h-4 w-4" />
-                    Report
+
+                  <DropdownMenuItem onClick={handleReport} className="flex items-start gap-3">
+                    <Bug className="mt-0.5 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Report</span>
+                      <span className="text-xs text-muted-foreground">Report inappropriate or harmful content</span>
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -119,8 +125,7 @@ export default function ShortsControls({
       <ReportModal
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
-        onSubmit={handleReportSubmit}
-        isLoading={isPending}
+        id={2}
       />
     </TooltipProvider>
   )

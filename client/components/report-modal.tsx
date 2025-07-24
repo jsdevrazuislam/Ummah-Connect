@@ -13,19 +13,51 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useMutation } from "@tanstack/react-query";
+import { report_user } from "@/lib/apis/stream";
+import { toast } from "sonner";
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectItem,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface ReportModalProps {
     isOpen: boolean
     onClose: () => void
-    onSubmit: (description: string, images: File[]) => void
-    isLoading?: boolean
+    id: number
 }
 
-export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModalProps) {
+export enum ReportType {
+    POST = "post",
+    USER = "user",
+    MESSAGE = "message",
+    STREAM = "stream",
+    SPAMMING = "spamming",
+    SHORTS = "shorts",
+}
+
+
+export function ReportModal({ isOpen, onClose, id }: ReportModalProps) {
     const [description, setDescription] = useState("");
+    const [type, setType] = useState("");
     const [images, setImages] = useState<File[]>([]);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const { isPending, mutate } = useMutation({
+        mutationFn: report_user,
+        onSuccess: () => {
+            onClose()
+            toast.success('Report submitted')
+        },
+        onError: (error) => {
+            console.log(error)
+            toast.error(error?.message)
+        }
+    })
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         setError(null);
@@ -70,7 +102,14 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
             setError("Please describe the issue");
             return;
         }
-        await onSubmit(description, images);
+        const formData = new FormData()
+        formData.append("type", type)
+        formData.append("reported_id", String(id))
+        formData.append('reason', description)
+        for (const file of images) {
+            formData.append("attachments", file);
+        }
+        mutate(formData);
         setDescription("");
         setImages([]);
 
@@ -94,7 +133,7 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="description">Reason for reporting</Label>
+                        <Label htmlFor="description" className="mb-3 inline-block">Reason for reporting</Label>
                         <Textarea
                             id="description"
                             placeholder="Please describe the issue..."
@@ -105,7 +144,26 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Add images (optional, max 3, 2MB each)</Label>
+                         <Label htmlFor="type" className="mb-3 inline-block">What kind of type?</Label>
+                        <Select
+                            value={type}
+                            onValueChange={(value) => setType(value)}
+                        >
+                            <SelectTrigger id='type' className="w-full">
+                                <SelectValue placeholder="Select report type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(ReportType).map(([key, value]) => (
+                                    <SelectItem key={key} value={value}>
+                                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="mb-3 inline-block">Add images (optional, max 3, 2MB each)</Label>
                         <div className="flex flex-wrap gap-3">
                             {images.map((image, index) => (
                                 <div key={index} className="relative group">
@@ -119,7 +177,7 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                                     <button
                                         type="button"
                                         onClick={() => removeImage(index)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute cursor-pointer -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <X className="h-3 w-3" />
                                     </button>
@@ -130,8 +188,8 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="h-24 w-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
-                                    disabled={isLoading}
+                                    className="h-24 w-24 cursor-pointer border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
+                                    disabled={isPending}
                                 >
                                     <ImagePlus className="h-6 w-6 mb-1" />
                                     <span className="text-xs">Add Image</span>
@@ -146,20 +204,20 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                             accept="image/*"
                             multiple
                             className="hidden"
-                            disabled={isLoading || images.length >= 3}
+                            disabled={isPending || images.length >= 3}
                         />
                     </div>
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose} disabled={isLoading}>
+                    <Button variant="outline" onClick={onClose} disabled={isPending}>
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={!description.trim() || isLoading}
+                        disabled={!description.trim() || isPending}
                     >
-                        {isLoading ? (
+                        {isPending ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Submitting...

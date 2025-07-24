@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
     MoreHorizontal,
-    Sparkles,
     Pencil,
     Trash,
-    FlagOff,
+    Flag,
+    Ban,
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
 import { useStore } from '@/store/store'
@@ -26,7 +26,6 @@ import { ReportModal } from '@/components/report-modal'
 const PostDropDownMenu = ({ post }: { post: PostsEntity }) => {
 
     const { user, setUser } = useStore()
-    const [showTranslation, setShowTranslation] = useState(false)
     const [showReportModal, setShowReportModal] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false)
@@ -45,7 +44,6 @@ const PostDropDownMenu = ({ post }: { post: PostsEntity }) => {
     })
 
 
-    const handleReportSubmit = () =>{}
     const handleDeletePost = () => {
         queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
             const updatedPages = oldData?.pages?.map((page) => {
@@ -79,34 +77,48 @@ const PostDropDownMenu = ({ post }: { post: PostsEntity }) => {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowTranslation(!showTranslation)}>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        {showTranslation ? "Hide translation" : "Translate post"}
+                    <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)} className="flex flex-col items-start gap-1 py-2">
+                        <div className="flex items-center gap-2">
+                            <Flag className="w-4 h-4 text-yellow-500" />
+                            <span className="font-medium text-sm">Report</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground pl-6">
+                            Report this profile for inappropriate content.
+                        </p>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)}>
-                        <FlagOff className="h-4 w-4 mr-2" />
-                        Report
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="flex flex-col items-start gap-1 py-2">
+                        <div className="flex items-center gap-2">
+                            <Ban className="w-4 h-4 text-red-600" />
+                            <span className="font-medium text-sm">Block Profile</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground pl-6">
+                            Prevent this user from contacting you.
+                        </p>
                     </DropdownMenuItem>
-
                     {isCurrentUserPost && (
                         <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit post
+                            <DropdownMenuItem className="flex flex-col items-start gap-1 py-2" onClick={() => setIsEditing(true)}>
+                                <div className="flex items-center gap-2">
+                                    <Pencil className="w-4 h-4 text-blue-500" />
+                                    <span className="font-medium text-sm">Edit</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground pl-6">
+                                    Modify the details of this post.
+                                </p>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setIsModalOpen(true)} className="text-destructive">
-                                <Trash className="h-4 w-4 mr-2" />
-                                Delete post
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="flex flex-col items-start gap-1 py-2" onClick={() => setIsModalOpen(true)}>
+                                <div className="flex items-center gap-2">
+                                    <Trash className="w-4 h-4 text-red-500" />
+                                    <span className="font-medium text-sm">Delete</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground pl-6">
+                                    Permanently remove this post.
+                                </p>
                             </DropdownMenuItem>
                         </>
-                    )}
-
-                    {!isCurrentUserPost && (
-                        <DropdownMenuItem>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Not interested
-                        </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -121,11 +133,10 @@ const PostDropDownMenu = ({ post }: { post: PostsEntity }) => {
                 isLoading={isDeleting}
             />
             <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        onSubmit={handleReportSubmit}
-        isLoading={false}
-      />
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                id={1}
+            />
         </>
     )
 }

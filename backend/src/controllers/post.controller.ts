@@ -29,7 +29,7 @@ import { REDIS_KEY } from "@/controllers/notification.controller";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { NotificationType } from "@/models/notification.models";
 
-export const DELETE_POST_CACHE = async () =>{
+export const DELETE_POST_CACHE = async () => {
   await redis.keys("posts:public:*").then((keys) => {
     if (keys.length > 0) {
       redis.del(...keys);
@@ -109,13 +109,23 @@ export const post_react = asyncHandler(async (req: Request, res: Response) => {
   const postId = req.params?.postId;
   const userId = req.user?.id;
 
-  const [reaction, created] = await Reaction.findOrCreate({
+  const existingReaction = await Reaction.findOne({
     where: { userId, postId },
-    defaults: { react_type, icon },
   });
 
-  if (!created) {
-    await reaction.update({ react_type: react_type ? react_type : null, icon: icon ? icon : null });
+
+  if (existingReaction) {
+
+    if (!react_type && !icon) {
+      await existingReaction.destroy();
+    } else {
+      await existingReaction.update({
+        react_type: react_type || null,
+        icon: icon || null,
+      });
+    }
+  } else {
+    await Reaction.create({ userId, postId, react_type, icon });
   }
 
   const postWithStats = await Post.findOne({
@@ -664,31 +674,31 @@ export const user_suggestion = asyncHandler(async (req: Request, res: Response) 
   const q = req.query.q?.toString().toLowerCase();
   const currentUserId = req.user?.id;
 
-   const users = await User.findAll({
-      where: {
-        username: {
-          [Op.iLike]: `${q}%`,
-        },
-        id: {
-          [Op.ne]: currentUserId 
-        }
+  const users = await User.findAll({
+    where: {
+      username: {
+        [Op.iLike]: `${q}%`,
       },
-      limit: 10,
-      attributes: [
-        "id",
-        "username",
-        "avatar",
-        "full_name",
-        [
-          sequelize.literal(`(
+      id: {
+        [Op.ne]: currentUserId
+      }
+    },
+    limit: 10,
+    attributes: [
+      "id",
+      "username",
+      "avatar",
+      "full_name",
+      [
+        sequelize.literal(`(
             SELECT COUNT(*) 
             FROM "follows" 
             WHERE "followingId" = "User"."id"
           )`),
-          "follower_count"
-        ],
-        [
-          sequelize.literal(`(
+        "follower_count"
+      ],
+      [
+        sequelize.literal(`(
             SELECT EXISTS (
               SELECT 1 
               FROM "follows" 
@@ -696,17 +706,17 @@ export const user_suggestion = asyncHandler(async (req: Request, res: Response) 
               AND "followingId" = "User"."id"
             )
           )`),
-          "is_following"
-        ]
-      ],
-      order: [
-        [sequelize.literal('is_following'), 'DESC'],
-        [sequelize.literal('follower_count'), 'DESC'],
-        ['username', 'ASC']
+        "is_following"
       ]
-    });
+    ],
+    order: [
+      [sequelize.literal('is_following'), 'DESC'],
+      [sequelize.literal('follower_count'), 'DESC'],
+      ['username', 'ASC']
+    ]
+  });
 
-    return res.json(
-      new ApiResponse(200, users, 'Users fetched successfully')
-    );
+  return res.json(
+    new ApiResponse(200, users, 'Users fetched successfully')
+  );
 });

@@ -1,12 +1,19 @@
 import { DataTypes, Model } from 'sequelize'
 import sequelize from '@/config/db'
 
+export enum ReportType {
+  POST = "post",
+  USER = "user",
+  MESSAGE = "message",
+  STREAM = "stream",
+  SPAMMING = "spamming",
+  SHORTS = "shorts",
+}
 
 class Report extends Model {
     public id!: number
     public type!: string
     public reason!: string
-    public stream_id!: number
     public reported_id!: number
     public reporter_id!: number
     public attachments!: string[]
@@ -31,11 +38,6 @@ Report.init(
             type: DataTypes.INTEGER,
             allowNull: false,
             comment: "ID of the reported item (postId, userId, messageId, etc)",
-        },
-        stream_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            comment: "Only for live stream spamming",
         },
         reporter_id: {
             type: DataTypes.INTEGER,
