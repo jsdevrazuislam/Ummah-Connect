@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ReportModal } from "@/components/report-modal"
 import { useStore } from "@/store/store"
-import { useMutation } from "@tanstack/react-query"
 
 interface StoryViewerProps {
   story: StoryEntity
@@ -41,7 +40,6 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
 
   const storyDuration = 5000
 
-  const { isPending } = useMutation({})
 
   const goToNextItem = useCallback(() => {
     if (currentItemIndex < story?.stories?.length - 1) {
@@ -60,7 +58,6 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   }
 
   const handleDeleteStory = () => { }
-  const handleReportSubmit = () => { }
 
 
   useEffect(() => {
@@ -245,13 +242,12 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteStory}
-              disabled={isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isPending ? "Deleting..." : "Delete"}
+                Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -260,8 +256,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
       <ReportModal
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
-        onSubmit={handleReportSubmit}
-        isLoading={isPending}
+        id={3}
       />
     </div>
   )

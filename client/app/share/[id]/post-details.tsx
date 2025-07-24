@@ -43,8 +43,7 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
 
   return (
     <>
-      <Card className="border-0 shadow-none">
-        {/* Post Header */}
+      <Card className="border-0 shadow-none py-8">
         <CardHeader className="p-0 px-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">

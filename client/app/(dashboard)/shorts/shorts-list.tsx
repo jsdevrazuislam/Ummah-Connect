@@ -8,6 +8,7 @@ import { get_shorts } from '@/lib/apis/stream'
 import { ErrorMessage } from '@/components/api-error'
 import ShortLoading from '@/app/(dashboard)/shorts/loading'
 import ShortVideo from '@/components/short-video'
+import { UploadShortModal } from "@/components/upload-shorts"
 
 export default function ShortsPage() {
     const [activeIndex, setActiveIndex] = useState(0)
@@ -98,6 +99,7 @@ export default function ShortsPage() {
                 <VideoOff className="h-10 w-10 mb-3" />
                 <p className="text-lg font-semibold">No Shorts found</p>
                 <p className="text-sm mt-1">Please try again later or upload a video.</p>
+                <UploadShortModal />
             </div>
         );
     }
@@ -138,6 +140,7 @@ export default function ShortsPage() {
                     ))}
                 </div>
             </main>
+            <UploadShortModal />
         </div>
     )
 }

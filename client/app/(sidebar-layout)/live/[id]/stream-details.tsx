@@ -23,7 +23,7 @@ import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
 import SocketEventEnum from "@/constants/socket-event"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_stream_messages, report_user, send_stream_message } from "@/lib/apis/stream"
+import { get_stream_messages, send_stream_message } from "@/lib/apis/stream"
 import { ErrorMessage } from "@/components/api-error"
 import { formatDistanceToNow } from 'date-fns';
 import { InfiniteScroll } from "@/components/infinite-scroll"
@@ -199,8 +199,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const queryClient = useQueryClient()
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
-    const [type, setType] = useState('spamming')
-    const [reportedId, setReportedId] = useState<number | null>(null)
     const [isBan, setIsBan] = useState(false)
     const [banUser, setBanUser] = useState({
         userId: 0,
@@ -253,18 +251,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
         }
     })
 
-    const { isPending: reportSubmitLoading, mutate: reportMuFunc } = useMutation({
-        mutationFn: report_user,
-        onSuccess: () => {
-            setShowReportModal(false)
-            toast.success('Report submitted')
-        },
-        onError: (error) => {
-            console.log(error)
-            toast.error(error?.message)
-        }
-    })
-
 
     const handleCopy = () => {
         navigator.clipboard.writeText(window.location.href)
@@ -280,19 +266,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             audioEl.current.muted = !muted;
             setMuted(!muted);
         }
-    }
-
-    const handleReportSubmit = (description: string, images: File[]) => {
-        if (!reportedId) return
-        const formData = new FormData()
-        formData.append("stream_id", id)
-        formData.append("type", type)
-        formData.append("reported_id", String(reportedId))
-        formData.append('reason', description)
-        for (const file of images) {
-            formData.append("attachments", file);
-        }
-        reportMuFunc(formData)
     }
 
     const handleSendMessage = (e: React.FormEvent) => {
@@ -402,10 +375,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="w-20" align="start">
-                                            <DropdownMenuItem onClick={() => {
-                                                setShowReportModal(!showReportModal)
-                                                setType('stream')
-                                            }} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => setShowReportModal(!showReportModal)} className="cursor-pointer">
                                                 Report
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -480,7 +450,6 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                                                 onClick={() => {
                                                                     if (message?.sender_id === stream.user_id) return
                                                                     setShowReportModal(true)
-                                                                    setReportedId(message?.sender_id ?? 0)
                                                                 }}
                                                                 className="text-sm"
                                                                 disabled={message?.sender_id === stream.user_id}
@@ -567,8 +536,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             <ReportModal
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
-                onSubmit={handleReportSubmit}
-                isLoading={reportSubmitLoading}
+                id={3}
             />
             <BanModal isOpen={isBan} onClose={() => setIsBan(false)} userId={banUser?.userId} streamId={stream.id} username={banUser?.username} />
         </LiveKitRoom>
