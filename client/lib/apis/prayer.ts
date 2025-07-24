@@ -1,15 +1,15 @@
 import { getCurrentLocation } from "@/lib/prayer"
 
-export const fetchReverseGeocode = async (lat: number, lng: number): Promise<{city: string, country: string}> => {
-  const response = await fetch(
-    `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=place`
-  )
-  const data: LocationResponse = await response.json()
-  return {
-    city: data.features[0]?.text || '',
-    country: data.features[0]?.context.find((c) => c.id.includes('country'))?.text || ''
-  }
-}
+export const fetchReverseGeocode = async (
+  lat: number,
+  lng: number
+): Promise<{ city: string; country: string }> => {
+  const res = await fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
+  if (!res.ok) throw new Error("Failed to fetch location");
+
+  const data = await res.json();
+  return { city: data.city, country: data.country };
+};
 
 export const fetchPrayerTimes = async (date: string) => {
     const coords = await getCurrentLocation()

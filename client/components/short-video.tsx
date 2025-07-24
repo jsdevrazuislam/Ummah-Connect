@@ -134,7 +134,6 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
         setShowShareDialog(true)
     }
 
-
     useEffect(() => {
         if (playerRef.current) {
             if (isActive && isPlaying) {
@@ -161,7 +160,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
             <div className='relative bg-black rounded-lg h-[calc(100vh-90px)] overflow-hidden'>
                 <VideoPlayer
                     ref={playerRef}
-                    autoPlay
+                    autoPlay={isActive}
                     muted={isMuted}
                     onLoadedMetadata={(dur) => setDuration(dur)}
                     onTimeUpdate={(time) => {

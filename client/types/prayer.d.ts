@@ -16,6 +16,7 @@ interface Timings {
     Midnight: string;
     Firstthird: string;
     Lastthird: string;
+    [key: string]: string
 }
 interface PrayerDate {
     readable: string;

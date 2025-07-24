@@ -49,7 +49,13 @@ Post.init(
         sequelize,
         tableName: 'posts',
         modelName: 'Post',
-        timestamps: true
+        timestamps: true,
+        indexes: [
+            {
+                unique: false,
+                fields: ['authorId']
+            }
+        ]
     }
 )
 

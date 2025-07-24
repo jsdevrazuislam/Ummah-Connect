@@ -29,7 +29,13 @@ BookmarkPost.init(
         sequelize,
         tableName: 'bookmarks_posts',
         modelName: 'BookmarkPost',
-        timestamps: true
+        timestamps: true,
+        indexes: [
+            {
+                unique: false,
+                fields: ['userId']
+            }
+        ]
 
     }
 )

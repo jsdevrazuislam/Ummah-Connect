@@ -11,6 +11,7 @@ class Story extends Model {
   public background?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  declare expiresAt: Date;
 }
 
 Story.init(
@@ -41,6 +42,7 @@ Story.init(
     textColor: {
       type: DataTypes.STRING,
     },
+    expiresAt: { type: DataTypes.DATE, allowNull: false },
   },
   {
     sequelize,

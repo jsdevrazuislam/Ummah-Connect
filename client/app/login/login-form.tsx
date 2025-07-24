@@ -21,7 +21,7 @@ import { RecoveryLogin } from "@/components/recover-login"
 
 export default function LoginPage() {
 
-    const { setLogin } = useAuthStore()
+    const { setLogin, initialLoading } = useAuthStore()
     const [show2FAModel, setShow2FAModal] = useState(false)
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -41,6 +41,7 @@ export default function LoginPage() {
             } else {
             setLogin(data.access_token, data.refresh_token, data.user)
             toast.success("Login successfully")
+            initialLoading()
             router.push("/")
             }
         },

@@ -4,6 +4,7 @@ import { REFRESH_TOKEN, ACCESS_TOKEN } from "@/constants";
 import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
 import { getCurrentLocation, getPrayerTimes } from "@/lib/prayer";
+import { fetchReverseGeocode } from "@/lib/apis/prayer";
 
 const storeResetFns = new Set<() => void>()
 
@@ -15,8 +16,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     selectedConversation: null,
     hijriDate: null,
     user: null,
+    location: null,
     stories: null,
-    isLoading: false,
+    isLoading: true,
     isOpen: false,
     onlineUsers: new Map(),
     lastSeen: new Map(),
@@ -53,21 +55,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             try {
                 const { data } = await api.get(ApiStrings.ME)
                 const { data: storiesData } = await api.get<StoryResponse>(ApiStrings.GET_STORIES)
-                const coords = await getCurrentLocation()
-                const { date, timings } = await getPrayerTimes(coords.latitude, coords.longitude)
+                const { latitude, longitude } = await getCurrentLocation()
+                const { date, timings } = await getPrayerTimes(latitude, longitude)
                 const user = data?.data?.user
+                const { city, country } = await fetchReverseGeocode(latitude, longitude)
+                const res = await fetch(`/api/weather?lat=${latitude}&lon=${longitude}`);
+                const { condition, temp } = await res.json();
 
                 set({
+                    user,
+                    stories: storiesData?.data,
                     prayerTime: timings,
                     hijriDate: date,
-                    stories: storiesData?.data
-                })
-                set({
-                    user
+                    location: {
+                        latitude,
+                        longitude,
+                        city,
+                        country,
+                        condition,
+                        temp
+                    }
                 })
             } catch (error) {
                 console.log("initialLoading Error", error)
+            } finally {
+                set({
+                    isLoading: false
+                })
             }
+        } else {
+            set({
+                isLoading: false
+            })
         }
     },
 

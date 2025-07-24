@@ -27,4 +27,16 @@ interface AuthState {
   decrementUnread: () => void;
   stories: StoryEntity[] | null;
   addStory: (newStory: Story) => void;
+  isLoading: boolean
+  location: MyLocation | null
+}
+
+
+interface MyLocation {
+    latitude: number
+    longitude: number
+    city: string
+    country: string
+    condition:string
+    temp: number
 }
