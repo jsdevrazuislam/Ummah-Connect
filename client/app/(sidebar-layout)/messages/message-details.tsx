@@ -9,7 +9,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { get_conversation_messages, get_conversations, read_message, send_attachment, send_message } from "@/lib/apis/conversation"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { toast } from "sonner"
 import { addMessageConversation, replaceMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -33,7 +33,7 @@ export default function ConversationPage() {
   const [message, setMessage] = useState("")
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useAuthStore()
+  const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useStore()
   const queryClient = useQueryClient()
   const { socket } = useSocketStore()
   const { setBulkUnreadCounts, resetUnreadCount } = useConversationStore()

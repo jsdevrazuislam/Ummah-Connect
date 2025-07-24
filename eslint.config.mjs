@@ -1,5 +1,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
+
 
 export default [
   {
@@ -9,6 +11,9 @@ export default [
   ...tseslint.configs.recommended,
   {
     files: ["client/**/*.{ts,tsx,js,jsx}"],
+     plugins: {
+      "@next/next": nextPlugin,
+    },
     languageOptions: {
       parserOptions: {
         project: "./client/tsconfig.json",
@@ -16,6 +21,7 @@ export default [
     },
     rules: {
       "react/react-in-jsx-scope": "off",
+      ...nextPlugin.configs.recommended.rules,
     },
   },
   {

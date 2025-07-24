@@ -16,10 +16,11 @@ import { toast } from "sonner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Globe, Lock, Users, User } from "lucide-react"
 import LoadingUi from "@/components/ui-loading"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
+import Image from "next/image"
 
 
 
@@ -30,7 +31,7 @@ export function CreatePostForm() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
   const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
-  const { user, setIsOpen, setUser } = useAuthStore()
+  const { user, setIsOpen, setUser } = useStore()
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme()
@@ -199,10 +200,12 @@ export function CreatePostForm() {
           <div className="relative">
             <div className="rounded-lg overflow-hidden border border-border">
               {selectedFile.type.startsWith('image/') ? (
-                <img
+                <Image
                   src={URL.createObjectURL(selectedFile) || "/placeholder.svg"}
                   alt="Selected"
                   className="w-full h-full object-cover"
+                  width={200}
+                  height={200}
                 />
               ) : (
                 <div className="relative">

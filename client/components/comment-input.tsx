@@ -1,7 +1,7 @@
 import { useDebouncedValue } from '@/hooks/use-debounce';
 import { create_comment } from '@/lib/apis/comment';
 import { user_suggestion } from '@/lib/apis/posts';
-import { useAuthStore } from '@/store/store';
+import { useStore } from '@/store/store';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ const CommentInput = ({
     const [query, setQuery] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [comment, setComment] = useState("")
-    const { user } = useAuthStore()
+    const { user } = useStore()
     const highlightMentions = (text: string) => {
         return text.replace(/(@\w+)/g, '<span class="text-blue-500">$1</span>');
     };

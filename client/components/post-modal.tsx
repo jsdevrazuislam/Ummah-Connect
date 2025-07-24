@@ -2,10 +2,10 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CreatePostForm } from "@/components/create-post-form";
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 
 export function GlobalModal() {
-  const { isOpen, setIsOpen } = useAuthStore();
+  const { isOpen, setIsOpen } = useStore();
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

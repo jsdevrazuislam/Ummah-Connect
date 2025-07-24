@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 
@@ -41,7 +41,7 @@ const isTokenExpiringSoon = () => {
 const refreshAuthToken = async () => {
   const refreshToken = Cookies.get(REFRESH_TOKEN);
   if (!refreshToken) {
-    useAuthStore.getState().logout();
+    useStore.getState().logout();
     return;
   }
 
@@ -52,13 +52,13 @@ const refreshAuthToken = async () => {
     const data = response?.data?.data;
 
     if (!data?.accessToken) {
-      useAuthStore.getState().logout();
+      useStore.getState().logout();
     }
 
     Cookies.set(ACCESS_TOKEN, data.accessToken);
     Cookies.set(REFRESH_TOKEN, data.refreshToken);
 
-    useAuthStore.setState({
+    useStore.setState({
       user: data?.user,
       accessToken: data?.accessToken,
       refreshToken: data?.refreshToken,
@@ -68,7 +68,7 @@ const refreshAuthToken = async () => {
     return data.accessToken;
   } catch (error) {
     console.log(error)
-    useAuthStore.getState().logout();
+    useStore.getState().logout();
     throw new Error("Token refresh failed");
   }
 };
@@ -93,7 +93,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = Cookies.get(REFRESH_TOKEN);
         if (!refreshToken) {
-          useAuthStore.getState().logout();
+          useStore.getState().logout();
           return Promise.reject(error);
         }
 
@@ -109,7 +109,7 @@ api.interceptors.response.use(
         api.defaults.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        useAuthStore.getState().logout();
+        useStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }

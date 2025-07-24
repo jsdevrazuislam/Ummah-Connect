@@ -7,7 +7,7 @@ import { ChangePasswordFormData, changePasswordSchema } from "@/validation/auth.
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 import { changePassword } from "@/lib/apis/auth"
 import { toast } from "sonner"
@@ -20,7 +20,7 @@ const ChangePassword = () => {
   });
 
   const router = useRouter()
-  const { logout } = useAuthStore()
+  const { logout } = useStore()
 
 
   const { isPending, mutate } = useMutation({

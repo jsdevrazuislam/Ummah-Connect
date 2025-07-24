@@ -17,7 +17,7 @@ import {
 import { ReportModal } from "@/components/report-modal"
 import { toast } from "sonner"
 import { LiveKitRoom, TrackRefContext, useRoomContext, useTracks, VideoTrack } from "@livekit/components-react"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { RemoteParticipant, Track } from "livekit-client"
 import CustomControlBar from "@/components/stream-controll"
 import { useSocketStore } from "@/hooks/use-socket"
@@ -192,7 +192,7 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
     const [muted, setMuted] = useState(false)
     const [chatMessage, setChatMessage] = useState("")
     const chatEndRef = useRef<HTMLDivElement>(null)
-    const { user } = useAuthStore()
+    const { user } = useStore()
     const { socket } = useSocketStore()
     const isHost = user?.id === stream?.user_id
     const audioEl = useRef<HTMLAudioElement>(null);

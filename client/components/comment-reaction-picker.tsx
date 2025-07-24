@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query"
 import { comment_react } from "@/lib/apis/comment"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThumbsUp } from "lucide-react"
+import Image from "next/image"
 
 
 
@@ -131,7 +132,7 @@ export function CommentReactionPicker({
         onClick={handleMainButtonClick}
       >
         {currentReaction ? (
-          <img src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
+          <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
         ) : (
           <ThumbsUp className="h-4 w-4 mt-1" />
         )}
@@ -159,7 +160,7 @@ export function CommentReactionPicker({
                   whileHover={{ scale: 1.3 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <img src={reaction.emoji} alt={reaction.label} className="h-6 w-6" />
+                  <Image width={20} height={20} src={reaction.emoji} alt={reaction.label} className="h-6 w-6" />
                 </motion.button>
               ))}
             </div>

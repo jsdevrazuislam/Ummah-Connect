@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PrivacyFormData, privacySettingsSchema } from '@/validation/auth.validation'
 import { Controller, useForm } from 'react-hook-form'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -15,7 +15,7 @@ import { updatePrivacySetting } from '@/lib/apis/auth'
 
 const PrivacySettings = () => {
 
-    const { user, setUser } = useAuthStore()
+    const { user, setUser } = useStore()
     const { handleSubmit, control } = useForm<PrivacyFormData>({
         resolver: zodResolver(privacySettingsSchema),
         defaultValues: {

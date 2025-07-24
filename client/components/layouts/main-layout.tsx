@@ -19,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ThemeToggle } from "@/components/theme-toggle"
 import { RightSidebar } from "@/components/right-sidebar"
 import { LeftSidebar } from "@/components/left-sidebar"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useQueryClient } from "@tanstack/react-query"
 import { useConversationStore } from "@/hooks/use-conversation-store"
 
@@ -42,7 +42,7 @@ interface SocialMediaLayoutProps {
 
 export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   const pathname = usePathname()
-  const { logout, user, totalUnread: notificationUnReadCount } = useAuthStore()
+  const { logout, user, unreadCount } = useStore()
   const router = useRouter()
   const queryClient = useQueryClient()
   const totalUnread = useConversationStore((state) =>
@@ -114,8 +114,8 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                 <Link href="/notifications">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
-                    {notificationUnReadCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
-                      {notificationUnReadCount}
+                    {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex justify-center items-center">
+                      {unreadCount}
                     </Badge>}
                   </Button>
                 </Link>
@@ -142,10 +142,10 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                       <Link href={item.href} className="flex items-center">
                         <item.icon className="h-4 w-4 mr-3" />
                         <span>{item.label}</span>
-                        {(item.label === "Notifications" && notificationUnReadCount > 0) ||
+                        {(item.label === "Notifications" && unreadCount > 0) ||
                           (item.label === "Messages" && totalUnread > 0) ? (
                           <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
-                            {item.label === "Notifications" ? notificationUnReadCount : totalUnread}
+                            {item.label === "Notifications" ? unreadCount : totalUnread}
                           </Badge>
                         ) : null}
                       </Link>

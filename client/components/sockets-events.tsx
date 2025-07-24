@@ -5,9 +5,9 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addNotification, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
+import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -17,7 +17,7 @@ const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
-  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen, setUser } = useAuthStore()
+  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen, setUser, addNotification } = useStore()
   const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall, setShowEndModal, setHostUsername } = useCallActions();
   const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
@@ -316,10 +316,7 @@ const SocketEvents = () => {
   useEffect(() => {
     if (!socket) return;
     socket.on(SocketEventEnum.NOTIFY_USER, (payload: NotificationsEntity) => {
-      console.log(payload)
-      queryClient.setQueryData(['getNotifications'], (oldData: QueryOldNotificationDataPayload) => {
-        return addNotification(oldData, payload)
-      })
+      addNotification(payload)
     });
     return () => {
       socket.off(SocketEventEnum.NOTIFY_USER);

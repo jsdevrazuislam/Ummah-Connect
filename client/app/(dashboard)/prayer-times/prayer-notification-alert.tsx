@@ -10,12 +10,12 @@ import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { to12HourFormat } from "@/lib/utils"
 import { fetchPrayerTimes, fetchWeeklyPrayerTimes, fetchMonthlyPrayerTimes } from "@/lib/apis/prayer"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 
 
 export default function PrayerTimesPage() {
     const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">("daily")
-    const { user, location} = useAuthStore()
+    const { user, location} = useStore()
 
     const { data: dailyData, isLoading: isDailyLoading } = useQuery({
         queryKey: ['dailyPrayerTimes'],

@@ -11,6 +11,7 @@ import Short from "@/models/shorts.models";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { NotificationType } from "@/models/notification.models";
 import { Op } from "sequelize";
+import { DELETE_POST_CACHE } from "@/controllers/post.controller";
 
 export const create_comment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -52,7 +53,7 @@ export const create_comment = asyncHandler(
             receiverId: user.id,
             type: NotificationType.MENTION,
             message: comment.content,
-            postId: postId || null,
+            postId: comment.id || null,
           });
         }
       } else {
@@ -62,7 +63,7 @@ export const create_comment = asyncHandler(
           receiverId,
           type: NotificationType.COMMENT,
           message: comment.content,
-          postId: postId || null,
+          postId: comment.id || null,
         });
       }
     }
@@ -134,7 +135,7 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
           receiverId: user.id,
           type: NotificationType.MENTION,
           message: comment.content,
-          postId: postId || null,
+          postId: comment.id || null,
         });
       }
     } else {
@@ -144,7 +145,7 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
         receiverId,
         type: NotificationType.REPLY,
         message: comment.content,
-        postId: postId || null,
+        postId: comment.id || null,
       });
     }
 
@@ -235,6 +236,8 @@ export const delete_comment = asyncHandler(async (req: Request, res: Response) =
   })
 
   emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: comment.parentId ? true : false, totalComments } })
+
+  await DELETE_POST_CACHE()
 
   return res.json(
     new ApiResponse(200, totalComments, 'Comment delete success')

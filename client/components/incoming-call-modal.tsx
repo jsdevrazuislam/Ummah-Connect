@@ -8,7 +8,7 @@ import { Lock, Phone, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSocketStore } from '@/hooks/use-socket';
 import SocketEventEnum from '@/constants/socket-event';
-import { useAuthStore } from '@/store/store';
+import { useStore } from '@/store/store';
 
 
 function IncomingCallNotification() {
@@ -16,7 +16,7 @@ function IncomingCallNotification() {
     const { incomingCall } = useCallStore();
     const { acceptCall, rejectCall, setIncomingCall, startRingtone, stopRingtone } = useCallActions();
     const { socket } = useSocketStore()
-    const { user } = useAuthStore()
+    const { user } = useStore()
 
     useEffect(() => {
         if (incomingCall) {

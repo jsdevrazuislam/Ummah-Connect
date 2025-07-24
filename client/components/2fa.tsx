@@ -5,16 +5,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { disable2FA, enable2FA, verify2FA } from "@/lib/apis/auth"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 import { Loader2, Key } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { BackupCodes } from "@/components/recover-backcodes"
+import Image from "next/image"
 
 export function TwoFactorAuth() {
 
-    const { user } = useAuthStore()
+    const { user } = useStore()
     const [is2FAActive, setIs2FAActive] = useState(user?.is_two_factor_enabled)
     const [showVerificationSetup, setShowVerificationSetup] = useState(false)
     const [verificationCode, setVerificationCode] = useState('')
@@ -124,7 +125,7 @@ export function TwoFactorAuth() {
                                 </ol>
                                 <div className="flex justify-center my-4">
                                     <div className="w-40 h-40 bg-muted border rounded flex items-center justify-center">
-                                        <img src={qrCode} alt="2FA QR Code" className="w-full h-full" />
+                                        <Image width={160} height={160} src={qrCode} alt="2FA QR Code" className="w-full h-full" />
                                     </div>
                                 </div>
                             </div>

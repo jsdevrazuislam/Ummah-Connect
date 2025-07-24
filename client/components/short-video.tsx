@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { create_comment } from '@/lib/apis/comment'
 import { cn } from '@/lib/utils'
 import { ShareVideoDialog } from '@/components/share-video-modal'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 
 interface VideoShortsProps {
     currentShort: ShortsEntity | null | undefined
@@ -48,7 +48,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
     const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
     const [overlayIconType, setOverlayIconType] = useState<'play' | 'pause' | null>(null);
     const [showShareDialog, setShowShareDialog] = useState(false)
-    const { user } = useAuthStore()
+    const { user } = useStore()
 
 
     const { mutate } = useMutation({

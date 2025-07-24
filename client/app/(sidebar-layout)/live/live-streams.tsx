@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query"
 import { get_streams } from "@/lib/apis/stream"
 import {LiveStreamCardSkeleton} from "@/app/(sidebar-layout)/live/loading"
 import { NoLiveStreams } from "@/components/stream-empty-state"
+import Image from "next/image"
 
 
 
@@ -68,10 +69,12 @@ export default function LivePage() {
                             <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
                                 <CardContent className="p-0">
                                     <div className="relative">
-                                        <img
+                                        <Image
                                             src={stream.thumbnail || "/live.webp"}
                                             alt={stream.title}
                                             className="w-full aspect-video object-cover"
+                                            width={400}
+                                            height={400}
                                         />
                                         <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
                                             <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>

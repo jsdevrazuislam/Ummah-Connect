@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock } from "lucide-react"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { to12HourFormat } from "@/lib/utils"
 
 function getNextPrayer(prayerTime: Record<string, string>, currentTime: Date) {
@@ -28,7 +28,7 @@ function getNextPrayer(prayerTime: Record<string, string>, currentTime: Date) {
 
 export function PrayerTimesWidget() {
   const [nextPrayer, setNextPrayer] = useState<string>("")
-  const { prayerTime } = useAuthStore()
+  const { prayerTime } = useStore()
 
   useEffect(() => {
     const timer = setInterval(() => {

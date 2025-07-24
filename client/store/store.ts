@@ -5,10 +5,11 @@ import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
 import { getCurrentLocation, getPrayerTimes } from "@/lib/prayer";
 import { fetchReverseGeocode } from "@/lib/apis/prayer";
+import { getNotifications } from "@/lib/apis/notification";
 
 const storeResetFns = new Set<() => void>()
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useStore = create<AuthState>((set, get) => ({
     accessToken: Cookies.get(ACCESS_TOKEN) || null,
     refreshToken: Cookies.get(REFRESH_TOKEN) || null,
     prayerTime: null,
@@ -20,9 +21,75 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     stories: null,
     isLoading: true,
     isOpen: false,
+    notificationErrorMessage: '',
     onlineUsers: new Map(),
     lastSeen: new Map(),
-    totalUnread: 0,
+    notifications: [],
+    unreadCount: 0,
+    notificationsPage: 1,
+    hasMoreNotifications: true,
+    notificationLoading: false,
+    setNotifications: (notifications, unreadCount) => {
+        set({ notifications, unreadCount });
+    },
+    addNotification: (newNotification: NotificationsEntity) => {
+        const { notifications, unreadCount } = get();
+
+        set({
+            notifications: [newNotification, ...(notifications ?? [])],
+            unreadCount: unreadCount + 1,
+        });
+    },
+    markAsRead: () => {
+        const { notifications } = get();
+
+        if (!notifications) return;
+
+        const updatedNotifications = notifications.map((notif) => ({
+            ...notif,
+            is_read: true,
+        }));
+
+        set({
+            notifications: updatedNotifications,
+            unreadCount: 0,
+        });
+    },
+    fetchNotifications: async () => {
+        try {
+            const { notificationsPage, notifications } = get();
+
+            const res = await getNotifications({
+                page: notificationsPage + 1,
+                limit: 10,
+            });
+
+            const newNotifs = res.data.notifications ?? [];
+            const { total, page, limit } = res.data;
+
+            const hasMore = page * limit < total;
+
+            set({
+                notifications: [...notifications, ...newNotifs],
+                notificationsPage: notificationsPage + 1,
+                hasMoreNotifications: hasMore,
+            });
+        } catch (error) {
+            console.log("Notification Fetch Error", error)
+        }
+    },
+
+    deleteNotificationFromStore: (id) => {
+        const { notifications, unreadCount } = get();
+        const filtered = notifications.filter((n) => n.id !== id);
+        const isUnread = notifications.find((n) => n.id === id)?.is_read === false;
+
+        set({
+            notifications: filtered,
+            unreadCount: isUnread ? unreadCount - 1 : unreadCount,
+        });
+    },
+
     setUser: (user) => set({ user }),
     setIsOpen: (value) => set({ isOpen: value }),
     setSelectedConversation: (data) => {
@@ -54,6 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (get().accessToken) {
             try {
                 const { data } = await api.get(ApiStrings.ME)
+                const notificationsData = await getNotifications({ page: 1, limit: 10 })
                 const { data: storiesData } = await api.get<StoryResponse>(ApiStrings.GET_STORIES)
                 const { latitude, longitude } = await getCurrentLocation()
                 const { date, timings } = await getPrayerTimes(latitude, longitude)
@@ -64,6 +132,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
                 set({
                     user,
+                    notifications: notificationsData?.data?.notifications ?? [],
+                    unreadCount: notificationsData?.data?.unreadCount,
                     stories: storiesData?.data,
                     prayerTime: timings,
                     hijriDate: date,
@@ -131,8 +201,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getUserLastSeen: (userId: number) => {
         return get().lastSeen.get(userId) ?? 0;
     },
-    setTotalUnread: (count) => set({ totalUnread: count }),
-    decrementUnread: () => set((state) => ({ totalUnread: Math.max(0, state.totalUnread - 1) })),
     addStory: (newStory) => set((state) => {
         if (!state.user) return state;
 

@@ -14,7 +14,7 @@ import {
     FlagOff,
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import EditPostModel from '@/components/edit-post-model'
 import { ConfirmationModal } from '@/components/confirmation-modal'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -25,7 +25,7 @@ import { ReportModal } from '@/components/report-modal'
 
 const PostDropDownMenu = ({ post }: { post: PostsEntity }) => {
 
-    const { user, setUser } = useAuthStore()
+    const { user, setUser } = useStore()
     const [showTranslation, setShowTranslation] = useState(false)
     const [showReportModal, setShowReportModal] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);

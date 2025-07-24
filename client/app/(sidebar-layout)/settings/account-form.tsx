@@ -17,7 +17,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useEffect, useRef, useState } from "react"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UserProfileFormData, userProfileSchema } from "@/validation/auth.validation"
 import { Controller, useForm } from "react-hook-form"
@@ -29,8 +29,7 @@ import Image from "next/image"
 const AccountForm = () => {
 
     const [loading, setLoading] = useState(true)
-    const { user } = useAuthStore()
-    const { setUser } = useAuthStore()
+    const { setUser, user } = useStore()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const { register, setValue, control, handleSubmit, formState: { errors } } = useForm<UserProfileFormData>({
         resolver: zodResolver(userProfileSchema),

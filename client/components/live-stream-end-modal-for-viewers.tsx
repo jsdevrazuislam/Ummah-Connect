@@ -3,13 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useCallActions, useCallStore } from "@/hooks/use-call-store";
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 
 export function StreamEndedModal() {
     const router = useRouter();
     const { showEndModal, hostUsername } = useCallStore()
     const { setShowEndModal } = useCallActions()
-    const { user } = useAuthStore()
+    const { user } = useStore()
 
     if (!showEndModal) return null;
     if (hostUsername === user?.username) return null;

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip"
 import FollowButton from "@/components/follow-button"
 import MessageButton from "@/components/message-button"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -28,7 +28,7 @@ interface CardHoverTooltipProps {
 
 const CardHoverTooltip = ({ children, user }: CardHoverTooltipProps) => {
 
-    const { user: currentUser } = useAuthStore()
+    const { user: currentUser } = useStore()
 
     return (
         <div>

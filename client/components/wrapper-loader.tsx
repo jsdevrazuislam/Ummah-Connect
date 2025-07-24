@@ -1,11 +1,11 @@
 "use client"
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 import { motion } from "framer-motion";
 import React from 'react'
 
 const WrapperLoader = ({ children }: { children: React.ReactNode }) => {
 
-    const { isLoading } = useAuthStore()
+    const { isLoading } = useStore()
 
 
     if (isLoading) {

@@ -14,7 +14,7 @@ import { RoomEvent, Track } from 'livekit-client';
 import { useCallStore, useCallActions } from '@/hooks/use-call-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/store';
+import { useStore } from '@/store/store';
 import { useSocketStore } from '@/hooks/use-socket';
 import SocketEventEnum from '@/constants/socket-event';
 
@@ -59,7 +59,7 @@ export default function CallInterface({ roomName, callType }: { roomName: string
 
     const { token, livekitUrl, isFetchingToken } = useCallStore();
     const { fetchToken, endCall } = useCallActions();
-    const { user } = useAuthStore()
+    const { user } = useStore()
 
     useEffect(() => {
         if (typeof roomName !== 'string' || (callType !== 'audio' && callType !== 'video')) {

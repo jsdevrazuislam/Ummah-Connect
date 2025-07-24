@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { delete_post_media, edit_post } from '@/lib/apis/posts'
 import { toast } from 'sonner'
 import LoadingUi from '@/components/ui-loading'
+import Image from 'next/image'
 
 interface EditPostModelProps {
     post: PostsEntity
@@ -127,10 +128,12 @@ const EditPostModel = ({
                         {selectedImage ? (
                             <div className="relative rounded-lg overflow-hidden border border-border">
                                 {deleteLoading && <LoadingUi title='Delete image' />}
-                                <img
+                                <Image
                                     src={selectedImage || "/placeholder.svg"}
                                     alt="Post image"
                                     className="w-full h-auto max-h-[200px] object-cover"
+                                    width={100}
+                                    height={200}
                                 />
                                 <div className="absolute top-2 right-2 flex gap-2">
                                     <Button
