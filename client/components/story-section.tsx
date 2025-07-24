@@ -4,13 +4,13 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus } from "lucide-react"
 import { StoryViewer } from "@/components/story-viewer"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useRouter } from "next/navigation"
 
 
 export function StorySection() {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null)
-  const { user, stories: storiesData } = useAuthStore()
+  const { user, stories: storiesData } = useStore()
   const router = useRouter()
 
   const stories = storiesData ?? []

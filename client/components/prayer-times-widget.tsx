@@ -3,32 +3,51 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock } from "lucide-react"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { to12HourFormat } from "@/lib/utils"
 
+function getNextPrayer(prayerTime: Record<string, string>, currentTime: Date) {
+  const prayerOrder = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+
+  for (let i = 0; i < prayerOrder.length; i++) {
+    const prayer = prayerOrder[i]
+    const timeStr = prayerTime[prayer] 
+    if (!timeStr) continue
+
+    const [hour, minute] = timeStr.split(":").map(Number)
+    const prayerDate = new Date(currentTime)
+    prayerDate.setHours(hour, minute, 0, 0)
+
+    if (currentTime < prayerDate) {
+      return prayer
+    }
+  }
+
+  return "Fajr"
+}
 
 export function PrayerTimesWidget() {
-  const [currentTime, setCurrentTime] = useState(new Date())
   const [nextPrayer, setNextPrayer] = useState<string>("")
-  const { prayerTime } = useAuthStore()
-  
+  const { prayerTime } = useStore()
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000)
+      const now = new Date()
+      if (prayerTime) {
+        const next = getNextPrayer(prayerTime, now)
+        setNextPrayer(next)
+      }
+    }, 1000 * 60) 
 
-    const hour = currentTime.getHours()
-    if (hour < 5) setNextPrayer("Fajr")
-    else if (hour < 12) setNextPrayer("Dhuhr")
-    else if (hour < 15) setNextPrayer("Asr")
-    else if (hour < 18) setNextPrayer("Maghrib")
-    else setNextPrayer("Isha")
+    if (prayerTime) {
+      const next = getNextPrayer(prayerTime, new Date())
+      setNextPrayer(next)
+    }
 
     return () => clearInterval(timer)
-  }, [currentTime])
+  }, [prayerTime])
 
-  if(!prayerTime) return
+  if (!prayerTime) return null
 
   return (
     <Card>
@@ -42,10 +61,12 @@ export function PrayerTimesWidget() {
         {Object.entries(prayerTime).map(([prayer, time]) => (
           <div
             key={prayer}
-            className={`flex justify-between text-sm ${nextPrayer === prayer ? "font-bold text-primary" : ""}`}
+            className={`flex justify-between text-sm ${
+              nextPrayer === prayer ? "font-bold text-primary" : ""
+            }`}
           >
             <span className="capitalize">{prayer}</span>
-            <span>{(to12HourFormat(time))}</span>
+            <span>{to12HourFormat(time)}</span>
           </div>
         ))}
       </CardContent>

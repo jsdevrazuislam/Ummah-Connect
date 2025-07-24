@@ -5,14 +5,14 @@ import { useMutation } from "@tanstack/react-query"
 import { followUnFollow } from "@/lib/apis/follow"
 import { toast } from "sonner"
 import { useState } from "react"
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { useSocketStore } from '@/hooks/use-socket'
 import SocketEventEnum from '@/constants/socket-event'
 
 const FollowButton = ({ isFollowing, id }: { isFollowing: boolean, id: number }) => {
 
     const [follow, setFollow] = useState(isFollowing)
-    const { user, setUser } = useAuthStore()
+    const { user, setUser } = useStore()
     const { socket } = useSocketStore()
 
     const { mutate } = useMutation({

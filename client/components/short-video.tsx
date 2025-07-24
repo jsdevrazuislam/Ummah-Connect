@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { create_comment } from '@/lib/apis/comment'
 import { cn } from '@/lib/utils'
 import { ShareVideoDialog } from '@/components/share-video-modal'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 
 interface VideoShortsProps {
     currentShort: ShortsEntity | null | undefined
@@ -48,7 +48,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
     const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
     const [overlayIconType, setOverlayIconType] = useState<'play' | 'pause' | null>(null);
     const [showShareDialog, setShowShareDialog] = useState(false)
-    const { user } = useAuthStore()
+    const { user } = useStore()
 
 
     const { mutate } = useMutation({
@@ -134,7 +134,6 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
         setShowShareDialog(true)
     }
 
-
     useEffect(() => {
         if (playerRef.current) {
             if (isActive && isPlaying) {
@@ -161,7 +160,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
             <div className='relative bg-black rounded-lg h-[calc(100vh-90px)] overflow-hidden'>
                 <VideoPlayer
                     ref={playerRef}
-                    autoPlay
+                    autoPlay={isActive}
                     muted={isMuted}
                     onLoadedMetadata={(dur) => setDuration(dur)}
                     onTimeUpdate={(time) => {

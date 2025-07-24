@@ -22,9 +22,29 @@ interface AuthState {
   setIsOpen: (value:boolean) => void
   prayerTime: null | Timings
   hijriDate: null | PrayerDate
-  totalUnread: number;
-  setTotalUnread: (count: number) => void;
-  decrementUnread: () => void;
   stories: StoryEntity[] | null;
   addStory: (newStory: Story) => void;
+  isLoading: boolean
+  location: MyLocation | null
+  notifications: NotificationsEntity[];
+  unreadCount: number;
+  notificationsPage: number;
+  hasMoreNotifications: boolean;
+  notificationErrorMessage: string;
+  notificationLoading: boolean;
+  setNotifications: (n: NotificationsEntity[], unreadCount: number) => void;
+  addNotification: (n: NotificationsEntity) => void;
+  fetchNotifications: () => Promise<void>;
+  deleteNotificationFromStore: (id: number) => void;
+  markAsRead: () => void;
+}
+
+
+interface MyLocation {
+    latitude: number
+    longitude: number
+    city: string
+    country: string
+    condition:string
+    temp: number
 }

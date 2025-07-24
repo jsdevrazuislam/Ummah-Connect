@@ -1,22 +1,11 @@
 "use client"
+import { useStore } from "@/store/store";
 import { motion } from "framer-motion";
-import React, { useState } from 'react'
+import React from 'react'
 
-const WrapperLoader = ({ children } : {children: React.ReactNode}) => {
+const WrapperLoader = ({ children }: { children: React.ReactNode }) => {
 
-    const [isLoading, setIsLoading] = useState(true);
-
-    React.useEffect(() => {
-        document.title = "Ummah Connect";
-        const timeout = setTimeout(() => {
-            setIsLoading(false);
-        }, 1000);
-
-        return () => {
-            clearTimeout(timeout);
-            document.title = "Ummah Connect";
-        };
-    }, []);
+    const { isLoading } = useStore()
 
 
     if (isLoading) {

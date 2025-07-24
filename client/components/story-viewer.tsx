@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ReportModal } from "@/components/report-modal"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 
 interface StoryViewerProps {
@@ -37,7 +37,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   const [isPaused, setIsPaused] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
-  const { user } = useAuthStore()
+  const { user } = useStore()
 
   const storyDuration = 5000
 

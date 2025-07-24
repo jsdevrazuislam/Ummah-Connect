@@ -14,7 +14,7 @@ import { useMutation } from "@tanstack/react-query"
 import { create_story } from "@/lib/apis/posts"
 import { toast } from "sonner"
 import Image from "next/image"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 
 type StoryMode = "select" | "photo" | "text"
 
@@ -32,7 +32,7 @@ const textBackgrounds = [
 const textColors = ["#ffffff", "#000000", "#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3"]
 
 export default function StoryCreator() {
-    const { addStory } = useAuthStore()
+    const { addStory } = useStore()
     const [mode, setMode] = useState<StoryMode>("select")
     const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined)
     const [photoText, setPhotoText] = useState("")

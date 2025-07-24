@@ -17,7 +17,7 @@ import { useMutation } from "@tanstack/react-query"
 import { recoverLogin, recoverLoginWithEmail, requestOtp } from "@/lib/apis/auth"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { validateEmail } from "@/lib/utils"
 
 
@@ -31,7 +31,7 @@ export function RecoveryLogin({
 }) {
 
     const router = useRouter()
-    const { setLogin } = useAuthStore()
+    const { setLogin } = useStore()
     const { mutate, isPending } = useMutation({
         mutationFn: recoverLogin,
         onSuccess: (userData) => {

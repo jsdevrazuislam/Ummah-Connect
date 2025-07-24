@@ -118,6 +118,7 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           </div>
         )}
         <video
+          preload={autoPlay ? "auto" : "none"}
           ref={videoRef}
           className="w-full h-full object-cover"
           autoPlay={autoPlay}

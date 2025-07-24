@@ -27,14 +27,14 @@ export const uploadStory = asyncHandler(async (req: Request, res: Response) => {
         fs.unlinkSync(file.path);
     }
 
-    const story = await Story.create({ userId, mediaUrl, caption, background, type, textColor });
+
+    const story = await Story.create({ userId, mediaUrl, caption, background, type, textColor, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
     await redis.del(STORY_CACHE_KEY(userId));
     res.json(new ApiResponse(200, story, "Story uploaded"));
 });
 
 export const getActiveStories = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user.id;
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const cacheKey = STORY_CACHE_KEY(userId);
 
@@ -62,7 +62,7 @@ export const getActiveStories = asyncHandler(async (req: Request, res: Response)
             {
                 model: Story,
                 where: {
-                    createdAt: { [Op.gte]: twentyFourHoursAgo },
+                    expiresAt: { [Op.gt]: new Date() },
                 },
                 required: true,
                 order: [['createdAt', 'DESC']],

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from '@/components/ui/switch'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -14,7 +14,7 @@ import { NotificationPreferenceFormData, notificationPreferenceSchema } from '@/
 
 const Notification = () => {
 
-    const { user, setUser } = useAuthStore()
+    const { user, setUser } = useStore()
     const { handleSubmit, control, setValue } = useForm<NotificationPreferenceFormData>({
         resolver: zodResolver(notificationPreferenceSchema),
         defaultValues:{

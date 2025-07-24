@@ -2,7 +2,7 @@ import React, { FC, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSocketStore } from '@/hooks/use-socket'
 import SocketEventEnum from '@/constants/socket-event'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { useConversationStore } from '@/hooks/use-conversation-store'
 import { formatDistanceToNow } from 'date-fns';
 
@@ -16,7 +16,7 @@ interface ConversationItemProps {
 const ConversationItem: FC<ConversationItemProps> = ({ conv, onClick }) => {
 
     const { socket } = useSocketStore()
-    const { getIsUserOnline, user } = useAuthStore()
+    const { getIsUserOnline, user } = useStore()
     const { unreadCounts } = useConversationStore();
     const unreadCount = unreadCounts[conv.id] ?? 0;
 

@@ -12,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ImagePlus, X, Loader2 } from "lucide-react";
+import Image from "next/image";
 
 interface ReportModalProps {
     isOpen: boolean
@@ -108,10 +109,12 @@ export function ReportModal({ isOpen, onClose, onSubmit, isLoading }: ReportModa
                         <div className="flex flex-wrap gap-3">
                             {images.map((image, index) => (
                                 <div key={index} className="relative group">
-                                    <img
+                                    <Image
                                         src={URL.createObjectURL(image)}
                                         alt={`Preview ${index + 1}`}
                                         className="h-24 w-24 object-cover rounded-md border"
+                                        width={96}
+                                        height={96}
                                     />
                                     <button
                                         type="button"

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
 import { toast } from "sonner"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import {  editCommentToPost } from "@/lib/update-post-data"
 import { Skeleton } from "@/components//ui/skeleton"
 import { InfiniteScroll } from "@/components/infinite-scroll"
@@ -122,7 +122,7 @@ function CommentItem({
   isReply = false,
   postId,
 }: CommentItemProps) {
-  const { user } = useAuthStore()
+  const { user } = useStore()
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState("")
   const [showTranslation, setShowTranslation] = useState(false)

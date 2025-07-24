@@ -9,6 +9,7 @@ import { react_post } from "@/lib/apis/posts"
 import { toast } from "sonner"
 import updatePostInQueryData from "@/lib/update-post-data"
 import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 
 export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
 
@@ -108,7 +109,7 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
         onClick={handleMainButtonClick}
       >
         {currentReaction ? (
-          <img src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4" />
+          <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4" />
         ) : (
           <ThumbsUp className="h-4 w-4" />
         )}
@@ -139,7 +140,7 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
                   whileHover={{ scale: 1.3 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <img src={reaction.emoji} alt={reaction.label} className="h-6 w-6" />
+                  <Image width={20} height={20} src={reaction.emoji} alt={reaction.label} className="h-6 w-6" />
                 </motion.button>
               ))}
             </div>

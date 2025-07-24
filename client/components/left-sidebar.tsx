@@ -10,21 +10,17 @@ import {
   Plus,
   ChevronRight,
   MapPin,
+  CloudRain,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 
 
 export function LeftSidebar() {
-  const weather = {
-    temp: 24,
-    condition: "Sunny",
-    location: "Dhaka, BD",
-  }
 
-  const { setIsOpen, hijriDate, user } = useAuthStore()
+  const { setIsOpen, hijriDate, user, location } = useStore()
 
   const [currentTime, setCurrentTime] = useState(new Date())
   const quickShortcuts = [
@@ -112,14 +108,16 @@ export function LeftSidebar() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Cloud className="h-4 w-4 text-blue-500" />
-                <span className="text-sm font-medium">{weather.condition}</span>
+                {
+                  location?.condition === 'Rain' ? <CloudRain className="h-4 w-4 text-blue-500" /> : <Cloud className="h-4 w-4 text-blue-500" />
+                }
+                <span className="text-sm font-medium">{location?.condition}</span>
               </div>
-              <span className="text-lg font-bold">{weather.temp}°C</span>
+              <span className="text-lg font-bold">{location?.temp}°C</span>
             </div>
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span>{weather.location}</span>
+              <span>{location?.city}, {location?.country}</span>
             </div>
             <div className="text-center">
               <div className="text-sm font-mono">

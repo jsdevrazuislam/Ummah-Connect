@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Clock, Calendar, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,21 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { to12HourFormat } from "@/lib/utils"
-import { fetchPrayerTimes, fetchWeeklyPrayerTimes, fetchMonthlyPrayerTimes, fetchReverseGeocode } from "@/lib/apis/prayer"
-import { useAuthStore } from "@/store/store"
+import { fetchPrayerTimes, fetchWeeklyPrayerTimes, fetchMonthlyPrayerTimes } from "@/lib/apis/prayer"
+import { useStore } from "@/store/store"
 
-interface Location {
-    latitude: number
-    longitude: number
-    city: string
-    country: string
-}
 
 export default function PrayerTimesPage() {
     const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">("daily")
-    const [location, setLocation] = useState<Location | null>(null)
-    const [isLocating, setIsLocating] = useState(false)
-    const {user} = useAuthStore()
+    const { user, location} = useStore()
 
     const { data: dailyData, isLoading: isDailyLoading } = useQuery({
         queryKey: ['dailyPrayerTimes'],
@@ -43,54 +35,7 @@ export default function PrayerTimesPage() {
     })
 
 
-    useEffect(() => {
-        const getLocation = async () => {
-            setIsLocating(true)
-            try {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        async (position) => {
-                            const { latitude, longitude } = position.coords
-                            const { city, country } = await fetchReverseGeocode(latitude, longitude)
-                            setLocation({
-                                latitude,
-                                longitude,
-                                city,
-                                country
-                            })
-                            setIsLocating(false)
-                        },
-                        (error) => {
-                            console.error("Geolocation error:", error)
-                            setLocation({
-                                latitude: 3.1390,
-                                longitude: 101.6869,
-                                city: "Kuala Lumpur",
-                                country: "Malaysia"
-                            })
-                            setIsLocating(false)
-                        }
-                    )
-                } else {
-                    setLocation({
-                        latitude: 3.1390,
-                        longitude: 101.6869,
-                        city: "Kuala Lumpur",
-                        country: "Malaysia"
-                    })
-                    setIsLocating(false)
-                }
-            } catch (error) {
-                console.error("Location error:", error)
-                setIsLocating(false)
-            }
-        }
-
-        getLocation()
-    }, [])
-
-    const isLoading =
-        isLocating ||
+    const isLoading = 
         (activeTab === 'daily' && isDailyLoading) ||
         (activeTab === 'weekly' && isWeeklyLoading) ||
         (activeTab === 'monthly' && isMonthlyLoading)

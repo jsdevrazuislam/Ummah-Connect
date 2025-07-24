@@ -4,12 +4,12 @@ import { useMutation } from '@tanstack/react-query'
 import { bookmark_post } from '@/lib/apis/posts'
 import { toast } from 'sonner'
 import { Bookmark } from 'lucide-react'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 
 const BookmarkButton = ({ post }: { post: PostsEntity }) => {
 
     const [isBookmarked, setIsBookmarked] = useState(post?.isBookmarked || false)
-    const { user, setUser } = useAuthStore()
+    const { user, setUser } = useStore()
 
     const { mutate: bookmarkFunc } = useMutation({
         mutationFn: bookmark_post,

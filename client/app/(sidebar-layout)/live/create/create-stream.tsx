@@ -19,12 +19,12 @@ import { StreamFormData, streamSchema } from "@/validation/stream.validation";
 import { useMutation } from "@tanstack/react-query";
 import { start_live } from "@/lib/apis/stream";
 import { toast } from "sonner";
-import { useAuthStore } from "@/store/store";
+import { useStore } from "@/store/store";
 
 
 export default function CreateLiveStreamPage() {
     const router = useRouter();
-    const { user } = useAuthStore()
+    const { user } = useStore()
     const [isTestingDevices, setIsTestingDevices] = useState(false);
     const [isMicActive, setIsMicActive] = useState(false);
     const [isCameraActive, setIsCameraActive] = useState(false);

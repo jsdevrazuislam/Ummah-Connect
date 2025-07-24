@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useForm } from "react-hook-form"
 import { LoginFormData, loginSchema } from "@/validation/auth.validation"
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 import { loginUser } from "@/lib/apis/auth"
 import { toast } from "sonner"
@@ -21,7 +21,7 @@ import { RecoveryLogin } from "@/components/recover-login"
 
 export default function LoginPage() {
 
-    const { setLogin } = useAuthStore()
+    const { setLogin, initialLoading } = useStore()
     const [show2FAModel, setShow2FAModal] = useState(false)
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -41,6 +41,7 @@ export default function LoginPage() {
             } else {
             setLogin(data.access_token, data.refresh_token, data.user)
             toast.success("Login successfully")
+            initialLoading()
             router.push("/")
             }
         },

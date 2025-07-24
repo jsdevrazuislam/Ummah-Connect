@@ -5,14 +5,14 @@ import {
   ThemeProvider as NextThemesProvider,
   type ThemeProviderProps,
 } from 'next-themes'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { useSocketStore } from '@/hooks/use-socket';
 
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 
   const { initializeSocket, disconnectSocket } = useSocketStore();
-  const { initialLoading } = useAuthStore()
+  const { initialLoading } = useStore()
 
 
   React.useEffect(() => {

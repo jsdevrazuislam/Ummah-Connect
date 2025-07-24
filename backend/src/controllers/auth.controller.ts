@@ -109,14 +109,13 @@ export const login_with_2FA = asyncHandler(async (req: Request, res: Response) =
     },
   });
 
-  if (!user) throw new ApiError(400, "User doesn't exits");
+  if (!user) throw new ApiError(400, "User doesn't exist");
+  
   const is_password_correct = await compare_password(user.password, password);
   if (!is_password_correct) throw new ApiError(400, "Invalid User Details");
 
   if (user?.is_two_factor_enabled) {
-    if (!token) return res.json(
-      new ApiResponse(200, true, '2FA is required')
-    )
+    if (!token) return res.json(new ApiResponse(200, true, '2FA is required'));
 
     const verified = speakeasy.totp.verify({
       secret: user.two_factor_secret,
@@ -125,33 +124,39 @@ export const login_with_2FA = asyncHandler(async (req: Request, res: Response) =
       window: 1
     });
 
-    if (!verified) {
-      throw new ApiError(401, "Invalid 2FA token");
-    }
+    if (!verified) throw new ApiError(401, "Invalid 2FA token");
   }
 
-  const access_token = generate_access_token({
-    id: user.id,
-    email: user.email,
-    role: user.role
-  });
+  const access_token = generate_access_token({ id: user.id, email: user.email, role: user.role });
+  const refresh_token = generate_refresh_token({ id: user.id, email: user.email, role: user.role });
 
-  const refresh_token = generate_refresh_token({
-    id: user.id,
-    email: user.email,
-    role: user.role
-  });
-
-  const updated_user = await User.update(
+  await User.update(
     { refresh_token },
-    {
-      where: { email: user.email },
-      returning: true,
-    }
+    { where: { id: user.id } }
   );
 
-  const safeUser = updated_user[1][0].get({ plain: true });
+  const safeUser = {
+    ...user.get({ plain: true }),
+    refresh_token
+  };
   delete safeUser.password;
+
+  const userId = user.id;
+
+  const [followerCount, followingCount, totalPosts, totalLikes, totalBookmarks] = await Promise.all([
+    Follow.count({ where: { followerId: userId } }),
+    Follow.count({ where: { followingId: userId } }),
+    Post.count({ where: { authorId: userId } }),
+    Reaction.count({
+      include: [{
+        model: Post,
+        as: "post",
+        where: { authorId: userId },
+        attributes: [],
+      }],
+    }),
+    BookmarkPost.count({ where: { userId } })
+  ]);
 
   return res
     .cookie("access_token", access_token, options)
@@ -160,7 +165,14 @@ export const login_with_2FA = asyncHandler(async (req: Request, res: Response) =
       new ApiResponse(
         200,
         {
-          user: safeUser,
+          user: {
+            ...safeUser,
+            following_count: followerCount,
+            followers_count: followingCount,
+            totalPosts,
+            totalLikes,
+            totalBookmarks,
+          },
           access_token,
           refresh_token,
         },

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Bell, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { to12HourFormat } from "@/lib/utils"
 
 interface PrayerTime {
@@ -66,7 +66,7 @@ function PrayerNotificationModal({
 }
 
 export function PrayerTimeNotifications() {
-    const { user, prayerTime } = useAuthStore()
+    const { user, prayerTime } = useStore()
     const [currentPrayer, setCurrentPrayer] = useState<PrayerTime | null>(null)
     const [showNotification, setShowNotification] = useState(false)
     const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null)

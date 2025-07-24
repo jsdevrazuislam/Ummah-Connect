@@ -13,13 +13,13 @@ import InfiniteScrollPost from "@/components/infinite-scroll-post"
 import FollowButton from "@/components/follow-button"
 import MessageButton from "@/components/message-button"
 import Image from "next/image"
-import { useAuthStore } from "@/store/store"
+import { useStore } from "@/store/store"
 import { useRouter } from "next/navigation"
 
 
 export default function ProfilePage({ username, user }: { username: string, user: User }) {
 
-    const { user: currentUser } = useAuthStore()
+    const { user: currentUser } = useStore()
     const router = useRouter()
 
     const {

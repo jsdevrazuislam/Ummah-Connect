@@ -119,7 +119,13 @@ User.init(
         sequelize,
         modelName: 'User',
         tableName: 'users',
-        timestamps: true
+        timestamps: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['email', 'username']
+            }
+        ]
     }
 )
 

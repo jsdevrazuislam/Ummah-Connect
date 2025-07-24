@@ -8,11 +8,12 @@ import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
 import { useSocketStore } from '@/hooks/use-socket'
-import { useAuthStore } from '@/store/store'
+import { useStore } from '@/store/store'
 import { ALLOWED_TYPES, MAX_FILE_SIZE } from '@/constants'
 import { UseMutateFunction, useMutation, useQueryClient } from '@tanstack/react-query'
 import { loadTempDataForMessage } from '@/lib/temp-load-data'
 import { addMessageConversation } from '@/lib/update-conversation'
+import Image from 'next/image'
 
 interface MessageFormProps {
     handleSendMessage: (e: React.FormEvent) => void
@@ -52,7 +53,7 @@ const MessageForm: FC<MessageFormProps> = ({
 
     const { theme } = useTheme()
     const { socket } = useSocketStore()
-    const { user } = useAuthStore()
+    const { user } = useStore()
     const { isPending: isSending } = useMutation({})
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,10 +124,12 @@ const MessageForm: FC<MessageFormProps> = ({
                     {selectedFiles.map((file, index) => (
                         <div key={index} className="relative">
                             {file.type.startsWith('image/') ? (
-                                <img
+                                <Image
                                     src={URL.createObjectURL(file)}
                                     alt="Preview"
                                     className="h-16 w-16 object-cover rounded-md"
+                                    width={64}
+                                    height={64}
                                 />
                             ) : (
                                 <video className="h-16 w-16 object-cover rounded-md">
