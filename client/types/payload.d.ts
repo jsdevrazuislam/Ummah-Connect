@@ -33,6 +33,7 @@ interface RegisterPayload {
   full_name: string;
   password: string;
   username: string;
+  public_key: string
 }
 
 interface UpdatedCommentPayload {
@@ -109,6 +110,8 @@ interface CreateConversationPayload {
   content: string;
   messageType: string;
   type: string;
+  key_for_recipient: string,
+  key_for_sender: string
 }
 
 interface ReadMessagePayload {

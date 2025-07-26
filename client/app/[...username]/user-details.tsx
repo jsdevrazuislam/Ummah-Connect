@@ -99,7 +99,8 @@ export default function ProfilePage({ username, user }: { username: string, user
                                     followers_count: user?.followers_count ?? '',
                                     bio: user?.bio,
                                     isFollowing: user?.isFollowing,
-                                    privacy_settings: user?.privacy_settings
+                                    privacy_settings: user?.privacy_settings,
+                                    public_key: user?.public_key
                                 }} />
                             </div> : <Button onClick={() => router.push('/settings')}>Edit Profile</Button>}
                         </div>

@@ -26,7 +26,7 @@ import { Op } from "sequelize";
 export const create_conversation_for_dm = asyncHandler(
     async (req: Request, res: Response) => {
         const creatorId = Number(req.user.id);
-        const { receiverId, type, content } = req.body;
+        const { receiverId, type, content, key_for_recipient, key_for_sender } = req.body;
         const receiverIdNum = Number(receiverId);
 
         if (creatorId === receiverIdNum)
@@ -103,6 +103,8 @@ export const create_conversation_for_dm = asyncHandler(
             sender_id: creatorId,
             content,
             sent_at: Date.now(),
+            key_for_recipient,
+            key_for_sender
         });
 
         await MessageStatus.create({
@@ -177,7 +179,7 @@ export const get_all_conversations = asyncHandler(
                                 {
                                     model: Message,
                                     as: "lastMessage",
-                                    attributes: ["id", "sender_id", "content", "sent_at"],
+                                    attributes: ["id", "sender_id", "content", "sent_at", "key_for_sender", "key_for_recipient"],
                                     include: [
                                         {
                                             model: User,
@@ -305,7 +307,7 @@ export const get_conversation_message = asyncHandler(
 
 export const send_message = asyncHandler(
     async (req: Request, res: Response) => {
-        const { conversationId, content, type } = req.body;
+        const { conversationId, content, type,  key_for_recipient, key_for_sender } = req.body;
         const senderId = req.user.id;
 
         const conversation = await Conversation.findOne({
@@ -352,6 +354,8 @@ export const send_message = asyncHandler(
             content,
             type,
             sent_at: new Date(),
+            key_for_recipient,
+            key_for_sender
         });
 
         const messageStatuses = receiverParticipants.map((participant) => ({

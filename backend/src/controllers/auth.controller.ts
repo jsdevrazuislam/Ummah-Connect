@@ -29,7 +29,7 @@ const options = {
 };
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, full_name, password, username } = req.body;
+  const { email, full_name, password, username, public_key } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -46,6 +46,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     full_name,
     role: "user",
     is_verified: false,
+    public_key,
     privacy_settings: {
       active_status: true,
       private_account: false,

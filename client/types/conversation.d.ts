@@ -19,6 +19,7 @@ interface Conversation {
   userId?: number;
   username?: string;
   last_seen_at?: string;
+  public_key?: string;
   createdAt: string;
   lastMessage: {
     id: number;
@@ -31,6 +32,8 @@ interface Conversation {
     content: string;
     type: string;
     sent_at: string;
+    key_for_sender: string
+    key_for_recipient: string
   } | null;
   unreadCount: number;
   isMuted: null | undefined;
@@ -69,6 +72,8 @@ interface ConversationMessages {
   reactions?: null[] | null;
   statuses: MessageStatus[];
   attachments: MessageAttachment[];
+  key_for_sender:string
+  key_for_recipient?:string
 }
 
 interface MessageAttachment {
@@ -96,4 +101,5 @@ interface MessageSender {
   status?: string;
   conversationId?: number;
   last_seen_at?: string;
+  public_key?:string
 }

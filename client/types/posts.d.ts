@@ -64,6 +64,7 @@ interface PostAuthor {
   bio:string
   isFollowing?: boolean;
   privacy_settings?:PrivacySettings
+  public_key?:string
 }
 
 interface CommentsResponse{

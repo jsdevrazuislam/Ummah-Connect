@@ -13,6 +13,8 @@ import { registerUser } from "@/lib/apis/auth"
 import { toast } from "sonner"
 import { LoadingOverlay } from "@/components/loading-overlay"
 import { Label } from "@/components/ui/label"
+import { exportPublicKey, generateKeyPair } from "@/lib/e2ee"
+import { saveToIndexedDB } from "@/lib/indexedDB"
 
 const SignupForm = () => {
 
@@ -31,14 +33,18 @@ const SignupForm = () => {
             toast.error(error.message)
         }
     })
-    const onSubmit = (data: SignupFormData) => {
+    const onSubmit = async (data: SignupFormData) => {
+        const key = await generateKeyPair()
+        const exportedPublicKey = await exportPublicKey(key.publicKey);
         const payload = {
             full_name: `${data.first_name} ${data.last_name}`,
             email: data.email,
             password: data.password,
-            username: data.username
+            username: data.username,
+            public_key: exportedPublicKey
         }
         mutate(payload)
+        await saveToIndexedDB("privateKey", key.privateKey);
     }
 
     return (

@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ErrorMessage } from "@/components/api-error"
 import { useConversationStore } from "@/hooks/use-conversation-store"
+import { encryptMessageForBothParties, importPublicKey } from "@/lib/e2ee"
 
 
 
@@ -124,7 +125,7 @@ export default function ConversationPage() {
     },
     onError: (error, variable) => {
       const id = Number(variable?.get('id'))
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id })
+      const tempMessage = loadTempDataForMessage({ user, message: '', key_for_recipient: '', key_for_sender: '', selectedConversation, status: 'failed', id })
       queryClient.setQueryData(['get_conversation_messages', Number(variable?.get("conversationId"))], (oldData: QueryOldDataPayloadConversation) => {
         return replaceMessageInConversation(oldData, id, tempMessage, Number(variable?.get("conversationId")))
       })
@@ -142,7 +143,7 @@ export default function ConversationPage() {
     },
     onError: (error, variable) => {
       setMessage("")
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id: variable.id })
+      const tempMessage = loadTempDataForMessage({ user, message: variable.content, key_for_recipient: variable.key_for_recipient, key_for_sender: variable.key_for_sender, selectedConversation, status: 'failed', id: variable.id })
       queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return replaceMessageInConversation(oldData, variable.id, tempMessage, variable.conversationId)
       })
@@ -164,7 +165,8 @@ export default function ConversationPage() {
       username: conv.username ?? '',
       id: conv.userId ?? 0,
       conversationId: conv.id,
-      last_seen_at: conv?.last_seen_at
+      last_seen_at: conv?.last_seen_at,
+      public_key: conv?.public_key
     });
 
     readMessageFun({
@@ -181,20 +183,28 @@ export default function ConversationPage() {
   };
 
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim()) {
 
+      const recipientKey = await importPublicKey(selectedConversation?.public_key ?? '');
+      const senderKey = await importPublicKey(user?.public_key ?? '');
+      const { content, key_for_recipient, key_for_sender } =  await encryptMessageForBothParties(message,  senderKey, recipientKey)
+
+
       const id = Date.now()
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id })
+      const tempMessage = loadTempDataForMessage({ user, message: content, selectedConversation, key_for_recipient, key_for_sender, status: 'sending', id })
       queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
       })
+
       mutate({
         conversationId: selectedConversation?.conversationId ?? 0,
         type: 'text',
-        content: message,
-        id
+        content,
+        id,
+        key_for_recipient,
+        key_for_sender
       })
     }
   }
@@ -223,7 +233,7 @@ export default function ConversationPage() {
       formData.append("media", blob);
       formData.append("id", String(tempId));
       formData.append("conversationId", String(selectedConversation?.conversationId));
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id: tempId, attachments: [blob] })
+      const tempMessage = loadTempDataForMessage({ user, message, key_for_recipient: '', key_for_sender: '', selectedConversation, status: 'sending', id: tempId, attachments: [blob] })
       queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
       })

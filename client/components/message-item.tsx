@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AudioPlayer } from "@/components/audio-player"
 import { FC } from "react"
@@ -7,6 +7,9 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import HLSVideoPlayer from "@/components/hsl-video-player"
 import { Eye } from "lucide-react"
+import { getFromIndexedDB } from "@/lib/indexedDB"
+import { decryptMessageForBothParties } from "@/lib/e2ee"
+import Link from "next/link"
 
 interface MessageItemProps {
     message: ConversationMessages | undefined
@@ -17,6 +20,28 @@ const MessageItem: FC<MessageItemProps> = ({
     message,
     user
 }) => {
+
+    const [decryptedText, setDecryptedText] = useState<string | null>(null);
+
+    useEffect(() => {
+        if(message?.content){
+            (async () =>{
+                try {
+                    const privateKey = await getFromIndexedDB<CryptoKey>("privateKey");
+                    if (!privateKey) return setDecryptedText("[Private Key Missing]");
+                     const encryptedSymmetricKey = user?.id === message.sender_id
+                    ? message.key_for_sender
+                    : message.key_for_recipient;
+
+                    const decrypted = await decryptMessageForBothParties(message.content, encryptedSymmetricKey ?? '', privateKey);
+                    setDecryptedText(decrypted);
+                } catch (err) {
+                    console.error("Decryption failed", err);
+                    setDecryptedText("[Failed to decrypt]");
+                }
+        })()
+        }
+    }, [message]);
 
     const renderMessageType = (type: string, thumbnail_url?:string, url?: string, duration?: number, isOwnMessage?:boolean) => {
         switch (type) {
@@ -31,7 +56,7 @@ const MessageItem: FC<MessageItemProps> = ({
             case 'image':
                 return <Image width={285} height={200} src={url ?? ''} alt={user?.full_name ?? ''} className="w-[285px] h-[200px] object-cover self-end rounded-lg" />
             default:
-                return <p>{message?.content}</p>
+                return <p>{decryptedText ?? 'Decrypting...'}</p>
 
         }
     }
@@ -40,10 +65,12 @@ const MessageItem: FC<MessageItemProps> = ({
         <>
             <div key={message?.id} className={cn(`flex ${message?.sender_id === user?.id ? "justify-end items-end flex-col" : "justify-start"} mt-4 mb-4`, { "opacity-70": message?.status === 'sending' || message?.status === 'failed' })}>
                 {message?.sender_id !== user?.id && (
-                    <Avatar className="h-8 w-8 mr-2 mt-1">
-                        <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.full_name} />
-                        <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/${message?.sender?.username}`}>
+                        <Avatar className="h-8 w-8 mr-2 mt-1">
+                            <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.full_name} />
+                            <AvatarFallback>{message?.sender?.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    </Link>
                 )}
                 <div
                     className={cn("max-w-[70%] flex flex-col rounded-lg px-3 py-2 bg-muted", { "bg-primary text-primary-foreground": message?.sender_id === user?.id })}

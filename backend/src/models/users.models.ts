@@ -6,6 +6,7 @@ import RecoveryCodes from '@/models/recoverycodes.models';
 class User extends Model {
     public id!: number;
     public username!: string;
+    public public_key!: string;
     public full_name!: string;
     public avatar!: string;
     public cover!: string;
@@ -72,6 +73,10 @@ User.init(
         },
         website: {
             type: DataTypes.STRING,
+            allowNull: true
+        },
+        public_key: {
+            type: DataTypes.TEXT,
             allowNull: true
         },
         role: {
