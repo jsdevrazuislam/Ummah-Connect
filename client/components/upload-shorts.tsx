@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { upload_shorts } from '@/lib/apis/stream'
+import { LoadingOverlay } from '@/components/loading-overlay'
 
 const MAX_FILE_SIZE_MB = 5
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
@@ -91,9 +92,13 @@ export function UploadShortModal() {
       <Button variant='ghost' onClick={() => setOpen(true)} className="gap-2 z-50 text-white rounded-full w-10 h-10 bg-white/50 absolute right-6 bottom-6">
         <Upload className="h-4 w-4" />
       </Button>
-
+      <LoadingOverlay loading={isPending} />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]"
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-center">Upload Short Video</DialogTitle>
           </DialogHeader>

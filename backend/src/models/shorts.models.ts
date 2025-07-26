@@ -10,7 +10,7 @@ class Short extends Model {
   public description!: string;
   public thumbnail_url!: string;
   public is_public!: boolean;
-   public share!: number
+  public share!: number
   public createdAt!: Date;
   public updatedAt!: Date;
   public reactions!: Reaction[]
