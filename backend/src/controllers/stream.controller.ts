@@ -5,7 +5,7 @@ import {
   roomServiceClient,
 } from "@/config/livekit";
 import redis from "@/config/redis";
-import {  SocketEventEnum } from "@/constants";
+import { SocketEventEnum } from "@/constants";
 import { LiveStream, LiveStreamBan, Shorts, User } from "@/models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
@@ -17,6 +17,9 @@ import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLit
 import { isSpam } from "@/utils/spam-detection-algorithm";
 import { Request, Response } from "express";
 import fs from "fs";
+
+
+const REDIS_KEY = (userId: number | string) => `user:${userId}`;
 
 
 export const generate_livekit_token = asyncHandler(
@@ -452,6 +455,9 @@ export const upload_short = asyncHandler(async (req: Request, res: Response) => 
     thumbnail_url: getThumbnailFromVideo(uploadRes?.url, req?.file?.mimetype ?? '')
   });
 
+  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
+  if (keys.length > 0) await redis.del(...keys);
+
   res.json(new ApiResponse(200, short, "Short uploaded successfully"));
 });
 
@@ -460,6 +466,13 @@ export const get_shorts = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
+  const cacheKey = `${REDIS_KEY(req.user.id)}:shorts:page:${page}:limit:${limit}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return res.json(new ApiResponse(200, JSON.parse(cached), "Shorts fetched (cached)"));
+  }
+
 
   const { rows: shorts, count } = await Shorts.findAndCountAll({
     where: { is_public: true },
@@ -479,16 +492,62 @@ export const get_shorts = asyncHandler(async (req: Request, res: Response) => {
     offset
   });
 
+  const result = {
+    shorts,
+    totalPages: Math.ceil(count / limit),
+    currentPage: page,
+    totalItems: count,
+  };
+
+  await redis.set(cacheKey, JSON.stringify(result), "EX", 60 * 5);
+
   return res.json(
     new ApiResponse(
       200,
-      {
-        shorts,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
-        totalItems: count,
-      },
+      result,
       'Shorts fetched'
     )
   );
+});
+
+export const get_single_short = asyncHandler(async (req: Request, res: Response) => {
+
+  const short = await Shorts.findOne({
+    where: { is_public: true, id: req.params.id },
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'username', 'avatar', 'full_name'] },
+    ],
+    attributes: {
+      include: [
+        getTotalCommentsCountLiteral('"Short"'),
+        getTotalReactionsCountLiteral('"Short"'),
+        getIsBookmarkedLiteral(req.user.id, '"Short"'),
+        getUserReactionLiteral(req.user.id, '"Short"'),
+      ],
+    },
+  });
+
+  if (!short) throw new ApiError(404, 'Short Not Found')
+
+  return res.json(
+    new ApiResponse(
+      200,
+      short,
+      'Short fetched'
+    )
+  );
+});
+
+export const delete_short = asyncHandler(async (req: Request, res: Response) => {
+  const short = await Shorts.findOne({ where: { id: req.params.shortId } });
+
+  if (!short) throw new ApiError(404, "Short not found");
+  if (short.userId !== req.user.id) throw new ApiError(403, "Unauthorized");
+
+  await short.destroy();
+
+  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
+  if (keys.length > 0) await redis.del(...keys);
+
+  return res.json(new ApiResponse(200, {}, "Short deleted"));
 });

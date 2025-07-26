@@ -52,6 +52,7 @@ const ApiStrings = {
   SEND_CHAT: '/stream/chat',
   GET_SHORTS: '/stream/shorts',
   UPLOAD_SHORT: '/stream/upload-short',
+  DELETE_STREAM: '/stream/short',
   // report
   REPORT:'/report/',
   BAN_USER: (id:number) => `/report/ban/${id}`,

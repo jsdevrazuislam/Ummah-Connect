@@ -34,46 +34,41 @@ export const uploadStory = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getActiveStories = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user.id;
+  const userId = req.user.id;
+  const cacheKey = STORY_CACHE_KEY(userId);
 
-    const cacheKey = STORY_CACHE_KEY(userId);
+  const cachedData = await redis.get(cacheKey);
+  if (cachedData) {
+    return res.json(new ApiResponse(200, JSON.parse(cachedData), "Stories fetched (cached)"));
+  }
 
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-        return res.json(new ApiResponse(200, JSON.parse(cachedData), 'Stories fetched (cached)'));
-    }
+  const following = await Follow.findAll({
+    where: { followerId: userId },
+    attributes: ["followingId"],
+  });
 
+  const followingIds = following.map((f) => f.followingId);
+  const userAndFollowingIds = [...new Set([...followingIds, userId])];
 
-    const following = await Follow.findAll({
-        where: { followerId: userId },
-        attributes: ["followingId"],
-    });
+  const stories = await User.findAll({
+    where: { id: { [Op.in]: userAndFollowingIds } },
+    attributes: ["id", "username", "avatar", "full_name"],
+    include: [
+      {
+        model: Story,
+        as: "stories",
+        where: {
+          expiresAt: { [Op.gt]: new Date() },
+        },
+        required: true,
+        order: [["createdAt", "DESC"]],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
 
-    const followingIds = following.map((f) => f.followingId);
+  await redis.setex(cacheKey, 300, JSON.stringify(stories));
 
-    if (followingIds.length === 0) {
-        return res.json(new ApiResponse(200, [], "No active stories"));
-    }
-
-    const stories = await User.findAll({
-        where: { id: { [Op.in]: [followingIds, req.user.id] } },
-        attributes: ['id', 'username', 'avatar', 'full_name'],
-        include: [
-            {
-                model: Story,
-                where: {
-                    expiresAt: { [Op.gt]: new Date() },
-                },
-                required: true,
-                order: [['createdAt', 'DESC']],
-                as: 'stories'
-            },
-        ],
-        order: [['stories', 'createdAt', 'DESC']],
-    });
-
-    await redis.setex(cacheKey, 300, JSON.stringify(stories));
-
-    res.json(new ApiResponse(200, stories, "Stories fetched"));
+  return res.json(new ApiResponse(200, stories, "Stories fetched"));
 });
 
