@@ -7,6 +7,7 @@ interface AuthState {
   setUser: (user: User) => void;
   logout: () => void;
   user: User | null;
+  deleteStoryFromStore: (id:number) => void
   initialLoading: () => void
   selectedConversation: MessageSender | null
   setSelectedConversation: (data:MessageSender | null) => void

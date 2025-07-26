@@ -141,14 +141,19 @@ const AccountForm = () => {
                                         accept="image/*"
                                         className="hidden"
                                         aria-label="Upload image"
-                                    />
-                                    <Image
-                                            src={cover ? cover : '/placeholder.svg'}
+                                    />        
+
+                                    {
+                                        cover &&    <Image
+                                            src={cover}
                                             alt="Cover photo"
                                             className="w-full h-full object-cover"
                                             width={1024}
                                             height={400}
                                         />
+                                    }
+
+
 
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                         <div className="flex gap-2">
