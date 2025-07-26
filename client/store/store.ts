@@ -90,6 +90,19 @@ export const useStore = create<AuthState>((set, get) => ({
         });
     },
 
+    deleteStoryFromStore: (id) => {
+        const { stories } = get();
+        const filtered = stories?.filter((n) => n.id !== id);
+       
+
+        set({
+            stories: filtered,
+           
+        });
+    },
+    
+    
+
     setUser: (user) => set({ user }),
     setIsOpen: (value) => set({ isOpen: value }),
     setSelectedConversation: (data) => {

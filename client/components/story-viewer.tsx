@@ -24,6 +24,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ReportModal } from "@/components/report-modal"
 import { useStore } from "@/store/store"
+import { useMutation } from "@tanstack/react-query"
+import { delete_story } from "@/lib/apis/stream"
+import { toast } from "sonner"
+import { LoadingOverlay } from "@/components/loading-overlay"
 
 interface StoryViewerProps {
   story: StoryEntity
@@ -36,7 +40,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   const [isPaused, setIsPaused] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
-  const { user } = useStore()
+  const { user,deleteStoryFromStore } = useStore()
 
   const storyDuration = 5000
 
@@ -48,8 +52,19 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
     } else {
       onClose()
     }
-  }, [currentItemIndex, story?.stories?.length, onClose])
+   }, [currentItemIndex, story?.stories?.length, onClose])
 
+     const { mutate: muFun, isPending } = useMutation({
+        mutationFn: delete_story,
+        onSuccess: (_, variable) =>{
+            deleteStoryFromStore(variable)
+            onClose()
+        },
+        onError: (error) =>{
+          toast.error(error.message)
+        }
+    })
+    
   const goToPrevItem = () => {
     if (currentItemIndex > 0) {
       setCurrentItemIndex(currentItemIndex - 1)
@@ -57,9 +72,12 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
     }
   }
 
-  const handleDeleteStory = () => { }
+  const handleDeleteStory = (id:number) => { 
+    muFun(id)
+    setShowDeleteDialog(false)
+  }
 
-
+   
   useEffect(() => {
     if (isPaused) return
 
@@ -82,7 +100,10 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   const handleTouchStart = () => {
     setIsPaused(true)
   }
-
+   const handleStory = (index:number) => {
+    setCurrentItemIndex(index)
+    setProgress(0)
+   }
   const handleTouchEnd = () => {
     setIsPaused(false)
   }
@@ -102,9 +123,10 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
   }, [])
 
   if (!currentItem) return null
-
+   
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+      <LoadingOverlay loading={isPending} />
       <div
         className="relative w-full h-full max-w-md mx-auto"
         onTouchStart={handleTouchStart}
@@ -136,9 +158,10 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           )}
         </div>
 
-        <div className="absolute top-0 left-0 right-0 p-2 flex gap-1 z-10">
-          {story?.stories?.map((_, index) => (
-            <div key={index} className="h-1 bg-white/30 rounded-full flex-1">
+        <div className="absolute top-0 left-0 right-0 p-2 flex gap-1 z-[100]">
+          {story?.stories?.map((_, index ) => (
+            <div key={index} className="h-1 bg-white/30 rounded-full flex-1 cursor-pointer"
+             onClick={()=>  handleStory(index)} >
               {index === currentItemIndex ? (
                 <Progress value={progress} className="h-full" />
               ) : index < currentItemIndex ? (
@@ -160,12 +183,14 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 relative z-50">
-              <DropdownMenu>
+              <DropdownMenu  onOpenChange={(open) => {
+               setIsPaused(open);
+                 }}  >
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="default"
                     size="icon"
-                    className="text-white hover:bg-white/10 cursor-pointer"
+                    className="text-white bg-transparent w-6 h-6 hover:bg-white/10 cursor-pointer"
                   >
                     <MoreVertical className="h-5 w-5" />
                   </Button>
@@ -189,34 +214,48 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
               </DropdownMenu>
 
             <Button
-              variant="ghost"
+              variant="default"
               size="icon"
               onClick={onClose}
-              className="text-white hover:bg-white/10"
+              className="text-white bg-transparent w-6 h-6 hover:bg-white/10"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
+      {story?.stories.length > 1 && (
+       <>
+      <button
+      className={`absolute top-1/2 left-2 transform -translate-y-1/2 w-fit flex items-center justify-start z-10 ${
+        currentItemIndex === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+      }`}
+      onClick={(e) => {
+        e.stopPropagation()
+        goToPrevItem()
+      }}
+      disabled={currentItemIndex === 0}
+    >
+      <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center">
+        <ChevronLeft className="h-6 w-6 text-black" />
+      </div>
+    </button>
 
-        <button
-          className="absolute top-1/2 left-2 cursor-pointer transform -translate-y-1/2 w-fit flex items-center justify-start z-10"
-          onClick={(e) => {
-            e.stopPropagation()
-            goToPrevItem()
-          }}
-        >
-          <ChevronLeft className="h-8 w-8 text-white/50" />
-        </button>
-        <button
-          className="absolute cursor-pointer top-1/2 right-2 transform -translate-y-1/2 w-fit flex items-center justify-end z-10"
-          onClick={(e) => {
-            e.stopPropagation()
-            goToNextItem()
-          }}
-        >
-          <ChevronRight className="h-8 w-8 text-white/50" />
-        </button>
+    <button
+      className={`absolute top-1/2 right-2 transform -translate-y-1/2 w-fit flex items-center justify-end z-10 ${
+        currentItemIndex === story.stories.length - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+      }`}
+      onClick={(e) => {
+        e.stopPropagation()
+        goToNextItem()
+      }}
+      disabled={currentItemIndex === story.stories.length - 1}
+    >
+      <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center">
+        <ChevronRight className="h-6 w-6 text-black" />
+      </div>
+    </button>
+  </>
+)}
 
         <div className="absolute bottom-4 left-0 right-0 p-4 flex items-center gap-4 z-10">
           <input
@@ -244,7 +283,7 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteStory}
+              onClick={()=> handleDeleteStory(currentItem.id)}
               className="bg-red-600 hover:bg-red-700"
             >
                 Delete
