@@ -86,6 +86,6 @@ export const get_shorts = async ({
 };
 
 export const delete_story = async (id:number) =>{
-  const response = await api.delete(`${ApiStrings.DELETE_STREAM}/${id}`);
+  const response = await api.delete(`${ApiStrings.DELETE_STORY}/${id}`);
   return response.data;
 }

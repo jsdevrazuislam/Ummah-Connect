@@ -90,18 +90,16 @@ export const useStore = create<AuthState>((set, get) => ({
         });
     },
 
-    deleteStoryFromStore: (id) => {
+    deleteStoryFromStore: (storyId: number) => {
         const { stories } = get();
-        const filtered = stories?.filter((n) => n.id !== id);
-       
 
-        set({
-            stories: filtered,
-           
-        });
+        const updated = stories?.map((user) => ({
+            ...user,
+            stories: user.stories.filter((story) => story.id !== storyId),
+        })).filter(user => user.stories.length > 0);
+
+        set({ stories: updated });
     },
-    
-    
 
     setUser: (user) => set({ user }),
     setIsOpen: (value) => set({ isOpen: value }),

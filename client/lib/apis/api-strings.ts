@@ -35,6 +35,7 @@ const ApiStrings = {
   // Follow
   FOLLOW_UNFOLLOW:(id:number) =>  `/follow/${id}`,
   CREATE_STORY: `/follow/story/create`,
+  DELETE_STORY: `/follow/story`,
   GET_STORIES: `/follow/stories`,
   // Conversation
   GET_CONVERSATION: `/conversation/`,

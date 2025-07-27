@@ -6,6 +6,7 @@ import cloudinary from "@/utils/cloudinary";
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import fs from "fs";
+import ApiError from "@/utils/ApiError";
 
 
 const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
@@ -70,5 +71,26 @@ export const getActiveStories = asyncHandler(async (req: Request, res: Response)
   await redis.setex(cacheKey, 300, JSON.stringify(stories));
 
   return res.json(new ApiResponse(200, stories, "Stories fetched"));
+});
+
+export const deleteStory = asyncHandler(async (req: Request, res: Response) => {
+  const storyId = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  const story = await Story.findByPk(storyId);
+
+  if (!story) {
+    throw new ApiError(404, "Story not found");
+  }
+
+  if (story.userId !== userId) {
+    throw new ApiError(403, "You are not authorized to delete this story");
+  }
+
+  await story.destroy();
+
+  await redis.del(STORY_CACHE_KEY(userId));
+
+  return res.json(new ApiResponse(200, null, "Story deleted successfully"));
 });
 

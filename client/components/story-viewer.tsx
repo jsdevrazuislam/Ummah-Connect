@@ -27,7 +27,6 @@ import { useStore } from "@/store/store"
 import { useMutation } from "@tanstack/react-query"
 import { delete_story } from "@/lib/apis/stream"
 import { toast } from "sonner"
-import { LoadingOverlay } from "@/components/loading-overlay"
 
 interface StoryViewerProps {
   story: StoryEntity
@@ -54,12 +53,8 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
     }
    }, [currentItemIndex, story?.stories?.length, onClose])
 
-     const { mutate: muFun, isPending } = useMutation({
+     const { mutate: muFun } = useMutation({
         mutationFn: delete_story,
-        onSuccess: (_, variable) =>{
-            deleteStoryFromStore(variable)
-            onClose()
-        },
         onError: (error) =>{
           toast.error(error.message)
         }
@@ -74,6 +69,8 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
 
   const handleDeleteStory = (id:number) => { 
     muFun(id)
+    deleteStoryFromStore(id)
+    onClose()
     setShowDeleteDialog(false)
   }
 
@@ -126,7 +123,6 @@ export function StoryViewer({ story, onClose }: StoryViewerProps) {
    
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-      <LoadingOverlay loading={isPending} />
       <div
         className="relative w-full h-full max-w-md mx-auto"
         onTouchStart={handleTouchStart}

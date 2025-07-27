@@ -18,7 +18,7 @@ router.get("/chats", verify_auth, get_stream_chats)
 router.post("/end", verify_auth, end_live_stream)
 router.post("/upload-short", verify_auth, upload.single('media'), upload_short)
 router.get("/shorts", verify_auth, get_shorts)
-router.get("/short/:shortId", verify_auth, delete_short)
+router.delete("/short/:shortId", verify_auth, delete_short)
 
 export const basePath = '/stream';
 export default router
