@@ -69,6 +69,32 @@ export const addedConversation = (
   };
 };
 
+export const removeConversation = (
+  oldData: QueryOldDataPayloadConversations | undefined,
+  conversationId: number
+): QueryOldDataPayloadConversations | undefined => {
+  if (!oldData) return oldData;
+
+  const updatedPages = oldData.pages.map((page) => {
+    const existingConversations = page?.data?.conversations ?? [];
+
+    return {
+      ...page,
+      data: {
+        ...page.data,
+        conversations: existingConversations.filter(
+          (c) => c.id !== conversationId
+        ),
+      },
+    };
+  });
+
+  return {
+    ...oldData,
+    pages: updatedPages,
+  };
+};
+
 
 export const updatedUnReadCount = (
   oldData: QueryOldDataPayloadConversations | undefined,
@@ -127,6 +153,9 @@ export const addLastMessage = (
             ...conversation,
             lastMessage: {
               ...conversation.lastMessage,
+              id: data?.id,
+              key_for_recipient: data?.key_for_recipient,
+              key_for_sender: data?.key_for_sender,
               content: data.content,
               sent_at: data.sent_at,
               sender:{

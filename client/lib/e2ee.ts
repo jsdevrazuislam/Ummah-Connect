@@ -13,8 +13,9 @@ export async function generateKeyPair() {
 
 export async function exportPublicKey(key: CryptoKey): Promise<string> {
   const exported = await crypto.subtle.exportKey("spki", key);
-  return btoa(String.fromCharCode(...new Uint8Array(exported)));
+  return Buffer.from(exported).toString("base64");
 }
+
 
 export async function importPublicKey(base64Key: string): Promise<CryptoKey> {
   const binaryDer = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
@@ -36,10 +37,14 @@ export async function encryptWithPublicKey(publicKey: CryptoKey, data: ArrayBuff
 }
 
 export async function decryptWithPrivateKey(encryptedBase64: string, privateKey: CryptoKey) {
-  const binary = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-  return await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, binary);
+  try {
+    const binary = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+    return await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, binary);
+  } catch (err) {
+    console.error("decryptWithPrivateKey failed:", err);
+    throw err;
+  }
 }
-
 export async function decryptWithSymmetricKey(encryptedBase64: string, rawKeyBuffer: ArrayBuffer) {
   const data = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
   const iv = data.slice(0, 12);

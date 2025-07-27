@@ -31,7 +31,7 @@ const CallPage = async ({ searchParams }: { searchParams: { [key: string]: strin
 
 
     return (
-        <CallInterface roomName={room} callType={type} />
+        <CallInterface roomName={room} callType={type} authToken={authToken} />
     )
 }
 

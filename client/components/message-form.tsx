@@ -1,9 +1,8 @@
 import React, { FC, useRef, useState } from 'react'
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Send, ImageIcon, Paperclip, Smile, Mic, MicOff, Circle, X } from "lucide-react"
 import SocketEventEnum from "@/constants/socket-event"
-import { formatTime } from "@/lib/utils"
+import { cn, formatTime } from "@/lib/utils"
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes"
@@ -14,6 +13,8 @@ import { UseMutateFunction, useMutation, useQueryClient } from '@tanstack/react-
 import { loadTempDataForMessage } from '@/lib/temp-load-data'
 import { addMessageConversation } from '@/lib/update-conversation'
 import Image from 'next/image'
+import { Textarea } from '@/components/ui/textarea'
+import { encryptMessageForBothParties, importPublicKey } from '@/lib/e2ee'
 
 interface MessageFormProps {
     handleSendMessage: (e: React.FormEvent) => void
@@ -30,7 +31,8 @@ interface MessageFormProps {
     stopRecording: () => void
     startRecording: () => Promise<void>
     sendAttachmentFun: UseMutateFunction<unknown, Error, FormData, unknown>
-
+    reply: ReplyMessage | null
+    setReply: React.Dispatch<React.SetStateAction<ReplyMessage | null>>
 }
 
 
@@ -48,7 +50,9 @@ const MessageForm: FC<MessageFormProps> = ({
     sendLoading,
     stopRecording,
     startRecording,
-    sendAttachmentFun
+    sendAttachmentFun,
+    reply,
+    setReply
 }) => {
 
     const { theme } = useTheme()
@@ -58,6 +62,7 @@ const MessageForm: FC<MessageFormProps> = ({
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const queryClient = useQueryClient()
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -96,6 +101,9 @@ const MessageForm: FC<MessageFormProps> = ({
         e.preventDefault();
         if (selectedFiles?.length > 0) {
             if (isPending || sendLoading) return;
+            const recipientKey = await importPublicKey(selectedConversation?.public_key ?? '');
+            const senderKey = await importPublicKey(user?.public_key ?? '');
+            const { content, key_for_recipient, key_for_sender } = await encryptMessageForBothParties(message, senderKey, recipientKey)
             const tempId = Date.now()
             const formData = new FormData();
             for (const file of selectedFiles) {
@@ -105,7 +113,7 @@ const MessageForm: FC<MessageFormProps> = ({
             formData.append("content", message?.trim())
             formData.append("conversationId", String(selectedConversation?.conversationId));
             setSelectedFiles([])
-            const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id: tempId, attachments: selectedFiles })
+            const tempMessage = loadTempDataForMessage({ user, message: content, key_for_recipient, key_for_sender, selectedConversation, status: 'sending', id: tempId, attachments: selectedFiles })
             queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
                 return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
             })
@@ -113,9 +121,6 @@ const MessageForm: FC<MessageFormProps> = ({
         }
         handleSendMessage(e)
     };
-
-
-
 
     return (
         <div className='p-4 border-t border-border'>
@@ -147,6 +152,15 @@ const MessageForm: FC<MessageFormProps> = ({
                     ))}
                 </div>
             )}
+            {reply && <div className='flex justify-between items-center pb-4'>
+                <div>
+                    <p>Replying to {reply?.full_name}</p>
+                    <p className='text-sm text-gray-500 dark:text-gray-400'>{reply?.content}</p>
+                </div>
+                <Button onClick={() => setReply(null)} variant='ghost'>
+                    <X />
+                </Button>
+            </div>}
             <form className="flex relative items-center gap-2">
                 {showEmojiPicker && (
                     <div ref={emojiPickerRef} className="absolute bottom-14 left-2 z-10">
@@ -184,7 +198,7 @@ const MessageForm: FC<MessageFormProps> = ({
                         </span>
                     </div>
                 ) : (
-                    <Input
+                    <Textarea
                         placeholder="Type a message..."
                         value={message}
                         onChange={(e) => {
@@ -196,7 +210,14 @@ const MessageForm: FC<MessageFormProps> = ({
                                 });
                             }
                         }}
-                        className="flex-1"
+                        onInput={(e) => {
+                            const el = e.currentTarget;
+                            el.style.height = "auto";
+                            el.style.height = `${el.scrollHeight}px`;
+                        }}
+                        className={cn(`flex-1 overflow-y-scroll resize-none`, { "max-h-[80px]": message })}
+                        rows={1}
+                        cols={1}
                     />
                 )}
                 {(message.trim() || selectedFiles.length > 0) ? (

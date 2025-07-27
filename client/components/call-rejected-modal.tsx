@@ -22,12 +22,15 @@ const CallRejectedModal = () => {
                 <DialogContent onInteractOutside={(e) => {
                     e.preventDefault();
                 }} className="max-w-xs rounded-xl bg-gray-800 text-white border-none">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Rejected Call Modal</DialogTitle>
+                    </DialogHeader>
                     <div className="flex flex-col items-center justify-center p-8 gap-4">
                         {callStatus === 'rejected' && (
                             <>
                                 <Avatar className="h-20 w-20">
-                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
-                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                    {rejectedCallInfo?.callerAvatar ? <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} /> : 
+                                    <AvatarFallback>{rejectedCallInfo?.callerName?.charAt(0)}</AvatarFallback> }
                                 </Avatar>
                                 <h2 className="text-xl font-bold">Call Declined</h2>
                                 <p className="text-gray-300 text-center">
@@ -38,8 +41,8 @@ const CallRejectedModal = () => {
                         {callStatus === 'missed' && (
                             <>
                                 <Avatar className="h-20 w-20">
-                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
-                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                    {rejectedCallInfo?.callerAvatar ? <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} /> :
+                                    <AvatarFallback>{rejectedCallInfo?.callerName?.charAt(0)}</AvatarFallback>}
                                 </Avatar>
                                 <h2 className="text-xl font-bold">Missed Call</h2>
                                 <p className="text-gray-300 text-center">
@@ -58,8 +61,8 @@ const CallRejectedModal = () => {
                         {callStatus === 'ended' && (
                             <>
                                 <Avatar className="h-20 w-20">
-                                    {rejectedCallInfo?.callerAvatar && <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} />}
-                                    <AvatarFallback>{rejectedCallInfo?.callerAvatar?.charAt(2)}</AvatarFallback>
+                                    {rejectedCallInfo?.callerAvatar ? <AvatarImage src={rejectedCallInfo?.callerAvatar} alt={rejectedCallInfo?.callerName} /> :
+                                    <AvatarFallback>{rejectedCallInfo?.callerName?.charAt(0)}</AvatarFallback>}
                                 </Avatar>
                                 <h2 className="text-xl font-bold">Call Ended</h2>
                                 <p className="text-gray-300 text-center">

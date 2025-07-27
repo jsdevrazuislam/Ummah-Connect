@@ -76,6 +76,13 @@ interface ConversationMessages {
   key_for_recipient?:string
 }
 
+interface ReplyMessage{
+  id?:number
+  conversation_id?:number
+  content?: string;
+  full_name?: string;
+}
+
 interface MessageAttachment {
   id: number;
   message_id: number;

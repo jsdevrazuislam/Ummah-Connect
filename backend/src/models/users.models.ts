@@ -28,6 +28,7 @@ class User extends Model {
     public two_factor_secret!: string
     public is_saved_backup_codes!:boolean
     public recoveryCodes!: RecoveryCodes[]
+    public last_seen_at!: Date
 }
 
 User.init(

@@ -58,6 +58,8 @@ export default function ProfilePage({ username, user }: { username: string, user
         return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
     }
 
+    console.log("user", user)
+
     return (
         <div className="max-w-3xl mx-auto">
             <main className="flex-1 border-x border-border">

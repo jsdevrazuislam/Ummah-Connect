@@ -204,8 +204,10 @@ const SocketEvents = () => {
 
   useEffect(() => {
     if (!socket) return;
-    socket.on(SocketEventEnum.CALL_ACCEPTED, () => {
+    socket.on(SocketEventEnum.CALL_ACCEPTED, ({ callType, authToken, roomName }) => {
+      console.log(callType, authToken, callType)
       stopRingtone()
+      router.replace(`/call?room=${roomName}&type=${callType}&authToken=${authToken}`);
     });
     return () => {
       socket.off(SocketEventEnum.CALL_ACCEPTED);

@@ -3,15 +3,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Phone, Video } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { FC } from "react"
+import { FC, useState } from "react"
 import { useCallActions } from "@/hooks/use-call-store"
-import { useRouter } from "next/navigation"
 import { v4 as uuidv4 } from 'uuid';
 import { useMutation } from "@tanstack/react-query"
 import { initialize_call } from "@/lib/apis/stream"
 import { toast } from "sonner"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { OutgoingCallModal } from "@/components/outgoing-call-modal"
 
 
 interface ConversationHeaderProps {
@@ -29,6 +29,8 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
     className
 }) => {
 
+    const [isCalling, setIsCalling] = useState(false)
+
     const { mutate } = useMutation({
         mutationFn: initialize_call,
         onError: (error) => {
@@ -36,7 +38,6 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
         }
     })
     const { startCall } = useCallActions();
-    const router = useRouter()
 
     const handleStartCall = (callType: 'audio' | 'video') => {
         if (!selectedConversation || !selectedConversation?.id) return;
@@ -48,8 +49,8 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
             authToken,
             receiverId: String(selectedConversation?.id),
         })
-        startCall(callType, roomName);
-        router.push(`/call?room=${roomName}&type=${callType}&authToken=${authToken}`);
+        startCall();
+        setIsCalling(true)
     };
 
     if (!selectedConversation) return
@@ -78,6 +79,7 @@ const ConversationHeader: FC<ConversationHeaderProps> = ({
                     </Button>
                 </div>
             </div>
+            <OutgoingCallModal isOpen={isCalling} onClose={() => setIsCalling(false)} />
         </>
     )
 }

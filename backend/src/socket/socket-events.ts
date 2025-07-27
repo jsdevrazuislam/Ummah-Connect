@@ -27,16 +27,14 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
 
   socket.on(
     SocketEventEnum.CALL_REJECTED,
-    ({
+    async ({
       roomName,
       rejectedByUserId,
       callerUserId,
       callerName,
       callerAvatar,
+      authToken
     }) => {
-      console.log(
-        `Call to room ${roomName} rejected by ${rejectedByUserId}. Notifying ${callerUserId}`
-      );
       socket.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_REJECTED, {
         roomName,
         rejectedByName: rejectedByUserId,
@@ -44,12 +42,15 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
         callerName: callerName,
         callerAvatar: callerAvatar,
       });
+
+      await redis.del(`call:${roomName}`);
+      await redis.del(`call-token:${roomName}:${authToken}`);
     }
   );
 
   socket.on(
     SocketEventEnum.CALLER_LEFT,
-    async ({ roomName, userId, callerAvatar, callerName }) => {
+    async ({ roomName, userId, callerAvatar, callerName, authToken }) => {
       const callData = await redis.get(`call:${roomName}`);
 
       if (callData) {
@@ -67,11 +68,14 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
               callerAvatar,
               callerName,
             });
-          socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
+            socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
             message: "User left from room",
             callerAvatar,
             callerName,
           });
+
+          await redis.del(`call:${roomName}`);
+          await redis.del(`call-token:${roomName}:${authToken}`);
         }
       }
     }
@@ -79,15 +83,26 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
 
   socket.on(
     SocketEventEnum.CALL_ACCEPTED,
-    ({ roomName, receiverId, callerUserId }) => {
-      console.log(
-        `Call to room ${roomName} accepted by ${receiverId}. Notifying ${callerUserId}`
-      );
+    async ({ roomName, receiverId, callerUserId, callType, authToken }) => {
       socket.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_ACCEPTED, {
         roomName,
         receiverId,
         message: "Your call has been accepted.",
+        callType,
+        authToken
       });
+
+       await redis.set(
+        `call:${roomName}`,
+        JSON.stringify({
+          callerId: callerUserId,
+          receiverId,
+          type: callType,
+          status: "accept",
+        }),
+        "EX",
+        60
+      );
     }
   );
 

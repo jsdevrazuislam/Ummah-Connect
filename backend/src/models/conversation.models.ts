@@ -23,7 +23,7 @@ Conversation.init(
             type:DataTypes.ENUM('private', 'group'),
             defaultValue: 'private'
         },
-        name:DataTypes.STRING, // store group name
+        name:DataTypes.STRING,
         created_by:{
             type:DataTypes.INTEGER,
             references:{

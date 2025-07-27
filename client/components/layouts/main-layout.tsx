@@ -50,9 +50,9 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
   );
 
   const handleLogout = () => {
-    queryClient.clear()
     logout()
-    router.push("/login")
+    queryClient.clear()
+    router.replace("/login")
   }
 
   const RESERVED_ROUTES = [
