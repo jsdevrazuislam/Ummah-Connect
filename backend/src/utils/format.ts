@@ -15,6 +15,7 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
     let username = null
     let status = null
     let last_seen_at = null
+    let public_key = null
     if (conversation.type === 'private' && conversation.participants && conversation?.participants?.length > 0) {
       const otherParticipant = conversation.participants[0].user
       displayName = otherParticipant.full_name
@@ -23,6 +24,7 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
       avatar = otherParticipant.avatar
       status = otherParticipant?.status
       last_seen_at = otherParticipant.last_seen_at
+      public_key = otherParticipant.public_key
     }
 
 
@@ -35,6 +37,7 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
       status,
       avatar,
       last_seen_at,
+      public_key,
       lastMessage: conversation.lastMessage ? {
         id: conversation.lastMessage.id,
         sender: conversation.lastMessage.sender ? {
@@ -45,6 +48,8 @@ export const formatConversations = (conversations: ConversationParticipant[]) =>
           last_seen_at: conversation.lastMessage?.sender?.last_seen_at
         } : null,
         content: conversation.lastMessage.content,
+        key_for_sender: conversation.lastMessage.key_for_sender,
+        key_for_recipient: conversation.lastMessage.key_for_recipient,
         type: conversation.lastMessage.type,
         sent_at: conversation.lastMessage.sent_at,
       } : null,

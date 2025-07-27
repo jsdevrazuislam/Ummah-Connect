@@ -6,13 +6,17 @@ export const loadTempDataForMessage = ({
   message,
   status,
   id,
-  attachments: inputAttachments
+  attachments: inputAttachments,
+  key_for_recipient,
+  key_for_sender
 }: {
   selectedConversation: MessageSender | null;
   message: string;
   user: User | null;
   status: string;
   id: number;
+  key_for_recipient: string,
+  key_for_sender: string
   attachments?: (Blob | File)[];
 }) => {
   const now = new Date().toISOString();
@@ -47,6 +51,8 @@ export const loadTempDataForMessage = ({
     conversation_id: selectedConversation?.conversationId ?? 0,
     sender_id: user?.id ?? 0,
     content: message ?? 'Attachment',
+    key_for_recipient,
+    key_for_sender,
     parent_message_id: null,
     sent_at: now,
     is_deleted: null,
@@ -68,8 +74,8 @@ export const loadTempDataForMessage = ({
 };
 
 
-export const loadTempDataForStreamChat = (user: User | null, content:string, streamId:number, id:number) =>{
-   return {
+export const loadTempDataForStreamChat = (user: User | null, content: string, streamId: number, id: number) => {
+  return {
     id,
     stream_id: streamId,
     sender_id: user?.id ?? 0,

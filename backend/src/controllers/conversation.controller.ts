@@ -26,7 +26,7 @@ import { Op } from "sequelize";
 export const create_conversation_for_dm = asyncHandler(
     async (req: Request, res: Response) => {
         const creatorId = Number(req.user.id);
-        const { receiverId, type, content } = req.body;
+        const { receiverId, type, content, key_for_recipient, key_for_sender } = req.body;
         const receiverIdNum = Number(receiverId);
 
         if (creatorId === receiverIdNum)
@@ -103,6 +103,8 @@ export const create_conversation_for_dm = asyncHandler(
             sender_id: creatorId,
             content,
             sent_at: Date.now(),
+            key_for_recipient,
+            key_for_sender
         });
 
         await MessageStatus.create({
@@ -122,6 +124,8 @@ export const create_conversation_for_dm = asyncHandler(
             avatar: req.user.avatar,
             lastMessage: {
                 id: newMessage.id,
+                key_for_recipient: newMessage.key_for_recipient,
+                key_for_sender: newMessage.key_for_sender,
                 sender: {
                     id: req.user.id,
                     username: req.user.username,
@@ -132,6 +136,8 @@ export const create_conversation_for_dm = asyncHandler(
                 sent_at: newMessage.sent_at,
             },
             unreadCount: 0,
+            last_seen_at: receiverUser?.last_seen_at,
+            public_key: receiverUser?.public_key,
             isMuted: false,
         };
 
@@ -177,7 +183,7 @@ export const get_all_conversations = asyncHandler(
                                 {
                                     model: Message,
                                     as: "lastMessage",
-                                    attributes: ["id", "sender_id", "content", "sent_at"],
+                                    attributes: ["id", "sender_id", "content", "sent_at", "key_for_sender", "key_for_recipient"],
                                     include: [
                                         {
                                             model: User,
@@ -305,7 +311,7 @@ export const get_conversation_message = asyncHandler(
 
 export const send_message = asyncHandler(
     async (req: Request, res: Response) => {
-        const { conversationId, content, type } = req.body;
+        const { conversationId, content, type, key_for_recipient, key_for_sender } = req.body;
         const senderId = req.user.id;
 
         const conversation = await Conversation.findOne({
@@ -352,6 +358,8 @@ export const send_message = asyncHandler(
             content,
             type,
             sent_at: new Date(),
+            key_for_recipient,
+            key_for_sender
         });
 
         const messageStatuses = receiverParticipants.map((participant) => ({
@@ -559,3 +567,33 @@ export const send_attachment = asyncHandler(
         );
     }
 );
+
+
+export const delete_conversation = asyncHandler(async (req: Request, res: Response) => {
+    const conversationId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+  const conversation = await Conversation.findByPk(conversationId);
+
+  if (!conversation) {
+    throw new ApiError(404, "Conversation not found");
+  }
+
+  const isParticipant = await ConversationParticipant.findOne({
+    where: {
+      conversation_id: conversationId,
+      user_id: userId,
+    },
+  });
+
+  if (!isParticipant) {
+    throw new ApiError(403, "Not authorized to delete this conversation");
+  }
+
+  await conversation.destroy();
+
+  const pageKeys = await redis.keys(`conversations:page=*:limit=*:user=${userId}`);
+  await Promise.all(pageKeys.map((key) => redis.del(key)));
+
+  return res.json(new ApiResponse(200, null, "Conversation deleted successfully"));
+});

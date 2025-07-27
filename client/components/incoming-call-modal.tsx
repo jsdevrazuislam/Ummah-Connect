@@ -39,6 +39,8 @@ function IncomingCallNotification() {
             roomName: incomingCall?.roomName,
             receiverId: user?.id,
             callerUserId: incomingCall?.from,
+            callType: incomingCall?.callType,
+            authToken: incomingCall.authToken
         })
         router.push(`/call?room=${incomingCall?.roomName}&type=${incomingCall?.callType}&authToken=${incomingCall.authToken}`);
     };
@@ -50,7 +52,8 @@ function IncomingCallNotification() {
             rejectedByUserId: user?.id,
             callerUserId: incomingCall?.from,
             callerName: user?.full_name,
-            callerAvatar: user?.avatar
+            callerAvatar: user?.avatar,
+            authToken: incomingCall?.authToken
         })
         setIncomingCall(null)
     }

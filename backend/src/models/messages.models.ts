@@ -7,6 +7,8 @@ class Message extends Model{
     public conversation_id!:number
     public sender_id!:number
     public content!: string
+    public key_for_recipient!: string
+    public key_for_sender!: string
     public parent_message_id!:number
     public sent_at!: Date
     public is_deleted!: boolean
@@ -41,7 +43,15 @@ Message.init(
             }
         },
         content:{
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
+        key_for_recipient:{
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
+        key_for_sender:{
+            type: DataTypes.TEXT,
             allowNull: true
         },
         parent_message_id:{

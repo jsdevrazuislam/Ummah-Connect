@@ -42,7 +42,7 @@ export default function LoginPage() {
             setLogin(data.access_token, data.refresh_token, data.user)
             toast.success("Login successfully")
             initialLoading()
-            router.push("/")
+            router.replace("/")
             }
         },
         onError: (error) => {

@@ -58,6 +58,8 @@ export default function ProfilePage({ username, user }: { username: string, user
         return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
     }
 
+    console.log("user", user)
+
     return (
         <div className="max-w-3xl mx-auto">
             <main className="flex-1 border-x border-border">
@@ -99,7 +101,8 @@ export default function ProfilePage({ username, user }: { username: string, user
                                     followers_count: user?.followers_count ?? '',
                                     bio: user?.bio,
                                     isFollowing: user?.isFollowing,
-                                    privacy_settings: user?.privacy_settings
+                                    privacy_settings: user?.privacy_settings,
+                                    public_key: user?.public_key
                                 }} />
                             </div> : <Button onClick={() => router.push('/settings')}>Edit Profile</Button>}
                         </div>

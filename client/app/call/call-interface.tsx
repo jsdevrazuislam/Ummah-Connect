@@ -53,7 +53,7 @@ function RoomEventHandler({ onLeave }: { onLeave: () => void }) {
 }
 
 
-export default function CallInterface({ roomName, callType }: { roomName: string, callType: string }) {
+export default function CallInterface({ roomName, callType, authToken }: { roomName: string, callType: string, authToken:string }) {
     const router = useRouter();
     const { socket } = useSocketStore()
 
@@ -73,7 +73,7 @@ export default function CallInterface({ roomName, callType }: { roomName: string
     }, [roomName, callType, token, fetchToken, router, user]);
 
     const handleLeave = () => {
-        socket?.emit(SocketEventEnum.CALLER_LEFT, { roomName, userId: user?.id, callerAvatar: user?.avatar, callerName: user?.full_name });
+        socket?.emit(SocketEventEnum.CALLER_LEFT, { roomName, authToken, userId: user?.id, callerAvatar: user?.avatar, callerName: user?.full_name });
         endCall();
         router.push('/');
     };

@@ -9,6 +9,8 @@ import { create_conversation } from '@/lib/apis/conversation'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { addedConversation } from '@/lib/update-conversation'
+import { encryptMessageForBothParties, importPublicKey } from '@/lib/e2ee'
+import { useStore } from '@/store/store'
 
 
 type Message = {
@@ -29,6 +31,7 @@ type ChatWindow = {
 
 export default function MessageButton({ user }: { user: PostAuthor }) {
   const [chatWindows, setChatWindows] = useState<ChatWindow[]>([])
+  const { user: currentUser } = useStore()
   const [messageInput, setMessageInput] = useState('')
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -110,13 +113,19 @@ export default function MessageButton({ user }: { user: PostAuthor }) {
     )
   }
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (messageInput.trim() === '') return
+    const recipientKey = await importPublicKey(user?.public_key ?? '');
+    const senderKey = await importPublicKey(currentUser?.public_key ?? '');
+    const { content, key_for_recipient, key_for_sender } =  await encryptMessageForBothParties(messageInput,  senderKey, recipientKey)
+
     mutate({
       receiverId: String(user?.id),
       messageType: 'text',
       type: 'private',
-      content: messageInput
+      content,
+      key_for_recipient,
+      key_for_sender
     })
 
   }

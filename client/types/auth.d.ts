@@ -50,6 +50,7 @@ interface User {
   totalPosts: number;
   totalLikes: number;
   totalBookmarks: number;
+  public_key?:string
 }
 
 interface JwtResponsePayload {

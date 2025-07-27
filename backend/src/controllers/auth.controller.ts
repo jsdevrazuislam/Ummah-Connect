@@ -16,7 +16,7 @@ import { JwtResponse } from "@/types/auth";
 import { removeOldImageOnCloudinary, uploadFileOnCloudinary } from "@/utils/cloudinary";
 import { UploadedFiles } from "@/types/global";
 import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
-import { getIsBookmarkedLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
+import { getFollowerCountLiteral, getFollowingCountLiteral, getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
@@ -29,7 +29,7 @@ const options = {
 };
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, full_name, password, username } = req.body;
+  const { email, full_name, password, username, public_key } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -46,6 +46,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     full_name,
     role: "user",
     is_verified: false,
+    public_key,
     privacy_settings: {
       active_status: true,
       private_account: false,
@@ -110,7 +111,7 @@ export const login_with_2FA = asyncHandler(async (req: Request, res: Response) =
   });
 
   if (!user) throw new ApiError(400, "User doesn't exist");
-  
+
   const is_password_correct = await compare_password(user.password, password);
   if (!is_password_correct) throw new ApiError(400, "Invalid User Details");
 
@@ -192,7 +193,7 @@ export const get_me = asyncHandler(async (req: Request, res: Response) => {
 
   const userId = req.user.id
 
-  const followerCount = await Follow.count({ where: {  followerId: userId } });
+  const followerCount = await Follow.count({ where: { followerId: userId } });
   const followingCount = await Follow.count({ where: { followingId: userId } });
   const user = await User.findOne({
     where: { id: req.user.id }, attributes: {
@@ -317,10 +318,12 @@ export const get_user_profile = asyncHandler(async (req: Request, res: Response)
 
   return res.json(
     new ApiResponse(200, {
-      ...{ user: user.toJSON() },
-      following_count: followerCount,
-      followers_count: followingCount,
-      isFollowing: isFollow ? true : false
+        user: {
+          ...user.toJSON(),
+          following_count: followerCount,
+          followers_count: followingCount,
+          isFollowing: isFollow ? true : false 
+        }
     }, 'Fetch success')
   )
 })
@@ -349,7 +352,19 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
         as: 'originalPost',
         attributes: POST_ATTRIBUTE,
         include: [
-          { model: User, as: 'user', attributes: USER_ATTRIBUTE },
+          {
+            model: User,
+            as: "user",
+            attributes: [
+              ...USER_ATTRIBUTE,
+              getFollowerCountLiteral('"originalPost->user"."id"'),
+              getFollowingCountLiteral('"originalPost->user"."id"'),
+              getIsFollowingLiteral(
+                currentUserId,
+                '"originalPost->user"."id"'
+              ),
+            ],
+          },
         ]
       },
       {
@@ -365,6 +380,7 @@ export const get_user_details = asyncHandler(async (req: Request, res: Response)
         getTotalReactionsCountLiteral('"Post"'),
         getIsBookmarkedLiteral(currentUserId, '"Post"'),
         getUserReactionLiteral(currentUserId, '"Post"'),
+        getIsFollowingLiteral(currentUserId, '"Post"."authorId"'),
       ],
     }
   });

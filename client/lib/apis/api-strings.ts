@@ -44,6 +44,7 @@ const ApiStrings = {
   CREATE_CONVERSATION: `/conversation/create`,
   READ_MESSAGE: `/conversation/read-message`,
   SEND_ATTACHMENT: `/conversation/send-attachment`,
+  DELETE_CONVERSATION: `/conversation/delete`,
   // stream
   INITIAL_CALL: '/stream/initiate-call',
   GET_LIVES: '/stream/',

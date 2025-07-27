@@ -17,7 +17,6 @@ interface RejectedCallInfo {
     callerAvatar?: string
     callerName?: string
 }
-
 interface CallState {
     incomingCall: IncomingCall | null;
     rejectedCallInfo: RejectedCallInfo | null;
@@ -33,7 +32,7 @@ interface CallState {
         setIncomingCall: (call: IncomingCall | null) => void;
         setRejectedCallInfo: (rejectedCallInfo: RejectedCallInfo | null) => void;
         setCallStatus: (status: 'rejected' | 'missed' | 'ended' | null) => void;
-        startCall: (callType: CallType, roomName: string) => void;
+        startCall: () => void;
         acceptCall: () => void;
         setShowEndModal: (showEndModal: boolean) => void;
         setHostUsername: (username:string) => void;
@@ -50,6 +49,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     rejectedCallInfo: null,
     isCalling: false,
     token: null,
+    outgoingCall: null,
     livekitUrl: null,
     isFetchingToken: false,
     isPlayingRingtone: false,
@@ -72,7 +72,7 @@ export const useCallStore = create<CallState>((set, get) => ({
         setCallStatus: (callStatus) => set({ callStatus }),
 
         startCall: () => {
-            set({ isCalling: true });
+            set({ isCalling: true});
             get().actions.startRingtone();
         },
 

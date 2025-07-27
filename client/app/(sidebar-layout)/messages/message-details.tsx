@@ -26,6 +26,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ErrorMessage } from "@/components/api-error"
 import { useConversationStore } from "@/hooks/use-conversation-store"
+import { encryptMessageForBothParties, importPublicKey } from "@/lib/e2ee"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 
 
@@ -36,7 +38,7 @@ export default function ConversationPage() {
   const { user, selectedConversation, setSelectedConversation, getIsUserOnline, getUserLastSeen } = useStore()
   const queryClient = useQueryClient()
   const { socket } = useSocketStore()
-  const { setBulkUnreadCounts, resetUnreadCount } = useConversationStore()
+  const { resetUnreadCount } = useConversationStore()
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout>();
   const [recordingTime, setRecordingTime] = useState(0);
@@ -45,6 +47,7 @@ export default function ConversationPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [reply, setReply] = useState<ReplyMessage | null>(null)
 
 
 
@@ -124,7 +127,7 @@ export default function ConversationPage() {
     },
     onError: (error, variable) => {
       const id = Number(variable?.get('id'))
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id })
+      const tempMessage = loadTempDataForMessage({ user, message: '', key_for_recipient: '', key_for_sender: '', selectedConversation, status: 'failed', id })
       queryClient.setQueryData(['get_conversation_messages', Number(variable?.get("conversationId"))], (oldData: QueryOldDataPayloadConversation) => {
         return replaceMessageInConversation(oldData, id, tempMessage, Number(variable?.get("conversationId")))
       })
@@ -142,7 +145,7 @@ export default function ConversationPage() {
     },
     onError: (error, variable) => {
       setMessage("")
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'failed', id: variable.id })
+      const tempMessage = loadTempDataForMessage({ user, message: variable.content, key_for_recipient: variable.key_for_recipient, key_for_sender: variable.key_for_sender, selectedConversation, status: 'failed', id: variable.id })
       queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return replaceMessageInConversation(oldData, variable.id, tempMessage, variable.conversationId)
       })
@@ -164,7 +167,8 @@ export default function ConversationPage() {
       username: conv.username ?? '',
       id: conv.userId ?? 0,
       conversationId: conv.id,
-      last_seen_at: conv?.last_seen_at
+      last_seen_at: conv?.last_seen_at,
+      public_key: conv?.public_key
     });
 
     readMessageFun({
@@ -181,20 +185,28 @@ export default function ConversationPage() {
   };
 
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim()) {
 
+      const recipientKey = await importPublicKey(selectedConversation?.public_key ?? '');
+      const senderKey = await importPublicKey(user?.public_key ?? '');
+      const { content, key_for_recipient, key_for_sender } = await encryptMessageForBothParties(message, senderKey, recipientKey)
+
+
       const id = Date.now()
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id })
+      const tempMessage = loadTempDataForMessage({ user, message: content, selectedConversation, key_for_recipient, key_for_sender, status: 'sending', id })
       queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
       })
+
       mutate({
         conversationId: selectedConversation?.conversationId ?? 0,
         type: 'text',
-        content: message,
-        id
+        content,
+        id,
+        key_for_recipient,
+        key_for_sender
       })
     }
   }
@@ -223,7 +235,7 @@ export default function ConversationPage() {
       formData.append("media", blob);
       formData.append("id", String(tempId));
       formData.append("conversationId", String(selectedConversation?.conversationId));
-      const tempMessage = loadTempDataForMessage({ user, message, selectedConversation, status: 'sending', id: tempId, attachments: [blob] })
+      const tempMessage = loadTempDataForMessage({ user, message, key_for_recipient: '', key_for_sender: '', selectedConversation, status: 'sending', id: tempId, attachments: [blob] })
       queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
         return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
       })
@@ -239,7 +251,7 @@ export default function ConversationPage() {
 
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" })
   }, [messages])
 
   useEffect(() => {
@@ -283,14 +295,6 @@ export default function ConversationPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const unreadMap = conversations.reduce((acc, conv) => {
-      acc[conv.id] = conv.unreadCount ?? 0;
-      return acc;
-    }, {} as Record<number, number>);
-    setBulkUnreadCounts(unreadMap)
-  }, [conversations])
-
 
   if (isError || isMessageError) {
     return <div className="flex justify-center items-center h-[90vh] ">
@@ -299,7 +303,7 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="flex flex-1 h-screen bg-background">
+    <div className="flex flex-1 bg-background h-[calc(100dvh-130px)] lg:h-[calc(100dvh-70px)]">
       <div className="flex-1 flex flex-col md:flex-row">
         <div className={cn(
           "w-full border-r border-border",
@@ -320,7 +324,7 @@ export default function ConversationPage() {
               <Input placeholder="Search messages" className="pl-10" />
             </div>
           </div>
-          <div className="h-[calc(100vh-120px)] overflow-y-auto">
+          <div className=" lg:h-[calc(90vh-120px)] overflow-y-auto">
             <InfiniteScroll
               hasMore={hasNextPage}
               isLoading={isLoading}
@@ -355,11 +359,7 @@ export default function ConversationPage() {
         </div>
 
         {selectedConversation && !messageLoading ? (
-          <div className={cn(
-            "flex flex-col flex-1",
-            "w-full",
-            "md:w-[calc(100%-20rem)]"
-          )}>
+          <div className={"flex flex-col h-[90vh] w-full md:w-[calc(100%-20rem)]"}>
             <div className="md:hidden flex items-center px-4 py-1 border-b border-border">
               <Button
                 variant="ghost"
@@ -384,7 +384,15 @@ export default function ConversationPage() {
               />
             </div>
 
-            <ScrollArea className="flex-1 px-6 py-4 h-[calc(100vh-180px)] md:h-[calc(100vh-140px)]">
+            <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto max-h-[calc(100vh-180px)] md:max-h-[calc(100vh-140px)]">
+              <div className="flex justify-center items-center flex-col py-6">
+                <Avatar className="h-14 w-14">
+                  {selectedConversation?.avatar ? <AvatarImage src={selectedConversation?.avatar} alt={selectedConversation?.full_name} /> :
+                    <AvatarFallback>{selectedConversation?.full_name?.charAt(0)}</AvatarFallback>}
+                </Avatar>
+                <h4 className="mt-2 mb-3">{selectedConversation?.full_name}</h4>
+                <span className="text-xs text-gray-400">Messages and calls are secured with end-to-end encryption. Only people in this chat can read, listen to or share them.</span>
+              </div>
               <InfiniteScroll
                 hasMore={messageHasNextPage}
                 isLoading={messageLoading}
@@ -392,7 +400,7 @@ export default function ConversationPage() {
               >
                 <div>
                   {messages?.length > 0 ? messages.map((message) => (
-                    <MessageItem key={message?.id} message={message} user={user} />
+                    <MessageItem key={message?.id} message={message} user={user} setReply={setReply} setMessage={setMessage} />
                   )) : <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                     <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No messages yet</h3>
@@ -421,6 +429,8 @@ export default function ConversationPage() {
               handleSendMessage={handleSendMessage}
               showEmojiPicker={showEmojiPicker}
               sendAttachmentFun={sendAttachmentFun}
+              reply={reply}
+              setReply={setReply}
             />
           </div>
         ) : (
@@ -436,6 +446,5 @@ export default function ConversationPage() {
       </div>
       <CreateGroupDialog open={showCreateGroup} onOpenChange={setShowCreateGroup} />
     </div>
-
   )
 }

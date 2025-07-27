@@ -34,6 +34,8 @@ interface SendMessagePayload{
     content:string
     type:string
     id:number
+    key_for_recipient: string
+    key_for_sender: string
 }
 interface ReplyCommentPayload{
     content:string, 
