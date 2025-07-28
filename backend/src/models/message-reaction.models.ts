@@ -23,7 +23,8 @@ MessageReaction.init(
             references:{
                 model:"messages",
                 key:"id"
-            }
+            },
+            onDelete: 'CASCADE'
         },
         user_id:{
             type:DataTypes.INTEGER,
@@ -31,7 +32,8 @@ MessageReaction.init(
             references:{
                 model:"users",
                 key:"id"
-            }
+            },
+            onDelete: 'CASCADE'
         },
         emoji:{
             type: DataTypes.STRING,

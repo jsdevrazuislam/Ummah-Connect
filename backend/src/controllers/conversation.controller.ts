@@ -1,5 +1,5 @@
 import redis from "@/config/redis";
-import { MESSAGE_USER, SocketEventEnum } from "@/constants";
+import { MESSAGE_ATTRIBUTE, MESSAGE_USER, SocketEventEnum } from "@/constants";
 import {
     Conversation,
     ConversationParticipant,
@@ -22,6 +22,25 @@ import { formatConversations } from "@/utils/format";
 import { getFileType, getOrSetCache } from "@/utils/helper";
 import { Request, Response } from "express";
 import { Op } from "sequelize";
+
+
+const DELETE_CONVERSATION_CACHE = async (isConversation: boolean) => {
+
+    if (!isConversation) {
+        await redis.keys("conversation:messages:*").then((keys) => {
+            if (keys.length > 0) {
+                redis.del(...keys);
+            }
+        });
+    } else {
+        await redis.keys("conversations:*").then((keys) => {
+            if (keys.length > 0) {
+                redis.del(...keys);
+            }
+        });
+    }
+
+}
 
 export const create_conversation_for_dm = asyncHandler(
     async (req: Request, res: Response) => {
@@ -148,11 +167,7 @@ export const create_conversation_for_dm = asyncHandler(
             payload: { ...responseData, name: req.user.full_name, unreadCount: 1 },
         });
 
-        await redis.keys("conversations:*").then((keys) => {
-            if (keys.length > 0) {
-                redis.del(...keys);
-            }
-        });
+        await DELETE_CONVERSATION_CACHE(true)
 
         return res.json(new ApiResponse(200, responseData, "Conversation Created"));
     }
@@ -277,18 +292,49 @@ export const get_conversation_message = asyncHandler(
                         {
                             model: MessageReaction,
                             as: "reactions",
+                            include: [
+                                {
+                                    model: User,
+                                    as: "reactedUser",
+                                    attributes: MESSAGE_USER,
+                                }
+                            ],
+                            attributes: ['emoji', 'emoji', 'message_id', "id"]
                         },
                         {
                             model: MessageStatus,
                             as: "statuses",
-                            where: { user_id: req.user.id },
                             required: false,
-                            attributes: ["status"],
+                            include: [
+                                {
+                                    model: User,
+                                    as: "user",
+                                    attributes: MESSAGE_USER,
+                                }
+                            ],
+                            attributes: ["status"]
                         },
                         {
                             model: MessageAttachment,
                             as: "attachments",
                             required: false,
+                        },
+                        {
+                            model: Message,
+                            as: "parentMessage",
+                            include: [
+                                {
+                                    model: User,
+                                    as: "sender",
+                                    attributes: MESSAGE_USER,
+                                },
+                                {
+                                    model: MessageAttachment,
+                                    as: "attachments",
+                                    required: false,
+                                },
+                            ],
+                            attributes: MESSAGE_ATTRIBUTE
                         },
                     ],
                     order: [["sent_at", "ASC"]],
@@ -311,7 +357,7 @@ export const get_conversation_message = asyncHandler(
 
 export const send_message = asyncHandler(
     async (req: Request, res: Response) => {
-        const { conversationId, content, type, key_for_recipient, key_for_sender } = req.body;
+        const { conversationId, content, key_for_recipient, key_for_sender } = req.body;
         const senderId = req.user.id;
 
         const conversation = await Conversation.findOne({
@@ -356,7 +402,6 @@ export const send_message = asyncHandler(
             conversation_id: conversationId,
             sender_id: senderId,
             content,
-            type,
             sent_at: new Date(),
             key_for_recipient,
             key_for_sender
@@ -405,12 +450,7 @@ export const send_message = asyncHandler(
             payload: responseData,
         });
 
-        await redis.keys("conversation:messages:*").then((keys) => {
-            if (keys.length > 0) {
-                redis.del(...keys);
-            }
-        });
-
+        await DELETE_CONVERSATION_CACHE(false)
         return res.json(new ApiResponse(200, responseData, "success"));
     }
 );
@@ -449,6 +489,7 @@ export const read_message = asyncHandler(
         participant.last_read_message_id = messageId;
 
         await participant.save();
+        await DELETE_CONVERSATION_CACHE(false)
 
         return res.json(new ApiResponse(200, null, "Success"));
     }
@@ -556,11 +597,7 @@ export const send_attachment = asyncHandler(
             payload: responseData,
         });
 
-        await redis.keys("conversation:messages:*").then((keys) => {
-            if (keys.length > 0) {
-                redis.del(...keys);
-            }
-        });
+        await DELETE_CONVERSATION_CACHE(false)
 
         return res.json(
             new ApiResponse(200, responseData, "Message with attachments sent")
@@ -573,27 +610,210 @@ export const delete_conversation = asyncHandler(async (req: Request, res: Respon
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
 
-  const conversation = await Conversation.findByPk(conversationId);
+    const conversation = await Conversation.findByPk(conversationId);
 
-  if (!conversation) {
-    throw new ApiError(404, "Conversation not found");
-  }
+    if (!conversation) {
+        throw new ApiError(404, "Conversation not found");
+    }
+
+    const isParticipant = await ConversationParticipant.findOne({
+        where: {
+            conversation_id: conversationId,
+            user_id: userId,
+        },
+    });
+
+    if (!isParticipant) {
+        throw new ApiError(403, "Not authorized to delete this conversation");
+    }
+
+    await conversation.destroy();
+
+    await DELETE_CONVERSATION_CACHE(true)
+
+    return res.json(new ApiResponse(200, null, "Conversation deleted successfully"));
+});
+
+export const react_to_message = asyncHandler(async (req: Request, res: Response) => {
+  const { messageId } = req.params;
+  const { emoji } = req.body;
+  const userId = req.user.id;
+
+  if (!emoji) throw new ApiError(400, "Emoji is required");
+
+  const message = await Message.findByPk(messageId);
+  if (!message) throw new ApiError(404, "Message not found");
 
   const isParticipant = await ConversationParticipant.findOne({
+    where: { conversation_id: message.conversation_id, user_id: userId },
+  });
+  if (!isParticipant) throw new ApiError(403, "You are not part of this conversation");
+
+  const existingReaction = await MessageReaction.findOne({
     where: {
-      conversation_id: conversationId,
+      message_id: message.id,
       user_id: userId,
     },
   });
 
-  if (!isParticipant) {
-    throw new ApiError(403, "Not authorized to delete this conversation");
+  let reaction;
+  let created = false;
+
+  if (existingReaction) {
+    existingReaction.emoji = emoji;
+    await existingReaction.save();
+    reaction = existingReaction;
+  } else {
+    reaction = await MessageReaction.create({
+      message_id: message.id,
+      user_id: userId,
+      emoji,
+    });
+    created = true;
   }
 
-  await conversation.destroy();
+  await DELETE_CONVERSATION_CACHE(false);
 
-  const pageKeys = await redis.keys(`conversations:page=*:limit=*:user=${userId}`);
-  await Promise.all(pageKeys.map((key) => redis.del(key)));
+  return res.json(
+    new ApiResponse(200, { reaction }, created ? "Reaction added" : "Reaction updated")
+  );
+});
 
-  return res.json(new ApiResponse(200, null, "Conversation deleted successfully"));
+
+export const remove_reaction_from_message = asyncHandler(async (req: Request, res: Response) => {
+    const { messageId } = req.params;
+    const userId = req.user.id;
+
+    const deleted = await MessageReaction.destroy({
+        where: { message_id: messageId, user_id: userId },
+    });
+
+    if (!deleted) throw new ApiError(404, "Reaction not found");
+
+    await DELETE_CONVERSATION_CACHE(false)
+
+    return res.json(new ApiResponse(200, null, "Reaction removed"));
+});
+
+export const reply_to_message = asyncHandler(async (req: Request, res: Response) => {
+    const { parentMessageId } = req.params;
+    const { content, key_for_sender, key_for_recipient, receiver_id } = req.body;
+    const userId = req.user.id;
+
+    if (!content) throw new ApiError(400, "Content is required");
+
+    const parentMessage = await Message.findByPk(parentMessageId);
+    if (!parentMessage) throw new ApiError(404, "Original message not found");
+
+    const isParticipant = await ConversationParticipant.findOne({
+        where: { conversation_id: parentMessage.conversation_id, user_id: userId },
+    });
+    if (!isParticipant) throw new ApiError(403, "You are not part of this conversation");
+
+    const reply = await Message.create({
+        conversation_id: parentMessage.conversation_id,
+        sender_id: userId,
+        parent_message_id: parentMessage.id,
+        content,
+        key_for_sender,
+        key_for_recipient,
+        sent_at: new Date(),
+        is_deleted: false,
+    });
+
+    await MessageStatus.create({
+        message_id: reply.id,
+        user_id: Number(receiver_id),
+        status: "sent",
+    });
+
+    await DELETE_CONVERSATION_CACHE(false)
+
+    return res.json(new ApiResponse(201, { reply }, "Reply sent successfully"));
+});
+
+export const edit_message = asyncHandler(async (req: Request, res: Response) => {
+  const { messageId } = req.params;
+  const { content, key_for_recipient, key_for_sender } = req.body;
+  const userId = req.user.id;
+
+  if (!content)
+    throw new ApiError(400, "Content is required");
+
+  const message = await Message.findByPk(messageId);
+  if (!message) throw new ApiError(404, "Message not found");
+
+  if (message.sender_id !== userId)
+    throw new ApiError(403, "You can only edit your own messages");
+
+  if (message.is_deleted)
+    throw new ApiError(400, "Cannot edit a deleted message");
+
+  message.content = content;
+  message.key_for_recipient = key_for_recipient;
+  message.key_for_sender = key_for_sender;
+  message.is_updated = true;
+  await message.save();
+
+  await DELETE_CONVERSATION_CACHE(false);
+
+  return res.json(new ApiResponse(200, { message }, "Message updated"));
+});
+
+export const delete_message = asyncHandler(async (req: Request, res: Response) => {
+  const { messageId } = req.params;
+  const userId = req.user.id;
+
+  const message = await Message.findByPk(messageId);
+  if (!message) throw new ApiError(404, "Message not found");
+
+  const isParticipant = await ConversationParticipant.findOne({
+    where: {
+      conversation_id: message.conversation_id,
+      user_id: userId,
+    },
+  });
+
+  if (!isParticipant)
+    throw new ApiError(403, "You are not part of this conversation");
+
+  if (message.sender_id !== userId)
+    throw new ApiError(403, "You can only delete your own messages");
+
+  if (message.is_deleted)
+    throw new ApiError(400, "Message already deleted");
+
+  message.is_deleted = true;
+  message.deleted_by_id = userId;
+  message.deleted_at = new Date();
+
+  await message.save();
+
+  await DELETE_CONVERSATION_CACHE(false);
+
+  return res.json(new ApiResponse(200, {}, "Message deleted"));
+});
+
+export const undo_delete_message = asyncHandler(async (req: Request, res: Response) => {
+  const { messageId } = req.params;
+  const userId = req.user.id;
+
+  const message = await Message.findByPk(messageId);
+  if (!message) throw new ApiError(404, "Message not found");
+
+  if (message.sender_id !== userId)
+    throw new ApiError(403, "You can only restore your own messages");
+
+  if (!message.is_deleted)
+    throw new ApiError(400, "Message is not deleted");
+
+  message.is_deleted = false;
+  message.deleted_at = null;
+  message.deleted_by_id = null;
+
+  await message.save();
+
+  await DELETE_CONVERSATION_CACHE(false);
+
+  return res.json(new ApiResponse(200, {}, "Message restored"));
 });

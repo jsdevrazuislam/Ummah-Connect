@@ -29,7 +29,7 @@ const options = {
 };
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, full_name, password, username, public_key } = req.body;
+  const { email, full_name, password, username, public_key, gender = 'male' } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -47,6 +47,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     role: "user",
     is_verified: false,
     public_key,
+    gender,
     privacy_settings: {
       active_status: true,
       private_account: false,
@@ -111,6 +112,7 @@ export const login_with_2FA = asyncHandler(async (req: Request, res: Response) =
   });
 
   if (!user) throw new ApiError(400, "User doesn't exist");
+  if (!user.is_verified) throw new ApiError(400, "Please verified your email");
 
   const is_password_correct = await compare_password(user.password, password);
   if (!is_password_correct) throw new ApiError(400, "Invalid User Details");

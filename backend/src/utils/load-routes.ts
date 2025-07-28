@@ -16,7 +16,6 @@ export const load_routes = async (app: Application) => {
       const basePath = routeModule.basePath;
 
       if (!route || !basePath) {
-        console.warn(`⚠️ Skipped ${file}: Missing default export or basePath`);
         continue;
       }
 

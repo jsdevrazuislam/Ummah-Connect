@@ -84,6 +84,10 @@ Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 Message.hasMany(MessageReaction, { foreignKey: 'message_id', as: 'reactions' });
 MessageReaction.belongsTo(Message, { foreignKey: 'message_id' });
 MessageReaction.belongsTo(User, { foreignKey: 'user_id', as: 'reactedUser' });
+Message.belongsTo(Message, {
+  as: "parentMessage",
+  foreignKey: "parent_message_id",
+});
 
 Message.hasMany(MessageStatus, { foreignKey: 'message_id', as: 'statuses' });
 MessageStatus.belongsTo(Message, { foreignKey: 'message_id' });

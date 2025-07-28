@@ -12,9 +12,15 @@ type Props = {
   };
 };
 
+const blockUsername = ['.well-known', 'appspecific', 'com.chrome.devtools.json']
 async function fetchUser(username: string) {
   const cookie = await cookies();
   const token = cookie.get(ACCESS_TOKEN)?.value;
+
+  if (
+    !username ||
+    blockUsername.some(blocked => username.includes(blocked))
+  ) return
 
   if (!token) return null;
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/${username}/profile`, {

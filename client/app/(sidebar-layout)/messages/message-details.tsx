@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Search, Users, MessageSquare, Plus, ChevronLeft } from "lucide-react"
 import ConversationSkeleton from "@/components/conversation-loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_conversation_messages, get_conversations, read_message, send_attachment, send_message } from "@/lib/apis/conversation"
+import { get_conversation_messages, get_conversations, read_message, reply_to_message, send_attachment, send_message } from "@/lib/apis/conversation"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useStore } from "@/store/store"
@@ -153,6 +153,13 @@ export default function ConversationPage() {
     }
   })
 
+  const { mutate: replyMessageFunc } = useMutation({
+        mutationFn: reply_to_message,
+        onError: (error) =>{
+            toast.error(error.message)
+        }
+    })
+
   const loadMoreMessage = () => {
     if (messageHasNextPage && !isMessageFetchNextPage) {
       messageNextPage();
@@ -161,20 +168,22 @@ export default function ConversationPage() {
 
   const handleSelectionMessage = (conv: Conversation) => {
 
-    setSelectedConversation({
-      full_name: conv.name ?? '',
-      avatar: conv.avatar,
-      username: conv.username ?? '',
-      id: conv.userId ?? 0,
-      conversationId: conv.id,
-      last_seen_at: conv?.last_seen_at,
-      public_key: conv?.public_key
-    });
+    if(!selectedConversation){
+        setSelectedConversation({
+          full_name: conv.name ?? '',
+          avatar: conv.avatar,
+          username: conv.username ?? '',
+          id: conv.userId ?? 0,
+          conversationId: conv.id,
+          last_seen_at: conv?.last_seen_at,
+          public_key: conv?.public_key
+      });
 
-    readMessageFun({
-      conversationId: conv.id,
-      messageId: conv?.lastMessage?.id ?? 0,
-    });
+      readMessageFun({
+        conversationId: conv.id,
+        messageId: conv?.lastMessage?.id ?? 0,
+      });
+    }
   };
 
 
@@ -200,14 +209,23 @@ export default function ConversationPage() {
         return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
       })
 
-      mutate({
+     if(reply){
+       replyMessageFunc({
+        content,
+        id: reply.id ?? 0,
+        key_for_recipient,
+        key_for_sender,
+        receiver_id: reply.receiver_id ?? 0
+      })
+     } else {
+       mutate({
         conversationId: selectedConversation?.conversationId ?? 0,
-        type: 'text',
         content,
         id,
         key_for_recipient,
         key_for_sender
       })
+     }
     }
   }
 

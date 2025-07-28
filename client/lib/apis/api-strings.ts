@@ -45,6 +45,11 @@ const ApiStrings = {
   READ_MESSAGE: `/conversation/read-message`,
   SEND_ATTACHMENT: `/conversation/send-attachment`,
   DELETE_CONVERSATION: `/conversation/delete`,
+  REACT_MESSAGE: `/conversation/react`,
+  EDIT_MESSAGE: `/conversation/edit`,
+  DELETE_MESSAGE: `/conversation/message/delete`,
+  UNDO_DELETE_MESSAGE: `/conversation/message/undo`,
+  REPLY_MESSAGE: `/conversation/reply`,
   // stream
   INITIAL_CALL: '/stream/initiate-call',
   GET_LIVES: '/stream/',

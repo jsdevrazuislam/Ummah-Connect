@@ -12,8 +12,9 @@ class Message extends Model{
     public parent_message_id!:number
     public sent_at!: Date
     public is_deleted!: boolean
-    public deleted_by_id!: number
-    public deleted_at!: Date
+    public is_updated!: boolean
+    public deleted_by_id!: number | null
+    public deleted_at!: Date | null
     public createdAt!: Date
     public updatedAt!: Date
 }
@@ -67,13 +68,18 @@ Message.init(
             allowNull: false,
         },
         is_deleted: DataTypes.BOOLEAN,
+        is_updated: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
         deleted_by_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references:{
                 model:"users",
                 key:"id"
-            }
+            },
+            onDelete: 'CASCADE'
         },
         deleted_at:  {
             type: DataTypes.DATE,

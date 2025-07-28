@@ -1,4 +1,4 @@
-import { create_conversation_for_dm, delete_conversation, get_all_conversations, get_conversation_message, read_message, send_attachment, send_message } from '@/controllers/conversation.controller'
+import { create_conversation_for_dm, delete_conversation, delete_message, edit_message, get_all_conversations, get_conversation_message, react_to_message, read_message, remove_reaction_from_message, reply_to_message, send_attachment, send_message, undo_delete_message } from '@/controllers/conversation.controller'
 import { verify_auth } from '@/middleware/auth.middleware'
 import { upload } from '@/middleware/multer.middleware'
 import { validateData } from '@/middleware/validation.middleware'
@@ -14,6 +14,12 @@ router.post("/send-attachment", verify_auth, upload.array("media", 10), send_att
 router.get("/:id", verify_auth, get_conversation_message)
 router.post("/read-message", validateData(readMessageSchema), verify_auth, read_message)
 router.delete("/delete/:id", verify_auth, delete_conversation)
+router.post("/react/:messageId", verify_auth, react_to_message)
+router.delete("/react/:messageId", verify_auth, remove_reaction_from_message)
+router.post("/reply/:parentMessageId", verify_auth, reply_to_message)
+router.put("/edit/:messageId", verify_auth, edit_message)
+router.delete("/message/delete/:messageId", verify_auth, delete_message)
+router.post("/message/undo/:messageId", verify_auth, undo_delete_message)
 
 
 export const basePath = '/conversation';

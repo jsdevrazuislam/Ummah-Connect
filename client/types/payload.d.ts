@@ -132,14 +132,27 @@ interface StreamPayload {
   tags?: string[] | undefined;
 }
 
-interface LiveStreamChatPayload{
-  id:number
-  stream_id:number, sender_id:number, content:string,
+interface LiveStreamChatPayload {
+  id: number
+  stream_id: number, sender_id: number, content: string,
 }
 
-interface BanLivePayload{
+interface BanLivePayload {
   banned_user_id: number
-  reason:string
+  reason: string
   duration_type: string
   stream_id: number
+}
+
+interface ReactionToMessagePayload {
+  id: number
+  emoji: string
+}
+
+interface ReplyToMessagePayload {
+  content: string,
+  key_for_sender: string,
+  key_for_recipient: string
+  id:number
+  receiver_id?:number
 }

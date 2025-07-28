@@ -23,7 +23,8 @@ MessageStatus.init(
                 model: "messages",
                 key: "id"
             },
-            allowNull: false
+            allowNull: false,
+            onDelete: 'CASCADE'
         },
 
         user_id: {
@@ -32,7 +33,8 @@ MessageStatus.init(
                 model: "users",
                 key: "id"
             },
-            allowNull: false
+            allowNull: false,
+            onDelete: 'CASCADE'
         },
 
         status: {

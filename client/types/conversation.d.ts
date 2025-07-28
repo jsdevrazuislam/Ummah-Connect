@@ -60,26 +60,36 @@ interface ConversationMessages {
   conversation_id: number;
   sender_id: number;
   content: string;
-  parent_message_id?: null;
+  parent_message_id?: null | number;
   sent_at: string;
-  is_deleted?: null;
+  is_deleted?: boolean | null;
+  is_updated?: boolean;
   deleted_by_id?: null;
   deleted_at?: null;
   createdAt: string;
   updatedAt: string;
   sender: MessageSender;
   status: string;
-  reactions?: null[] | null;
+  reactions: MessageReaction[] | [];
   statuses: MessageStatus[];
   attachments: MessageAttachment[];
-  key_for_sender:string
-  key_for_recipient?:string
+  parentMessage?: ParentMessage | null
+  key_for_sender: string
+  key_for_recipient?: string
 }
 
-interface ReplyMessage{
-  id?:number
-  conversation_id?:number
+interface ParentMessage{
+  content:string
+  key_for_recipient:string
+  key_for_sender:string
+  sender: MessageSender
+  attachments: MessageAttachment[];
+}
+interface ReplyMessage {
+  id?: number
+  conversation_id?: number
   content?: string;
+  receiver_id?: number;
   full_name?: string;
 }
 
@@ -95,10 +105,20 @@ interface MessageAttachment {
   createdAt: string;
   updatedAt: string;
 }
-interface Metadata {}
+interface Metadata { }
+interface MessageReaction {
+  id:number
+  message_id:number
+  user_id:number
+  emoji:string
+  createdAt:string
+  updatedAt:string
+  reactedUser: MessageSender
+}
 
 interface MessageStatus {
   status: "sent" | "delivered" | "seen";
+  user: MessageSender
 }
 interface MessageSender {
   id: number;
@@ -108,5 +128,5 @@ interface MessageSender {
   status?: string;
   conversationId?: number;
   last_seen_at?: string;
-  public_key?:string
+  public_key?: string
 }

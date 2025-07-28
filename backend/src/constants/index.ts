@@ -46,5 +46,6 @@ const USER_ATTRIBUTE = ['id', 'username', 'full_name', 'avatar', 'location', 'bi
 const REACT_ATTRIBUTE = ['userId', 'react_type', 'icon', 'commentId', 'postId'];
 const POST_ATTRIBUTE = ['id', 'media', 'content', 'location', 'privacy', 'createdAt', 'contentType', 'background']
 const MESSAGE_USER = ['id', 'full_name', 'avatar', 'username', 'last_seen_at', 'public_key']
+const MESSAGE_ATTRIBUTE= ['content', 'key_for_recipient', 'key_for_sender']
 
-export { DATA_LIMIT, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER, GRACE_PERIOD_MS };
+export { DATA_LIMIT, MESSAGE_ATTRIBUTE, DB_NAME, POST_ATTRIBUTE, SocketEventEnum, API_VERSION, USER_ATTRIBUTE, REACT_ATTRIBUTE, MESSAGE_USER, GRACE_PERIOD_MS };

@@ -2,7 +2,6 @@ import express, {
   Application,
   urlencoded,
   json,
-  Request,
   Response,
 } from "express";
 import morgan from "morgan";
@@ -17,6 +16,7 @@ import swagger from "@/config/swagger";
 import { initializeSocketIO } from "@/socket";
 import { connectRedis } from "@/config/redis";
 import { load_routes } from "@/utils/load-routes";
+import { errorHandler } from "@/middleware/error.middleware";
 
 
 const app: Application = express();
@@ -84,19 +84,7 @@ const startApp = async () => {
     });
   });
 
-  app.use((err: Error, _req: Request, res: Response) => {
-    if (err instanceof ApiError) {
-      res.status(err.statusCode).json(err.toJSON());
-    } else {
-      res.status(500).json({
-        statusCode: 500,
-        message: "Internal Server Error",
-        success: false,
-        errors: [],
-        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-      });
-    }
-  });
+  app.use(errorHandler); 
 };
 
 startApp();

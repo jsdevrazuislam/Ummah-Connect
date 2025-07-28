@@ -32,7 +32,6 @@ interface DeletePostCommentPayload{
 interface SendMessagePayload{
     conversationId:number,
     content:string
-    type:string
     id:number
     key_for_recipient: string
     key_for_sender: string

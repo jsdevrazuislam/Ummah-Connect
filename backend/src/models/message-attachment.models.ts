@@ -27,7 +27,8 @@ MessageAttachment.init(
       references: {
         model: "messages",
         key: "id"
-      }
+      },
+      onDelete: 'CASCADE'
     },
     file_url: {
       type: DataTypes.STRING,
