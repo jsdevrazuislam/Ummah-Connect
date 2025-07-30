@@ -24,8 +24,8 @@ export function LeftSidebar() {
 
   const [currentTime, setCurrentTime] = useState(new Date())
   const quickShortcuts = [
-  { icon: Bookmark, label: "Saved Posts", href: "/bookmarks", count: user?.totalBookmarks },
-]
+    { icon: Bookmark, label: "Saved Posts", href: "/bookmarks", count: user?.totalBookmarks },
+  ]
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -55,19 +55,19 @@ export function LeftSidebar() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{user?.totalPosts}</div>
+              <div className="text-lg font-bold text-blue-600">{user?.totalPosts ?? 0}</div>
               <div className="text-xs text-muted-foreground">Posts</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{user?.followers_count}</div>
+              <div className="text-lg font-bold text-green-600">{user?.followers_count ?? 0}</div>
               <div className="text-xs text-muted-foreground">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-purple-600">{user?.following_count}</div>
+              <div className="text-lg font-bold text-purple-600">{user?.following_count ?? 0}</div>
               <div className="text-xs text-muted-foreground">Following</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{user?.totalLikes}</div>
+              <div className="text-lg font-bold text-red-600">{user?.totalLikes ?? 0}</div>
               <div className="text-xs text-muted-foreground">Likes</div>
             </div>
           </div>
@@ -93,9 +93,9 @@ export function LeftSidebar() {
                 <span className="text-sm">{shortcut.label}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <Badge variant="secondary" className="text-xs">
+                {Number(shortcut.count) > 0 && <Badge variant="secondary" className="text-xs">
                   {shortcut.count}
-                </Badge>
+                </Badge>}
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
               </div>
             </Link>
@@ -106,19 +106,21 @@ export function LeftSidebar() {
       <Card>
         <CardContent className="p-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {
-                  location?.condition === 'Rain' ? <CloudRain className="h-4 w-4 text-blue-500" /> : <Cloud className="h-4 w-4 text-blue-500" />
-                }
-                <span className="text-sm font-medium">{location?.condition}</span>
+            {
+              location?.condition && <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {
+                    location?.condition === 'Rain' ? <CloudRain className="h-4 w-4 text-blue-500" /> : <Cloud className="h-4 w-4 text-blue-500" />
+                  }
+                  <span className="text-sm font-medium">{location?.condition}</span>
+                </div>
+                <span className="text-lg font-bold">{location?.temp}°C</span>
               </div>
-              <span className="text-lg font-bold">{location?.temp}°C</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+            }
+            {user?.location && <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span>{location?.city}, {location?.country}</span>
-            </div>
+              <span>{user?.location}</span>
+            </div>}
             <div className="text-center">
               <div className="text-sm font-mono">
                 {currentTime.toLocaleTimeString("en-US", {
@@ -133,7 +135,11 @@ export function LeftSidebar() {
                   month: "short",
                   day: "numeric",
                 })} <br />
-                {hijriDate?.hijri?.day}, {hijriDate?.hijri?.weekday?.en}, {hijriDate?.hijri?.month?.en}, {hijriDate?.hijri?.year}
+                {
+                  hijriDate?.hijri && (
+                    hijriDate?.hijri?.day, hijriDate?.hijri?.weekday?.en, hijriDate?.hijri?.month?.en, hijriDate?.hijri?.year
+                  )
+                }
               </div>
             </div>
           </div>

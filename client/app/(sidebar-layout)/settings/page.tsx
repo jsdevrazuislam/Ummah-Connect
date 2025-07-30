@@ -1,13 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
 import { Bell, User, Lock } from "lucide-react"
 import AccountForm from "@/app/(sidebar-layout)/settings/account-form"
 import PrivacySettings from "@/app/(sidebar-layout)/settings/privacy-settings"
 import ChangePassword from "@/app/(sidebar-layout)/settings/change-password"
 import Notification from "@/app/(sidebar-layout)/settings/notification"
 import { TwoFactorAuth } from "@/components/2fa"
+import Preferences from "@/app/(sidebar-layout)/settings/preferences"
+import Security from "./security"
 
 export default function SettingsPage() {
   return (
@@ -32,26 +31,13 @@ export default function SettingsPage() {
         <TabsContent value="account" className="space-y-6">
           <AccountForm />
           <ChangePassword />
+          <Preferences />
         </TabsContent>
 
         <TabsContent value="privacy" className="space-y-6">
           <PrivacySettings />
           <TwoFactorAuth />
-          <Card>
-            <CardHeader>
-              <CardTitle>Security</CardTitle>
-              <CardDescription>Manage your account security settings.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Active Sessions</Label>
-                  <p className="text-sm text-muted-foreground">Manage devices where you're currently logged in</p>
-                </div>
-                <Button variant="outline">Manage</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <Security />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">

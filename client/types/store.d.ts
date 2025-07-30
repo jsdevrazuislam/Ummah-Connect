@@ -22,6 +22,7 @@ interface AuthState {
   getUserLastSeen: (userId: number) => number;
   setIsOpen: (value:boolean) => void
   prayerTime: null | Timings
+  fetchPrayerTimes: (latitude: number, longitude: number) => Promise<void>
   hijriDate: null | PrayerDate
   stories: StoryEntity[] | null;
   addStory: (newStory: Story) => void;
@@ -42,10 +43,6 @@ interface AuthState {
 
 
 interface MyLocation {
-    latitude: number
-    longitude: number
-    city: string
-    country: string
     condition:string
     temp: number
 }

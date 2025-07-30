@@ -18,6 +18,8 @@ class User extends Model {
     public password!: string;
     public gender!: string;
     public bio!: string;
+    public longitude!: number;
+    public latitude!: number;
     public is_verified!: boolean;
     public verified_identity!: boolean;
     public privacy_settings!: {
@@ -71,6 +73,14 @@ User.init(
         location: {
             type: DataTypes.STRING,
             allowNull: true
+        },
+        latitude:{
+             type: DataTypes.INTEGER,
+             allowNull: true
+        },
+        longitude:{
+             type: DataTypes.INTEGER,
+             allowNull: true
         },
         website: {
             type: DataTypes.STRING,

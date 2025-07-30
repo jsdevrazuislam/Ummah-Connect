@@ -17,7 +17,7 @@ const Notification = () => {
     const { user, setUser } = useStore()
     const { handleSubmit, control, setValue } = useForm<NotificationPreferenceFormData>({
         resolver: zodResolver(notificationPreferenceSchema),
-        defaultValues:{
+        defaultValues: {
 
         }
     });
@@ -104,71 +104,61 @@ const Notification = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2 mt-3">
-                            <h3 className="text-sm font-medium">Notify me about:</h3>
-                            <div className="grid gap-2">
-                                <div className="flex items-center space-x-2">
+                        <div className="space-y-4 mt-3">
+                            {[
+                                {
+                                    name: "like_post",
+                                    id: "likes",
+                                    label: "Likes on my posts",
+                                    description: "Get notified when someone likes your post",
+                                },
+                                {
+                                    name: "comment_post",
+                                    id: "comments",
+                                    label: "Comments on my posts",
+                                    description: "Get notified when someone comments on your post",
+                                },
+                                {
+                                    name: "mention",
+                                    id: "mentions",
+                                    label: "Mentions",
+                                    description: "Get notified when someone mentions you",
+                                },
+                                {
+                                    name: "new_follower",
+                                    id: "follows",
+                                    label: "New followers",
+                                    description: "Get notified when someone follows you",
+                                },
+                                {
+                                    name: "dm",
+                                    id: "messages",
+                                    label: "Direct messages",
+                                    description: "Get notified when you receive a new message",
+                                },
+                                {
+                                    name: "islamic_event",
+                                    id: "events",
+                                    label: "Islamic events and holidays",
+                                    description: "Updates about important Islamic days and events",
+                                },
+                            ].map(({ name, id, label, description }) => (
+                                <div key={name} className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor={id} className="cursor-pointer">{label}</Label>
+                                        <p className="text-sm text-muted-foreground">{description}</p>
+                                    </div>
                                     <Controller
-                                        name='like_post'
+                                        name={name as "dm" | "islamic_event" | "like_post" | "comment_post" | "mention" | "new_follower" | "push_notification" | "email_notification" | "prayer_time_notification"}
                                         control={control}
                                         render={({ field }) => (
-                                            <Switch id='likes' checked={field.value} onCheckedChange={field.onChange} />
+                                            <Switch id={id} checked={field.value} onCheckedChange={field.onChange} />
                                         )}
                                     />
-                                    <Label htmlFor="likes" className='cursor-pointer'>Likes on my posts</Label>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Controller
-                                        name='comment_post'
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Switch id='comments' checked={field.value} onCheckedChange={field.onChange} />
-                                        )}
-                                    />
-                                    <Label htmlFor="comments" className='cursor-pointer'>Comments on my posts</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Controller
-                                        name='mention'
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Switch id='mentions' checked={field.value} onCheckedChange={field.onChange} />
-                                        )}
-                                    />
-                                    <Label htmlFor="mentions" className='cursor-pointer'>Mentions</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Controller
-                                        name='new_follower'
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Switch id='follows' checked={field.value} onCheckedChange={field.onChange} />
-                                        )}
-                                    />
-                                    <Label htmlFor="follows" className='cursor-pointer'>New followers</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Controller
-                                        name='dm'
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Switch id='messages' checked={field.value} onCheckedChange={field.onChange} />
-                                        )}
-                                    />
-                                    <Label htmlFor="messages" className='cursor-pointer'>Direct messages</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Controller
-                                        name='islamic_event'
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Switch id='events' checked={field.value} onCheckedChange={field.onChange} />
-                                        )}
-                                    />
-                                    <Label htmlFor="events" className='cursor-pointer'>Islamic events and holidays</Label>
-                                </div>
-                            </div>
+                            ))}
                         </div>
+
                         <Button disabled={isPending} className='mt-4'>
                             {isPending ? 'loading...' : 'Save Notification Settings'}
                         </Button>

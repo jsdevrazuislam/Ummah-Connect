@@ -4,7 +4,6 @@ import { REFRESH_TOKEN, ACCESS_TOKEN } from "@/constants";
 import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
 import { getCurrentLocation, getPrayerTimes } from "@/lib/prayer";
-import { fetchReverseGeocode } from "@/lib/apis/prayer";
 import { getNotifications } from "@/lib/apis/notification";
 
 const storeResetFns = new Set<() => void>()
@@ -90,6 +89,15 @@ export const useStore = create<AuthState>((set, get) => ({
         });
     },
 
+    fetchPrayerTimes: async (latitude, longitude) => {
+        const { date, timings } = await getPrayerTimes(latitude, longitude)
+        set({
+            prayerTime: timings,
+            hijriDate: date,
+
+        })
+    },
+
     deleteStoryFromStore: (storyId: number) => {
         const { stories } = get();
 
@@ -131,38 +139,55 @@ export const useStore = create<AuthState>((set, get) => ({
     initialLoading: async () => {
         if (get().accessToken) {
             try {
-                const { data } = await api.get(ApiStrings.ME)
-                const notificationsData = await getNotifications({ page: 1, limit: 10 })
-                const { data: storiesData } = await api.get<StoryResponse>(ApiStrings.GET_STORIES)
-                const { latitude, longitude } = await getCurrentLocation()
-                const { date, timings } = await getPrayerTimes(latitude, longitude)
-                const user = data?.data?.user
-                const { city, country } = await fetchReverseGeocode(latitude, longitude)
-                const res = await fetch(`/api/weather?lat=${latitude}&lon=${longitude}`);
-                const { condition, temp } = await res.json();
+                const [
+                    userRes,
+                    notificationsRes,
+                    storiesRes,
+                    location,
+                ] = await Promise.allSettled([
+                    api.get(ApiStrings.ME),
+                    getNotifications({ page: 1, limit: 10 }),
+                    api.get<StoryResponse>(ApiStrings.GET_STORIES),
+                    getCurrentLocation()
+                ]);
 
+                const user = userRes.status === 'fulfilled' ? userRes.value?.data?.data?.user : null;
+                const notifications = notificationsRes.status === 'fulfilled' ? notificationsRes.value?.data?.notifications ?? [] : [];
+                const unreadCount = notificationsRes.status === 'fulfilled' ? notificationsRes.value?.data?.unreadCount ?? 0 : 0;
+                const stories = storiesRes.status === 'fulfilled' ? storiesRes.value?.data?.data : [];
+
+                let prayerTime = null;
+                let hijriDate = null;
+                let locationInfo = null;
+
+                if (location.status === 'fulfilled') {
+                    const { latitude, longitude } = location.value;
+
+                    const [prayerRes, weatherRes] = await Promise.allSettled([
+                        getPrayerTimes(latitude, longitude),
+                        fetch(`/api/weather?lat=${latitude}&lon=${longitude}`).then(res => res.json())
+                    ]);
+
+                    prayerTime = prayerRes.status === 'fulfilled' ? prayerRes.value.timings : null;
+                    hijriDate = prayerRes.status === 'fulfilled' ? prayerRes.value.date : null;
+                    locationInfo = {
+                        condition: weatherRes.status === 'fulfilled' ? weatherRes.value.condition : null,
+                        temp: weatherRes.status === 'fulfilled' ? weatherRes.value.temp : null,
+                    };
+                }
                 set({
                     user,
-                    notifications: notificationsData?.data?.notifications ?? [],
-                    unreadCount: notificationsData?.data?.unreadCount,
-                    stories: storiesData?.data,
-                    prayerTime: timings,
-                    hijriDate: date,
-                    location: {
-                        latitude,
-                        longitude,
-                        city,
-                        country,
-                        condition,
-                        temp
-                    }
-                })
-            } catch (error) {
-                console.log("initialLoading Error", error)
+                    notifications,
+                    unreadCount,
+                    stories,
+                    prayerTime,
+                    hijriDate,
+                    location: locationInfo
+                });
+            } catch (err) {
+                console.error("initialLoading error", err);
             } finally {
-                set({
-                    isLoading: false
-                })
+                set({ isLoading: false });
             }
         } else {
             set({

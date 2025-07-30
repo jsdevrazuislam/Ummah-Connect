@@ -133,7 +133,7 @@ const AccountForm = () => {
                             </div>
 
                             <div className="relative group">
-                                <div className="relative w-full h-48 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg overflow-hidden border border-border">
+                                <div className="relative w-full h-[300px] bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg overflow-hidden border border-border">
                                     <Input
                                         type="file"
                                         ref={fileInputRef}
@@ -144,7 +144,7 @@ const AccountForm = () => {
                                     />        
 
                                     {
-                                        cover &&    <Image
+                                        cover &&   <Image
                                             src={cover}
                                             alt="Cover photo"
                                             className="w-full h-full object-cover"

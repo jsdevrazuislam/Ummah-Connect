@@ -332,11 +332,6 @@ export default function PeoplePage() {
                     <div className="text-center mb-4">
                         <div className="flex items-center justify-center gap-2 mb-1">
                             <h3 className="font-bold text-lg text-gray-900 dark:text-white">{user.fullName}</h3>
-                            {user.mutualFriends > 0 && (
-                                <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                                    {user.mutualFriends} mutual
-                                </Badge>
-                            )}
                         </div>
                         <p className="text-primary font-medium text-sm">@{user.username}</p>
                         {user.profession && <p className="text-muted-foreground text-sm mt-1">{user.profession}</p>}
@@ -517,7 +512,7 @@ export default function PeoplePage() {
                 <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-800 p-6 mb-8">
                     <div className="flex flex-col gap-4">
                         <div className="relative">
-                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                            <Search className="absolute z-10 left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                             <Input
                                 placeholder="Search by name, username, bio, or profession..."
                                 value={searchQuery}

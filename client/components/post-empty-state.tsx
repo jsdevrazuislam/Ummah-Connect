@@ -1,5 +1,6 @@
 import { Users, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export function FollowingEmptyState() {
   return (
@@ -15,13 +16,12 @@ export function FollowingEmptyState() {
       </p>
       
       <div className="flex gap-3">
+        <Link href='/discover-people'>
         <Button variant="default">
           <FileText className="h-4 w-4 mr-2" />
-          Explore Posts
+          Explore People to Follow
         </Button>
-        <Button variant="outline">
-          Find People to Follow
-        </Button>
+        </Link>
       </div>
     </div>
   )

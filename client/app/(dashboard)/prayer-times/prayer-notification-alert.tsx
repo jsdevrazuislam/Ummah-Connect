@@ -15,7 +15,7 @@ import { useStore } from "@/store/store"
 
 export default function PrayerTimesPage() {
     const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">("daily")
-    const { user, location} = useStore()
+    const { user, location } = useStore()
 
     const { data: dailyData, isLoading: isDailyLoading } = useQuery({
         queryKey: ['dailyPrayerTimes'],
@@ -35,12 +35,10 @@ export default function PrayerTimesPage() {
     })
 
 
-    const isLoading = 
+    const isLoading =
         (activeTab === 'daily' && isDailyLoading) ||
         (activeTab === 'weekly' && isWeeklyLoading) ||
         (activeTab === 'monthly' && isMonthlyLoading)
-
-        console.log("iser", user?.notification_preferences?.prayer_time_notification)
 
     return (
         <>
@@ -50,7 +48,7 @@ export default function PrayerTimesPage() {
                     {location ? (
                         <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                             <MapPin className="h-4 w-4" />
-                            <span>{location.city}, {location.country}</span>
+                            <span>{user?.location}</span>
                         </div>
                     ) : (
                         <Skeleton className="h-4 w-48 mt-2" />
@@ -98,7 +96,8 @@ export default function PrayerTimesPage() {
                                             <div className="text-xs text-muted-foreground uppercase">{prayer}</div>
                                             <div className="text-lg font-semibold mt-1">{to12HourFormat(time)}</div>
                                             <div className="mt-2">
-                                                <Switch id={`notify-${prayer}`} checked={user?.notification_preferences?.prayer_time_notification} />
+                                                <Switch onCheckedChange={() => { }}
+                                                    disabled id={`notify-${prayer}`} checked={user?.notification_preferences?.prayer_time_notification} />
                                                 <Label htmlFor={`notify-${prayer}`} className="ml-2 text-xs">
                                                     Notify
                                                 </Label>

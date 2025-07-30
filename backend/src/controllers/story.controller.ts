@@ -9,7 +9,7 @@ import fs from "fs";
 import ApiError from "@/utils/ApiError";
 
 
-const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
+export const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
 
 
 export const uploadStory = asyncHandler(async (req: Request, res: Response) => {

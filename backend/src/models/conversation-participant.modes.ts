@@ -51,7 +51,8 @@ ConversationParticipant.init(
                 model:"messages",
                 key:"id"
             },
-            allowNull: true
+            allowNull: true,
+            onDelete: 'SET NULL'
         },
         joined_at: DataTypes.DATE,
         left_at: DataTypes.DATE,

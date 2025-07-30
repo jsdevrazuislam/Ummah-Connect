@@ -26,6 +26,7 @@
     "livekit-server-sdk": "^2.13.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.0",
+    "node-cron": "^4.2.1",
     "pg": "^8.16.0",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",

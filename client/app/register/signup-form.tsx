@@ -15,8 +15,19 @@ import { LoadingOverlay } from "@/components/loading-overlay"
 import { Label } from "@/components/ui/label"
 import { exportPublicKey, generateKeyPair } from "@/lib/e2ee"
 import { saveToIndexedDB } from "@/lib/indexedDB"
+import { useEffect, useState } from "react"
+import { getCurrentLocation } from "@/lib/prayer";
+import { fetchReverseGeocode } from "@/lib/apis/prayer";
+
+interface Location {
+    latitude: number
+    longitude: number
+    location: string
+}
 
 const SignupForm = () => {
+
+    const [location, setLocation] = useState<Location | null>(null)
 
     const { register, handleSubmit, control, formState: { errors } } = useForm<SignupFormData>({
         resolver: zodResolver(registerSchema),
@@ -41,11 +52,26 @@ const SignupForm = () => {
             email: data.email,
             password: data.password,
             username: data.username,
-            public_key: exportedPublicKey
+            public_key: exportedPublicKey,
+            location: location?.location,
+            latitude: location?.latitude,
+            longitude:location?.longitude
         }
         mutate(payload)
         await saveToIndexedDB("privateKey", key.privateKey);
     }
+
+    useEffect(() => {
+        (async () => {
+            const { latitude, longitude } = await getCurrentLocation()
+            const { city, country } = await fetchReverseGeocode(latitude, longitude)
+            setLocation({
+                latitude,
+                location: `${city}, ${country}`,
+                longitude
+            })
+        })()
+    }, [])
 
     return (
         <>

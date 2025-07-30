@@ -17,6 +17,7 @@ import { initializeSocketIO } from "@/socket";
 import { connectRedis } from "@/config/redis";
 import { load_routes } from "@/utils/load-routes";
 import { errorHandler } from "@/middleware/error.middleware";
+import '@/cron/scheduler'
 
 
 const app: Application = express();

@@ -29,7 +29,7 @@ const options = {
 };
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, full_name, password, username, public_key, gender = 'male' } = req.body;
+  const { email, full_name, password, username, public_key, gender = 'male', location, latitude, longitude } = req.body;
 
   const user = await User.findOne({
     where: {
@@ -48,6 +48,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     is_verified: false,
     public_key,
     gender,
+    location,
+    latitude, 
+    longitude,
     privacy_settings: {
       active_status: true,
       private_account: false,
