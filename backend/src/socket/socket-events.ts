@@ -6,17 +6,30 @@ import redis from "@/config/redis";
 import { getConversationUserIds } from "@/utils/query";
 
 export const runSocketEvents = (socket: Socket, io: Server) => {
-  socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
-    await MessageStatus.update(
-      { status: "delivered" },
+  socket.on(SocketEventEnum.MESSAGE_RECEIVED, async ({ id, conversation_id, tempId }) => {
+    const messageStatus =  await MessageStatus.findOne(
       {
         where: {
-          message_id: messageId,
+          message_id: id,
           user_id: socket?.user?.id,
           status: { [Op.ne]: "seen" },
-        },
+        }
       }
     );
+
+    if(!messageStatus) return 
+
+    messageStatus.status = 'delivered'
+    await messageStatus.save()
+
+    socket
+      .to(`conversation_${conversation_id?.toString()}`)
+      .emit(SocketEventEnum.READ_MESSAGE, {
+        conversationId: conversation_id, messageId: id, tempId, status: {
+          status: 'delivered',
+          id: messageStatus.id
+        }
+      });
   });
 
   socket.on(SocketEventEnum.TYPING, ({ conversationId, userId }) => {
@@ -68,7 +81,7 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
               callerAvatar,
               callerName,
             });
-            socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
+          socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
             message: "User left from room",
             callerAvatar,
             callerName,
@@ -92,7 +105,7 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
         authToken
       });
 
-       await redis.set(
+      await redis.set(
         `call:${roomName}`,
         JSON.stringify({
           callerId: callerUserId,
@@ -132,7 +145,6 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
             SocketEventEnum.HOST_END_LIVE_STREAM,
             { username }
           );
-          console.log(`[Grace Timer Expired] Stream ${streamId} ended`);
         }
       }, GRACE_PERIOD_MS);
     }
@@ -144,7 +156,6 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
 
     if (stillWaiting === "waiting") {
       await redis.del(key);
-      console.log(`[Grace Cancelled] Host rejoined Stream ${streamId}`);
     }
   });
 

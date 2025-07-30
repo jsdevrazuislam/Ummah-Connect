@@ -43,7 +43,8 @@ Conversation.init(
             references: {
                 model: "messages",
                 key: "id"
-            }
+            },
+            onDelete: 'CASCADE'
         }
 
     },

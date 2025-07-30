@@ -4,6 +4,7 @@ import { PostSkeleton } from "@/components/post-skeleton"
 import { InfiniteScroll } from '@/components/infinite-scroll';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 
 interface InfiniteScrollPostProps {
@@ -46,7 +47,9 @@ const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
                             <p className="text-muted-foreground mb-4">
                                 {message}
                             </p>
-                            <Button size="sm">Discover People</Button>
+                            <Link href='/discover-people'>
+                                <Button size="sm">Discover People</Button>
+                            </Link>
                         </div>
                     )}
 

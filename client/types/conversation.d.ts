@@ -49,8 +49,8 @@ interface ConversationMessagesResponse {
   statusCode: number;
   data?: {
     messages: ConversationMessages[];
-    totalPages: number;
-    currentPage: number;
+    totalPages?: number;
+    currentPage?: number;
   };
   message: string;
   success: boolean;
@@ -76,6 +76,7 @@ interface ConversationMessages {
   parentMessage?: ParentMessage | null
   key_for_sender: string
   key_for_recipient?: string
+  tempId?:string | number
 }
 
 interface ParentMessage{
@@ -114,11 +115,13 @@ interface MessageReaction {
   createdAt:string
   updatedAt:string
   reactedUser: MessageSender
+  conversationId?:number
 }
 
 interface MessageStatus {
   status: "sent" | "delivered" | "seen";
   user: MessageSender
+  id: number
 }
 interface MessageSender {
   id: number;

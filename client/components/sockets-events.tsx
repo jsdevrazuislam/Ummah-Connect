@@ -5,7 +5,7 @@ import { useCallActions } from "@/hooks/use-call-store";
 import { useConversationStore } from "@/hooks/use-conversation-store";
 import { useSocketStore } from "@/hooks/use-socket";
 import { read_message } from "@/lib/apis/conversation";
-import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addUnReadCount, updateParticipantCount } from "@/lib/update-conversation";
+import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addMessageStatusToMessage, addUnReadCount, removeConversation, removeMessageReactionInConversation, toggleMessageDeleteState, updateMessageContentInConversation, updateMessageReactionInConversation, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
 import { useStore } from "@/store/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,7 @@ const SocketEvents = () => {
 
   const { socket } = useSocketStore()
   const queryClient = useQueryClient();
-  const { user, selectedConversation, markUserOffline, markUserOnline, updateLastSeen, setUser, addNotification } = useStore()
+  const { user, selectedConversation, setSelectedConversation, markUserOffline, markUserOnline, updateLastSeen, setUser, addNotification } = useStore()
   const { setIncomingCall, setRejectedCallInfo, stopRingtone, setCallStatus, endCall, setShowEndModal, setHostUsername } = useCallActions();
   const { incrementUnreadCount } = useConversationStore()
   const router = useRouter()
@@ -131,13 +131,12 @@ const SocketEvents = () => {
     socket.on(SocketEventEnum.SEND_MESSAGE_TO_CONVERSATION, (payload: ConversationMessages) => {
       if (payload?.sender_id !== user?.id) {
         queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
-          if (selectedConversation?.conversationId === payload.conversation_id) {
+          if (selectedConversation?.conversationId === payload.conversation_id && payload.sender_id !== user?.id) {
             readMessageFun({
               conversationId: payload.conversation_id,
               messageId: payload.id,
             })
           }
-          socket.emit(SocketEventEnum.MESSAGE_RECEIVED, payload.id.toString());
           return addMessageConversation(oldData, payload, payload.conversation_id)
         })
         if (selectedConversation?.conversationId !== payload.conversation_id) {
@@ -147,6 +146,8 @@ const SocketEvents = () => {
           incrementUnreadCount(payload.conversation_id)
         }
       }
+
+      socket.emit(SocketEventEnum.MESSAGE_RECEIVED, { id: payload.id, conversation_id: payload.conversation_id, tempId:payload.tempId });
 
       queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
         return addLastMessage(oldData, payload.conversation_id, payload)
@@ -350,6 +351,99 @@ const SocketEvents = () => {
       socket.off(SocketEventEnum.UNFOLLOW_USER);
     };
   }, [socket, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEventEnum.DELETE_CONVERSATION, ({ conversationId }) => {
+      if (selectedConversation?.conversationId === conversationId) {
+        setSelectedConversation(null)
+      }
+      queryClient.setQueryData(['get_conversations'], (oldData: QueryOldDataPayloadConversations) => {
+        return removeConversation(oldData, conversationId)
+      })
+    });
+    return () => {
+      socket.off(SocketEventEnum.DELETE_CONVERSATION);
+    };
+  }, [socket, selectedConversation]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.REACT_CONVERSATION_MESSAGE, (payload: MessageReaction) => {
+        queryClient.setQueryData(['get_conversation_messages', payload.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+          return updateMessageReactionInConversation(oldData, payload.conversationId ?? 0, payload.message_id, payload)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.REACT_CONVERSATION_MESSAGE);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.REMOVE_REACT_CONVERSATION_MESSAGE, ({ messageId, userId, conversationId}) => {
+        queryClient.setQueryData(['get_conversation_messages', conversationId], (oldData: QueryOldDataPayloadConversation) => {
+          return removeMessageReactionInConversation(oldData, conversationId, messageId, userId)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.REMOVE_REACT_CONVERSATION_MESSAGE);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.EDITED_CONVERSATION, (payload) => {
+        queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
+          return updateMessageContentInConversation(oldData, payload.conversation_id, payload.id, payload.content, payload.key_for_recipient, payload.key_for_sender)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.EDITED_CONVERSATION);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.DELETE_CONVERSATION_MESSAGE, (payload) => {
+        queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
+          return toggleMessageDeleteState(oldData, payload.conversation_id, payload.id, true)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.DELETE_CONVERSATION_MESSAGE);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.UNDO_DELETE_CONVERSATION_MESSAGE, (payload) => {
+        queryClient.setQueryData(['get_conversation_messages', payload.conversation_id], (oldData: QueryOldDataPayloadConversation) => {
+          return toggleMessageDeleteState(oldData, payload.conversation_id, payload.id, false)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.UNDO_DELETE_CONVERSATION_MESSAGE);
+    };
+  }, [socket]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+      socket.on(SocketEventEnum.READ_MESSAGE, ({ conversationId, messageId, status, tempId}) => {
+        queryClient.setQueryData(['get_conversation_messages', conversationId], (oldData: QueryOldDataPayloadConversation) => {
+          return addMessageStatusToMessage(oldData, conversationId, tempId || messageId, status)
+        })
+      });
+    return () => {
+      socket.off(SocketEventEnum.READ_MESSAGE);
+    };
+  }, [socket]);
 
   return null
 }

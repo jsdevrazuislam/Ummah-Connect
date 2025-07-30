@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Search, Users, MessageSquare, Plus, ChevronLeft } from "lucide-react"
 import ConversationSkeleton from "@/components/conversation-loading"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { get_conversation_messages, get_conversations, read_message, reply_to_message, send_attachment, send_message } from "@/lib/apis/conversation"
+import { edit_message, get_conversation_messages, get_conversations, read_message, reply_to_message, send_attachment, send_message } from "@/lib/apis/conversation"
 import { InfiniteScroll } from "@/components/infinite-scroll"
 import Loader from "@/components/loader"
 import { useStore } from "@/store/store"
 import { toast } from "sonner"
-import { addMessageConversation, replaceMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation"
+import { addMessageConversation, replaceMessageInConversation, replaceSendMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import ConversationItem from "@/components/conversation-item"
 import { useSocketStore } from "@/hooks/use-socket"
@@ -48,6 +48,10 @@ export default function ConversationPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [reply, setReply] = useState<ReplyMessage | null>(null)
+  const [isEditContent, setIsEditContent] = useState<{ enable: boolean, id: number | null }>({
+    enable: false,
+    id: null
+  })
 
 
 
@@ -116,6 +120,13 @@ export default function ConversationPage() {
     }
   })
 
+  const { mutate: editMessageFunc } = useMutation({
+    mutationFn: edit_message,
+    onError: (error) => {
+      toast.error(error.message)
+    }
+  })
+
   const { mutate: sendAttachmentFun, isPending: sendLoading } = useMutation({
     mutationFn: send_attachment,
     onSuccess: (newMessage, variable) => {
@@ -140,7 +151,28 @@ export default function ConversationPage() {
     onSuccess: (newMessage, variable) => {
       setMessage("")
       queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
-        return replaceMessageInConversation(oldData, variable.id, { ...newMessage.data, status: 'sent' }, variable.conversationId)
+        return replaceSendMessageInConversation(
+          oldData,
+          variable.id,
+          (prev) => {
+            const currentStatus = prev?.statuses?.[0]?.status;
+            if (currentStatus === 'delivered' || currentStatus === 'seen') {
+              return {
+                ...newMessage.data,
+                statuses: prev?.statuses ? [
+                  ...prev.statuses
+                ] : [],
+                status: 'sent',
+              };
+            }
+
+            return {
+              ...newMessage.data,
+              status: 'sent',
+            };
+          },
+          variable.conversationId
+        );
       })
     },
     onError: (error, variable) => {
@@ -154,11 +186,22 @@ export default function ConversationPage() {
   })
 
   const { mutate: replyMessageFunc } = useMutation({
-        mutationFn: reply_to_message,
-        onError: (error) =>{
-            toast.error(error.message)
-        }
-    })
+    mutationFn: reply_to_message,
+    onSuccess: (newMessage, variable) => {
+      setMessage("")
+      queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return replaceMessageInConversation(oldData, variable.tempId ?? 0, { ...newMessage.data, status: 'sent' }, variable.conversationId ?? 0)
+      })
+    },
+    onError: (error, variable) => {
+      setMessage("")
+      const tempMessage = loadTempDataForMessage({ user, message: variable.content, key_for_recipient: variable.key_for_recipient, key_for_sender: variable.key_for_sender, selectedConversation, status: 'failed', id: variable.tempId ?? 0 })
+      queryClient.setQueryData(['get_conversation_messages', variable.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return replaceMessageInConversation(oldData, variable.tempId ?? 0, tempMessage, variable.conversationId ?? 0)
+      })
+      toast.error(error.message)
+    }
+  })
 
   const loadMoreMessage = () => {
     if (messageHasNextPage && !isMessageFetchNextPage) {
@@ -168,21 +211,23 @@ export default function ConversationPage() {
 
   const handleSelectionMessage = (conv: Conversation) => {
 
-    if(!selectedConversation){
-        setSelectedConversation({
-          full_name: conv.name ?? '',
-          avatar: conv.avatar,
-          username: conv.username ?? '',
-          id: conv.userId ?? 0,
-          conversationId: conv.id,
-          last_seen_at: conv?.last_seen_at,
-          public_key: conv?.public_key
+    if (!selectedConversation) {
+      setSelectedConversation({
+        full_name: conv.name ?? '',
+        avatar: conv.avatar,
+        username: conv.username ?? '',
+        id: conv.userId ?? 0,
+        conversationId: conv.id,
+        last_seen_at: conv?.last_seen_at,
+        public_key: conv?.public_key
       });
 
-      readMessageFun({
-        conversationId: conv.id,
-        messageId: conv?.lastMessage?.id ?? 0,
-      });
+      if ((conv.unreadCount ?? 0) > 0 && conv?.lastMessage?.id) {
+        readMessageFun({
+          conversationId: conv.id,
+          messageId: conv.lastMessage.id,
+        });
+      }
     }
   };
 
@@ -195,39 +240,86 @@ export default function ConversationPage() {
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (message.trim()) {
+    e.preventDefault();
 
-      const recipientKey = await importPublicKey(selectedConversation?.public_key ?? '');
-      const senderKey = await importPublicKey(user?.public_key ?? '');
-      const { content, key_for_recipient, key_for_sender } = await encryptMessageForBothParties(message, senderKey, recipientKey)
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
 
+    const conversationId = selectedConversation?.conversationId ?? 0;
+    const recipientPublicKey = selectedConversation?.public_key;
+    const senderPublicKey = user?.public_key;
 
-      const id = Date.now()
-      const tempMessage = loadTempDataForMessage({ user, message: content, selectedConversation, key_for_recipient, key_for_sender, status: 'sending', id })
-      queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
-        return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
-      })
+    if (!recipientPublicKey || !senderPublicKey) return;
 
-     if(reply){
-       replyMessageFunc({
+    const [recipientKey, senderKey] = await Promise.all([
+      importPublicKey(recipientPublicKey),
+      importPublicKey(senderPublicKey)
+    ]);
+
+    const { content, key_for_recipient, key_for_sender } = await encryptMessageForBothParties(
+      trimmedMessage,
+      senderKey,
+      recipientKey
+    );
+
+    const id = Date.now();
+
+    if (isEditContent.enable && isEditContent.id) {
+      editMessageFunc({
+        id: isEditContent.id,
+        content,
+        key_for_recipient,
+        key_for_sender,
+        conversationId,
+        tempId: id,
+      });
+
+      setIsEditContent({ enable: false, id: null });
+      setMessage('');
+      return;
+    }
+
+    const tempMessage = loadTempDataForMessage({
+      user,
+      message: content,
+      selectedConversation,
+      key_for_recipient,
+      key_for_sender,
+      status: 'sending',
+      id,
+    });
+
+    queryClient.setQueryData(
+      ['get_conversation_messages', conversationId],
+      (oldData: QueryOldDataPayloadConversation) =>
+        addMessageConversation(oldData, tempMessage, conversationId)
+    );
+
+    if (reply) {
+      replyMessageFunc({
         content,
         id: reply.id ?? 0,
         key_for_recipient,
         key_for_sender,
-        receiver_id: reply.receiver_id ?? 0
-      })
-     } else {
-       mutate({
-        conversationId: selectedConversation?.conversationId ?? 0,
+        receiver_id: reply.receiver_id ?? 0,
+        conversationId,
+        tempId: id,
+      });
+
+      setReply(null);
+    } else {
+      mutate({
+        conversationId,
         content,
         id,
         key_for_recipient,
-        key_for_sender
-      })
-     }
+        key_for_sender,
+      });
     }
-  }
+
+    setMessage('');
+  };
+
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -418,7 +510,7 @@ export default function ConversationPage() {
               >
                 <div>
                   {messages?.length > 0 ? messages.map((message) => (
-                    <MessageItem key={message?.id} message={message} user={user} setReply={setReply} setMessage={setMessage} />
+                    <MessageItem key={message?.id} message={message} user={user} setReply={setReply} setMessage={setMessage} setIsEditContent={setIsEditContent} />
                   )) : <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                     <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No messages yet</h3>

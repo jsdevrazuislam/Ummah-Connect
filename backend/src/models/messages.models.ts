@@ -15,6 +15,7 @@ class Message extends Model{
     public is_updated!: boolean
     public deleted_by_id!: number | null
     public deleted_at!: Date | null
+    readonly statuses!: []
     public createdAt!: Date
     public updatedAt!: Date
 }

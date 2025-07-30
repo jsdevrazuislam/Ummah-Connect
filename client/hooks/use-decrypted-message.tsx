@@ -4,6 +4,13 @@ import { decryptMessageForBothParties } from "@/lib/e2ee"
 
 const decryptedMessageCache = new Map<string, string>()
 
+function generateCacheKey(
+  messageId: string | number | undefined,
+  encryptedContent: string | undefined
+) {
+  return `${messageId}-${encryptedContent?.slice(0, 16)}`
+}
+
 export function useDecryptedMessage(
   messageId: string | number | undefined,
   encryptedContent: string | undefined,
@@ -14,8 +21,10 @@ export function useDecryptedMessage(
   useEffect(() => {
     if (!messageId || !encryptedContent || !encryptedSymmetricKey) return
 
-    if (decryptedMessageCache.has(String(messageId))) {
-      setDecryptedText(decryptedMessageCache.get(String(messageId))!)
+    const cacheKey = generateCacheKey(messageId, encryptedContent)
+
+    if (decryptedMessageCache.has(cacheKey)) {
+      setDecryptedText(decryptedMessageCache.get(cacheKey)!)
       return
     }
 
@@ -32,7 +41,8 @@ export function useDecryptedMessage(
           encryptedSymmetricKey,
           privateKey
         )
-        decryptedMessageCache.set(String(messageId), decrypted)
+
+        decryptedMessageCache.set(cacheKey, decrypted)
         setDecryptedText(decrypted)
       } catch (err) {
         console.error("Decryption failed:", err)

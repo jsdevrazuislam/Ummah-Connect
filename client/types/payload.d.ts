@@ -155,4 +155,6 @@ interface ReplyToMessagePayload {
   key_for_recipient: string
   id:number
   receiver_id?:number
+  conversationId?:number
+  tempId?:number
 }

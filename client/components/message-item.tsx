@@ -31,13 +31,18 @@ interface MessageItemProps {
     user: User | null
     setMessage: React.Dispatch<React.SetStateAction<string>>
     setReply: React.Dispatch<React.SetStateAction<ReplyMessage | null>>
+    setIsEditContent: React.Dispatch<React.SetStateAction<{
+        enable: boolean;
+        id: number | null;
+    }>>
 }
 
 const MessageItem: FC<MessageItemProps> = ({
     message,
     user,
     setMessage,
-    setReply
+    setReply,
+    setIsEditContent
 }) => {
 
     const [showReportModal, setShowReportModal] = useState(false);
@@ -96,10 +101,18 @@ const MessageItem: FC<MessageItemProps> = ({
         deleteMessageFunc(message.id)
         setIsModalOpen(false)
     }
-    
-    const handleUndoDeleteMessage = () =>{
-         if (!message) return
+
+    const handleUndoDeleteMessage = () => {
+        if (!message) return
         undoDeleteMessageFunc(message.id)
+    }
+
+    const handlePostEdit = (text: string) => {
+        setMessage(text)
+        setIsEditContent({
+            enable: true,
+            id: message?.id ?? 0
+        })
     }
 
 
@@ -138,8 +151,15 @@ const MessageItem: FC<MessageItemProps> = ({
                     message?.parent_message_id && message?.parentMessage && <div className={cn('absolute -top-11 text-xs opacity-70 dark:opacity-60', { "ml-9": message?.sender_id !== user?.id })}>
                         <p className="flex items-center gap-1.5">
                             <Reply className="w-4 h-4" />
-                            {message?.parentMessage?.sender.id !== user?.id ? `You replied to ${message?.parentMessage?.sender?.full_name}` : `${message?.sender?.full_name} replied to you`}
+                            {getReplyText(
+                                message.parentMessage.sender.id!,
+                                message.sender.id!,
+                                user?.id ?? 0,
+                                message.parentMessage.sender.full_name!,
+                                message.sender.full_name!
+                            )}
                         </p>
+
                         <div className={cn('max-w-[450px] w-fit bg-black/10 dark:bg-white/30 px-4 py-2 rounded-full text-right cursor-pointer',
                             {
                                 "ml-auto": message?.sender_id === user?.id,
@@ -173,7 +193,7 @@ const MessageItem: FC<MessageItemProps> = ({
                         </div>
                     }
                     {
-                        message?.reactions?.length > 0 && <button onClick={() => setShowReactions(true)} className="w-5 h-5 p-1 absolute -bottom-4 bg-gray-300 dark:bg-gray-700 left-0 rounded-full flex items-center justify-center">
+                        message?.reactions?.length > 0 && <button onClick={() => setShowReactions(true)} className="px-1 absolute -bottom-4 bg-gray-300 dark:bg-gray-700 left-0 rounded-full flex items-center justify-center">
                             {
                                 message?.reactions?.map((react) => (
                                     <span key={react.id} className="text-sm cursor-pointer">{react?.emoji}</span>
@@ -259,7 +279,7 @@ const MessageItem: FC<MessageItemProps> = ({
                                 {user?.id === message?.sender_id ? (
                                     <>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={() => setMessage(decryptedText ?? '')} className="flex flex-col items-start gap-1 py-2">
+                                        <DropdownMenuItem onClick={() => handlePostEdit(decryptedText ?? '')} className="flex flex-col items-start gap-1 py-2">
                                             <div className="flex items-center gap-2">
                                                 <Pencil className="w-4 h-4 text-blue-500" />
                                                 <span className="font-medium text-sm">Edit</span>
@@ -342,6 +362,31 @@ const MessageItem: FC<MessageItemProps> = ({
             />
         </>
     )
+}
+
+function getReplyText(
+    parentSenderId: number,
+    replySenderId: number,
+    currentUserId: number,
+    parentSenderName: string,
+    replySenderName: string
+): string {
+    const isYouSender = replySenderId === currentUserId;
+    const isYouParent = parentSenderId === currentUserId;
+
+    if (isYouSender && isYouParent) {
+        return "You replied to yourself";
+    }
+
+    if (isYouSender) {
+        return `You replied to ${parentSenderName}`;
+    }
+
+    if (isYouParent) {
+        return `${replySenderName} replied to you`;
+    }
+
+    return `${replySenderName} replied to ${parentSenderName}`;
 }
 
 

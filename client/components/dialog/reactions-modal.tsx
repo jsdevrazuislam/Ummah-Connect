@@ -83,9 +83,9 @@ export function ReactionsModal({
 
                 <ScrollArea className="h-[300px]">
                     <div className="flex flex-col gap-4 p-4">
-                        {filteredReactions.flatMap(reaction =>
+                        {
                             filteredReactions?.map(user => (
-                                <div key={`${reaction.emoji}-${user.id}`} className="flex items-center justify-between">
+                                <div key={`${user.emoji}-${user.id}`} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-10 w-10">
                                             {
@@ -95,17 +95,20 @@ export function ReactionsModal({
                                                     </AvatarFallback>
                                             }
                                         </Avatar>
-                                            <span className="font-medium">{user?.reactedUser?.full_name}</span>
+                                        <span className="font-medium">{user?.reactedUser?.full_name}</span>
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xl">{reaction.emoji}</span>
+                                        <span className="text-xl">{user.emoji}</span>
                                         {user.reactedUser?.id === currentUserId && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-muted-foreground hover:text-destructive"
-                                                onClick={() => deleteReactFunc(messageId)}
+                                                onClick={() => {
+                                                    deleteReactFunc(messageId)
+                                                    onClose()
+                                                }}
                                             >
                                                 Remove
                                             </Button>
@@ -113,7 +116,7 @@ export function ReactionsModal({
                                     </div>
                                 </div>
                             ))
-                        )}
+                        }
                     </div>
                 </ScrollArea>
             </DialogContent>

@@ -39,6 +39,13 @@ const SocketEventEnum = Object.freeze({
   NOTIFY_USER:'notify_user',
   FOLLOW_USER:'follow_user',
   UNFOLLOW_USER:'unfollow_user',
+  DELETE_CONVERSATION:'delete_conversation',
+  REACT_CONVERSATION_MESSAGE:'react_conversation_message',
+  REMOVE_REACT_CONVERSATION_MESSAGE:'remove_react_conversation_message',
+  EDITED_CONVERSATION:'edit_conversation_message',
+  DELETE_CONVERSATION_MESSAGE:'delete_conversation_message',
+  UNDO_DELETE_CONVERSATION_MESSAGE:'undo_conversation_message',
+  READ_MESSAGE:'read_message',
 
 });
 
