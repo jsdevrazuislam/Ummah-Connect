@@ -1,4 +1,5 @@
 import { DataTypes, Model } from "sequelize";
+
 import sequelize from "@/config/db";
 
 class Story extends Model {
@@ -34,7 +35,7 @@ Story.init(
     },
     type: {
       type: DataTypes.STRING,
-      defaultValue: 'image'
+      defaultValue: "image",
     },
     background: {
       type: DataTypes.STRING,
@@ -49,7 +50,7 @@ Story.init(
     modelName: "Story",
     tableName: "stories",
     timestamps: true,
-  }
+  },
 );
 
-export default Story
+export default Story;

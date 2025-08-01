@@ -1,10 +1,11 @@
-import React from 'react'
-import BookmarksPage from '@/app/(dashboard)/bookmarks/bookmark'
+import React from "react";
 
-const Page = () => {
+import BookmarksPage from "@/app/(dashboard)/bookmarks/bookmark";
+
+function Page() {
   return (
     <BookmarksPage />
-  )
+  );
 }
 
-export default Page
+export default Page;

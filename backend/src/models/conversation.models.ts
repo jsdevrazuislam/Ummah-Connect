@@ -1,65 +1,66 @@
-import { DataTypes, Model} from 'sequelize'
-import sequelize from '@/config/db'
+import { DataTypes, Model } from "sequelize";
 
-class Conversation extends Model{
-    public id!: number
-    public type!:string
-    public name!: string
-    public created_by!: number
-    public last_message_id!:number
-    public createdAt!:Date
-    public updatedAt!:Date
+import sequelize from "@/config/db";
+
+class Conversation extends Model {
+  public id!: number;
+  public type!: string;
+  public name!: string;
+  public userPairKey!: string;
+  public createdBy!: number;
+  public lastMessageId!: number;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
-
 Conversation.init(
-    {
-        id:{
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
-        type:{
-            type:DataTypes.ENUM('private', 'group'),
-            defaultValue: 'private'
-        },
-        name:DataTypes.STRING,
-        created_by:{
-            type:DataTypes.INTEGER,
-            references:{
-                model:"users",
-                key:"id"
-            },
-            allowNull: true
-        },
-        user_pair_key:{
-            type: DataTypes.STRING,
-            unique: true,
-            allowNull: false
-        },
-        last_message_id:{
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: "messages",
-                key: "id"
-            },
-            onDelete: 'CASCADE'
-        }
-
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    {
-        sequelize,
-        tableName: 'conversations',
-        modelName:"Conversation",
-        timestamps: true,
-        indexes: [
-            {
-                unique: true,
-                fields: ['user_pair_key', 'type']
-            }
-        ]
-    }
-)
+    type: {
+      type: DataTypes.ENUM("private", "group"),
+      defaultValue: "private",
+    },
+    name: DataTypes.STRING,
+    createdBy: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      allowNull: true,
+    },
+    userPairKey: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+    },
+    lastMessageId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "messages",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
 
-export default Conversation
+  },
+  {
+    sequelize,
+    tableName: "conversations",
+    modelName: "Conversation",
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ["userPairKey", "type"],
+      },
+    ],
+  },
+);
+
+export default Conversation;

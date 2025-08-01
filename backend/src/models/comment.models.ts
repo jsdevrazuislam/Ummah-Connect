@@ -1,4 +1,5 @@
-import { Model, DataTypes } from "sequelize";
+import { DataTypes, Model } from "sequelize";
+
 import sequelize from "@/config/db";
 
 class Comment extends Model {
@@ -6,9 +7,9 @@ class Comment extends Model {
   public userId!: number;
   public postId!: number;
   public parentId!: number;
-  public createdAt!: string
-  public isEdited!: boolean
-  public content!: string
+  public createdAt!: string;
+  public isEdited!: boolean;
+  public content!: string;
 }
 
 Comment.init(
@@ -24,19 +25,19 @@ Comment.init(
     parentId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      onDelete: 'CASCADE'
+      onDelete: "CASCADE",
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false
-    }
+      allowNull: false,
+    },
   },
   {
     sequelize,
     tableName: "comments",
     modelName: "Comment",
     timestamps: true,
-  }
+  },
 );
 
 export default Comment;

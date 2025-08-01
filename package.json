@@ -5,24 +5,22 @@
     "start": "concurrently \"pnpm run backend\" \"pnpm run client\"",
     "backend": "cd backend && pnpm dev",
     "client": "cd client && pnpm dev",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "lint:client": "eslint client --ext .js,.ts,.jsx,.tsx",
-    "lint:backend": "eslint backend --ext .js,.ts",
+    "lint": "pnpm lint:client && pnpm lint:backend",
+    "lint:fix": "pnpm lint:client:fix && pnpm lint:backend:fix",
+    "lint:client": "eslint client --config client/eslint.config.mjs --ext .ts,.tsx,.js,.jsx",
+    "lint:backend": "eslint backend --config backend/eslint.config.mjs --ext .ts,.js",
+    "lint:client:fix": "eslint client --config client/eslint.config.mjs --ext .ts,.tsx,.js,.jsx --fix",
+    "lint:backend:fix": "eslint backend --config backend/eslint.config.mjs --ext .ts,.js --fix",
     "prepare": "husky"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^15.4.3",
-    "@eslint/js": "^9.31.0",
     "concurrently": "^9.2.0",
-    "eslint": "^9.31.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.2",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.36.0"
+    "lint-staged": "^16.1.2"
   },
   "lint-staged": {
-    "*": "pnpm lint"
+    "client/**/*.{js,ts,jsx,tsx}": "pnpm lint:client",
+    "backend/**/*.{js,ts}": "pnpm lint:backend"
   },
   "dependencies": {
     "client": "^0.0.1"

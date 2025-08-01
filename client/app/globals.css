@@ -23,7 +23,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
 }
 
 :root {
@@ -92,10 +91,9 @@
   }
 
   .no-scroll {
-    @apply overflow-hidden fixed w-full h-full
+    @apply overflow-hidden fixed w-full h-full;
   }
 }
-
 
 html {
   font-family: "Noto Sans", sans-serif;

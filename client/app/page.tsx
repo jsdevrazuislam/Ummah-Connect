@@ -1,7 +1,7 @@
-import { MainFeed } from "@/components/main-feed"
-import { StorySection } from "@/components/story-section"
-import { AIPrayerReminder } from "@/components/ai-prayer-reminder"
-import { SocialMediaLayout } from "@/components/layouts/main-layout"
+import { AIPrayerReminder } from "@/components/ai-prayer-reminder";
+import { SocialMediaLayout } from "@/components/layouts/main-layout";
+import { MainFeed } from "@/components/main-feed";
+import { StorySection } from "@/components/story-section";
 
 export default function Home() {
   return (
@@ -12,5 +12,5 @@ export default function Home() {
       </div>
       <MainFeed />
     </SocialMediaLayout>
-  )
+  );
 }

@@ -7,7 +7,7 @@ export async function generateKeyPair() {
       hash: "SHA-256",
     },
     true,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -15,7 +15,6 @@ export async function exportPublicKey(key: CryptoKey): Promise<string> {
   const exported = await crypto.subtle.exportKey("spki", key);
   return Buffer.from(exported).toString("base64");
 }
-
 
 export async function importPublicKey(base64Key: string): Promise<CryptoKey> {
   const binaryDer = Uint8Array.from(atob(base64Key), c => c.charCodeAt(0));
@@ -27,7 +26,7 @@ export async function importPublicKey(base64Key: string): Promise<CryptoKey> {
       hash: "SHA-256",
     },
     true,
-    ["encrypt"]
+    ["encrypt"],
   );
 }
 
@@ -40,7 +39,8 @@ export async function decryptWithPrivateKey(encryptedBase64: string, privateKey:
   try {
     const binary = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
     return await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, binary);
-  } catch (err) {
+  }
+  catch (err) {
     console.error("decryptWithPrivateKey failed:", err);
     throw err;
   }
@@ -55,7 +55,7 @@ export async function decryptWithSymmetricKey(encryptedBase64: string, rawKeyBuf
     rawKeyBuffer,
     { name: "AES-GCM" },
     false,
-    ["decrypt"]
+    ["decrypt"],
   );
 
   const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, symmetricKey, encryptedContent);
@@ -65,12 +65,12 @@ export async function decryptWithSymmetricKey(encryptedBase64: string, rawKeyBuf
 export async function encryptMessageForBothParties(
   message: string,
   senderPublicKey: CryptoKey,
-  recipientPublicKey: CryptoKey
+  recipientPublicKey: CryptoKey,
 ) {
   const aesKey = await crypto.subtle.generateKey(
     { name: "AES-GCM", length: 256 },
     true,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -84,20 +84,20 @@ export async function encryptMessageForBothParties(
 
   const rawKey = await crypto.subtle.exportKey("raw", aesKey);
 
-  const key_for_sender = await encryptWithPublicKey(senderPublicKey, rawKey);
-  const key_for_recipient = await encryptWithPublicKey(recipientPublicKey, rawKey);
+  const keyForSender = await encryptWithPublicKey(senderPublicKey, rawKey);
+  const keyForRecipient = await encryptWithPublicKey(recipientPublicKey, rawKey);
 
   return {
     content: encryptedMessageBase64,
-    key_for_sender,
-    key_for_recipient,
+    keyForSender,
+    keyForRecipient,
   };
 }
 
 export async function decryptMessageForBothParties(
   encryptedContent: string,
   encryptedSymmetricKey: string,
-  privateKey: CryptoKey
+  privateKey: CryptoKey,
 ) {
   const rawKeyBuffer = await decryptWithPrivateKey(encryptedSymmetricKey, privateKey);
   return await decryptWithSymmetricKey(encryptedContent, rawKeyBuffer);

@@ -1,72 +1,74 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
-import { useEffect, useRef, useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react";
 
-interface InfiniteScrollProps {
-  hasMore: boolean
-  isLoading: boolean
-  onLoadMore: () => void
-  threshold?: number
-  children: React.ReactNode
-  className?: string
-}
+import { cn } from "@/lib/utils";
 
-export function InfiniteScroll({ 
-  hasMore, 
-  isLoading, 
-  onLoadMore, 
-  threshold = 100, 
-  children, 
-  className 
+type InfiniteScrollProps = {
+  hasMore: boolean;
+  isLoading: boolean;
+  onLoadMore: () => void;
+  threshold?: number;
+  children: React.ReactNode;
+  className?: string;
+};
+
+export function InfiniteScroll({
+  hasMore,
+  isLoading,
+  onLoadMore,
+  threshold = 100,
+  children,
+  className,
 }: InfiniteScrollProps) {
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const loadingRef = useRef<HTMLDivElement>(null)
-  const [isLoadingInternal, setIsLoadingInternal] = useState(false)
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
+  const [isLoadingInternal, setIsLoadingInternal] = useState(false);
 
   const debouncedLoadMore = useCallback(() => {
     if (!isLoadingInternal && hasMore && !isLoading) {
-      setIsLoadingInternal(true)
-      onLoadMore()
+      setIsLoadingInternal(true);
+      onLoadMore();
       const timer = setTimeout(() => {
-        setIsLoadingInternal(false)
-      }, 1000) 
-      return () => clearTimeout(timer)
+        setIsLoadingInternal(false);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [hasMore, isLoading, onLoadMore])
+  }, [hasMore, isLoading, onLoadMore]);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
-      const [target] = entries
+      const [target] = entries;
       if (target.isIntersecting) {
-        debouncedLoadMore()
+        debouncedLoadMore();
       }
     },
-    [debouncedLoadMore]
-  )
+    [debouncedLoadMore],
+  );
 
   useEffect(() => {
-    const element = loadingRef.current
-    if (!element) return
+    const element = loadingRef.current;
+    if (!element)
+      return;
 
     observerRef.current = new IntersectionObserver(handleObserver, {
       threshold: 0.1,
       rootMargin: `${threshold}px`,
-    })
+    });
 
-    observerRef.current.observe(element)
+    observerRef.current.observe(element);
 
     return () => {
       if (observerRef.current) {
-        observerRef.current.disconnect()
+        observerRef.current.disconnect();
       }
-    }
-  }, [handleObserver, threshold])
+    };
+  }, [handleObserver, threshold]);
 
   return (
     <>
       {children}
-      <div ref={loadingRef} className={cn('h-4', className)} />
+      <div ref={loadingRef} className={cn("h-4", className)} />
     </>
-  )
+  );
 }

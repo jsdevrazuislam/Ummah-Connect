@@ -1,10 +1,11 @@
-import React from 'react'
-import LivePage from '@/app/(sidebar-layout)/live/live-streams'
+import React from "react";
 
-const Page = () => {
+import LivePage from "@/app/(sidebar-layout)/live/live-streams";
+
+function Page() {
   return (
     <LivePage />
-  )
+  );
 }
 
-export default Page
+export default Page;

@@ -1,15 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Bell, Clock, MapPin } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Bell, Clock, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Prayer times calculation would normally use a proper algorithm
 // This is a simplified mock version
-const calculateMockPrayerTimes = (date: Date) => {
+function calculateMockPrayerTimes(date: Date) {
   // Mock prayer times - in a real app, these would be calculated based on location and date
   return {
     fajr: new Date(date.setHours(5, 12)),
@@ -18,27 +19,27 @@ const calculateMockPrayerTimes = (date: Date) => {
     asr: new Date(date.setHours(15, 45)),
     maghrib: new Date(date.setHours(18, 32)),
     isha: new Date(date.setHours(20, 0)),
-  }
+  };
 }
 
 export function AIPrayerReminder() {
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [nextPrayer, setNextPrayer] = useState<{ name: string; time: Date } | null>(null)
-  const [timeUntilNextPrayer, setTimeUntilNextPrayer] = useState<string>("")
-  const location = { latitude: 3.139, longitude: 101.6869, name: "Kuala Lumpur" }
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [nextPrayer, setNextPrayer] = useState<{ name: string; time: Date } | null>(null);
+  const [timeUntilNextPrayer, setTimeUntilNextPrayer] = useState<string>("");
+  const location = { latitude: 3.139, longitude: 101.6869, name: "Kuala Lumpur" };
 
   useEffect(() => {
     // Update current time every minute
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000)
+      setCurrentTime(new Date());
+    }, 60000);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Calculate prayer times based on location
-    const prayerTimes = calculateMockPrayerTimes(new Date())
+    const prayerTimes = calculateMockPrayerTimes(new Date());
 
     // Determine next prayer
     const prayers = [
@@ -48,59 +49,61 @@ export function AIPrayerReminder() {
       { name: "Asr", time: prayerTimes.asr },
       { name: "Maghrib", time: prayerTimes.maghrib },
       { name: "Isha", time: prayerTimes.isha },
-    ]
+    ];
 
-    const now = new Date()
-    let nextPrayerInfo = null
+    const now = new Date();
+    let nextPrayerInfo = null;
 
     for (const prayer of prayers) {
       if (prayer.time > now) {
-        nextPrayerInfo = prayer
-        break
+        nextPrayerInfo = prayer;
+        break;
       }
     }
 
     // If no next prayer found today, set to Fajr of tomorrow
     if (!nextPrayerInfo) {
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowPrayerTimes = calculateMockPrayerTimes(tomorrow)
-      nextPrayerInfo = { name: "Fajr", time: tomorrowPrayerTimes.fajr }
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowPrayerTimes = calculateMockPrayerTimes(tomorrow);
+      nextPrayerInfo = { name: "Fajr", time: tomorrowPrayerTimes.fajr };
     }
 
-    setNextPrayer(nextPrayerInfo)
+    setNextPrayer(nextPrayerInfo);
 
     // Update time until next prayer
     const updateTimeUntil = () => {
-      if (!nextPrayerInfo) return
+      if (!nextPrayerInfo)
+        return;
 
-      const now = new Date()
-      const diff = nextPrayerInfo.time.getTime() - now.getTime()
+      const now = new Date();
+      const diff = nextPrayerInfo.time.getTime() - now.getTime();
 
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      setTimeUntilNextPrayer(`${hours}h ${minutes}m`)
-    }
+      setTimeUntilNextPrayer(`${hours}h ${minutes}m`);
+    };
 
-    updateTimeUntil()
-    const timeUntilTimer = setInterval(updateTimeUntil, 60000)
+    updateTimeUntil();
+    const timeUntilTimer = setInterval(updateTimeUntil, 60000);
 
-    return () => clearInterval(timeUntilTimer)
-  }, [currentTime])
+    return () => clearInterval(timeUntilTimer);
+  }, [currentTime]);
 
   const formatPrayerTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-  }
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  };
 
   const getProgressPercentage = () => {
-    if (!nextPrayer) return 0
+    if (!nextPrayer)
+      return 0;
 
-    const now = new Date()
-    const currentPrayerIndex = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"].indexOf(nextPrayer.name)
-    const previousPrayerIndex = currentPrayerIndex > 0 ? currentPrayerIndex - 1 : 5
+    const now = new Date();
+    const currentPrayerIndex = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"].indexOf(nextPrayer.name);
+    const previousPrayerIndex = currentPrayerIndex > 0 ? currentPrayerIndex - 1 : 5;
 
-    const prayerTimes = calculateMockPrayerTimes(new Date())
+    const prayerTimes = calculateMockPrayerTimes(new Date());
     const prayerTimesArray = [
       prayerTimes.fajr,
       prayerTimes.sunrise,
@@ -108,14 +111,14 @@ export function AIPrayerReminder() {
       prayerTimes.asr,
       prayerTimes.maghrib,
       prayerTimes.isha,
-    ]
+    ];
 
-    let previousPrayerTime = prayerTimesArray[previousPrayerIndex]
+    let previousPrayerTime = prayerTimesArray[previousPrayerIndex];
     if (previousPrayerTime > now) {
       // Previous prayer was yesterday
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      const yesterdayPrayerTimes = calculateMockPrayerTimes(yesterday)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayPrayerTimes = calculateMockPrayerTimes(yesterday);
       previousPrayerTime = [
         yesterdayPrayerTimes.fajr,
         yesterdayPrayerTimes.sunrise,
@@ -123,14 +126,14 @@ export function AIPrayerReminder() {
         yesterdayPrayerTimes.asr,
         yesterdayPrayerTimes.maghrib,
         yesterdayPrayerTimes.isha,
-      ][previousPrayerIndex]
+      ][previousPrayerIndex];
     }
 
-    const totalInterval = nextPrayer.time.getTime() - previousPrayerTime.getTime()
-    const elapsedInterval = now.getTime() - previousPrayerTime.getTime()
+    const totalInterval = nextPrayer.time.getTime() - previousPrayerTime.getTime();
+    const elapsedInterval = now.getTime() - previousPrayerTime.getTime();
 
-    return Math.min(100, Math.max(0, (elapsedInterval / totalInterval) * 100))
-  }
+    return Math.min(100, Math.max(0, (elapsedInterval / totalInterval) * 100));
+  };
 
   return (
     <Card
@@ -170,10 +173,17 @@ export function AIPrayerReminder() {
           <div className="space-y-3">
             <div>
               <div className="flex justify-between items-center">
-                <h3 className="font-medium">Next Prayer: {nextPrayer.name}</h3>
+                <h3 className="font-medium">
+                  Next Prayer:
+                  {nextPrayer.name}
+                </h3>
                 <span className="text-sm font-semibold">{formatPrayerTime(nextPrayer.time)}</span>
               </div>
-              <div className="mt-1 text-sm text-muted-foreground">{timeUntilNextPrayer} remaining</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {timeUntilNextPrayer}
+                {" "}
+                remaining
+              </div>
             </div>
 
             {/* Progress bar */}
@@ -181,7 +191,8 @@ export function AIPrayerReminder() {
               <div
                 className="h-full bg-primary rounded-full transition-all duration-1000 ease-in-out"
                 style={{ width: `${getProgressPercentage()}%` }}
-              ></div>
+              >
+              </div>
             </div>
 
             {/* Smart recommendation */}
@@ -231,5 +242,5 @@ export function AIPrayerReminder() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

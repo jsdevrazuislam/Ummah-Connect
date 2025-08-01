@@ -1,11 +1,11 @@
-import { Metadata } from "next"
-import SignupForm from "./signup-form"
+import type { Metadata } from "next";
+
+import SignupForm from "./signup-form";
 
 export const metadata: Metadata = {
   title: "Register",
-  description: "Register to your ummah connect account"
-}
-
+  description: "Register to your ummah connect account",
+};
 
 export default function RegisterPage() {
   return (
@@ -18,5 +18,5 @@ export default function RegisterPage() {
         <SignupForm />
       </div>
     </div>
-  )
+  );
 }

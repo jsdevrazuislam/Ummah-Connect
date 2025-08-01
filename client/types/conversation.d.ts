@@ -1,4 +1,4 @@
-interface ConversationResponse {
+type ConversationResponse = {
   statusCode: number;
   data: {
     conversations: Conversation[];
@@ -8,9 +8,9 @@ interface ConversationResponse {
   };
   message: string;
   success: boolean;
-}
+};
 
-interface Conversation {
+type Conversation = {
   id: number;
   type: string;
   name: string | undefined;
@@ -18,34 +18,34 @@ interface Conversation {
   status?: string;
   userId?: number;
   username?: string;
-  last_seen_at?: string;
-  public_key?: string;
+  lastSeenAt?: string;
+  publicKey?: string;
   createdAt: string;
   lastMessage: {
     id: number;
     sender: {
       id: number;
       username: string;
-      full_name: string;
+      fullName: string;
       avatar: string;
     } | null;
     content: string;
     type: string;
-    sent_at: string;
-    key_for_sender: string
-    key_for_recipient: string
+    sentAt: string;
+    keyForSender: string;
+    keyForRecipient: string;
   } | null;
   unreadCount: number;
   isMuted: null | undefined;
   sender: {
-    full_name: string;
+    fullName: string;
     avatar: string;
     id: number;
     username: string;
   };
-}
+};
 
-interface ConversationMessagesResponse {
+type ConversationMessagesResponse = {
   statusCode: number;
   data?: {
     messages: ConversationMessages[];
@@ -54,18 +54,18 @@ interface ConversationMessagesResponse {
   };
   message: string;
   success: boolean;
-}
-interface ConversationMessages {
+};
+type ConversationMessages = {
   id: number;
-  conversation_id: number;
-  sender_id: number;
+  conversationId: number;
+  senderId: number;
   content: string;
-  parent_message_id?: null | number;
-  sent_at: string;
-  is_deleted?: boolean | null;
-  is_updated?: boolean;
-  deleted_by_id?: null;
-  deleted_at?: null;
+  parentMessageId?: null | number;
+  sentAt: string;
+  isDeleted?: boolean | null;
+  isUpdated?: boolean;
+  deletedById?: null;
+  deletedAt?: null;
   createdAt: string;
   updatedAt: string;
   sender: MessageSender;
@@ -73,63 +73,65 @@ interface ConversationMessages {
   reactions: MessageReaction[] | [];
   statuses: MessageStatus[];
   attachments: MessageAttachment[];
-  parentMessage?: ParentMessage | null
-  key_for_sender: string
-  key_for_recipient?: string
-  tempId?:string | number
-}
+  parentMessage?: ParentMessage | null;
+  keyForSender: string;
+  keyForRecipient?: string;
+  tempId?: string | number;
+};
 
-interface ParentMessage{
-  content:string
-  key_for_recipient:string
-  key_for_sender:string
-  sender: MessageSender
+type ParentMessage = {
+  content: string;
+  keyForRecipient: string;
+  keyForSender: string;
+  sender: MessageSender;
   attachments: MessageAttachment[];
-}
-interface ReplyMessage {
-  id?: number
-  conversation_id?: number
+};
+type ReplyMessage = {
+  id?: number;
+  conversationId?: number;
   content?: string;
-  receiver_id?: number;
-  full_name?: string;
-}
+  receiverId?: number;
+  fullName?: string;
+};
 
-interface MessageAttachment {
+type MessageAttachment = {
   id: number;
-  message_id: number;
-  file_url: string;
-  file_type: string;
-  thumbnail_url?: string;
+  messageId: number;
+  fileUrl: string;
+  fileType: string;
+  thumbnailUrl?: string;
   duration: number;
-  size_in_bytes: number;
-  metadata: Metadata;
+  sizeInBytes: number;
+  metadata: MessageMetadata;
   createdAt: string;
   updatedAt: string;
-}
-interface Metadata { }
-interface MessageReaction {
-  id:number
-  message_id:number
-  user_id:number
-  emoji:string
-  createdAt:string
-  updatedAt:string
-  reactedUser: MessageSender
-  conversationId?:number
-}
-
-interface MessageStatus {
-  status: "sent" | "delivered" | "seen";
-  user: MessageSender
-  id: number
-}
-interface MessageSender {
+};
+type MessageMetadata = {
+  title?: string;
+};
+type MessageReaction = {
   id: number;
-  full_name: string;
+  messageId: number;
+  userId: number;
+  emoji: string;
+  createdAt: string;
+  updatedAt: string;
+  reactedUser: MessageSender;
+  conversationId?: number;
+};
+
+type MessageStatus = {
+  status: "sent" | "delivered" | "seen";
+  user: MessageSender;
+  id: number;
+};
+type MessageSender = {
+  id: number;
+  fullName: string;
   avatar: string;
   username: string;
   status?: string;
   conversationId?: number;
-  last_seen_at?: string;
-  public_key?: string
-}
+  lastSeenAt?: string;
+  publicKey?: string;
+};

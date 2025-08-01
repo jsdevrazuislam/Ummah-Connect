@@ -1,45 +1,42 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
+import { formatDistanceToNowStrict } from "date-fns";
 import {
-  MessageCircle,
-  MapPin,
   Calendar,
-} from "lucide-react"
-import { ReactionPicker } from "@/components/reaction-picker"
-import { formatDistanceToNowStrict } from "date-fns"
-import { PostMedia } from "@/components/post-media"
-import { cn } from "@/lib/utils"
-import { SharedPost } from "@/components/share-post"
-import { CommentItems } from "@/components/comment-item"
-import { useSocketStore } from "@/hooks/use-socket"
-import SocketEventEnum from "@/constants/socket-event"
-import CommentInput from "@/components/comment-input"
-import BookmarkButton from "@/components/bookmark-button"
-import ShareButton from "@/components/share-button"
-import PostDropDownMenu from "@/components/post-menu-dropdown"
+  MapPin,
+  MessageCircle,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import BookmarkButton from "@/components/bookmark-button";
+import CommentInput from "@/components/comment-input";
+import { CommentItems } from "@/components/comment-item";
+import { PostMedia } from "@/components/post-media";
+import PostDropDownMenu from "@/components/post-menu-dropdown";
+import { ReactionPicker } from "@/components/reaction-picker";
+import ShareButton from "@/components/share-button";
+import { SharedPost } from "@/components/share-post";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import SocketEventEnum from "@/constants/socket-event";
+import { useSocketStore } from "@/hooks/use-socket";
+import { cn } from "@/lib/utils";
 
 function PostDetailsPage({ post }: { post: PostsEntity }) {
-
-  const [showComments, setShowComments] = useState(true)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.currentUserReaction ?? null)
-  const { socket } = useSocketStore()
-
-
+  const [showComments, setShowComments] = useState(true);
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(post?.currentUserReaction ?? null);
+  const { socket } = useSocketStore();
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket)
+      return;
     socket.emit(SocketEventEnum.JOIN_POST, post.id.toString());
     return () => {
       socket.off(SocketEventEnum.JOIN_POST);
     };
   }, [socket, post]);
-
 
   return (
     <>
@@ -49,29 +46,35 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12 ring-2 ring-primary/10">
                 {
-                  post?.user?.avatar ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.avatar} /> : <AvatarFallback>
-                    {post?.user?.full_name?.charAt(0)}
-                  </AvatarFallback>
+                  post?.user?.avatar
+                    ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.avatar} />
+                    : (
+                        <AvatarFallback>
+                          {post?.user?.fullName?.charAt(0)}
+                        </AvatarFallback>
+                      )
                 }
               </Avatar>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">{post?.user?.full_name}</h3>
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                    Verified
-                  </Badge>
+                  <h3 className="font-semibold text-foreground">{post?.user?.fullName}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">@{post?.user?.username}</p>
+                <p className="text-sm text-muted-foreground">
+                  @
+                  {post?.user?.username}
+                </p>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>{formatDistanceToNowStrict(new Date(post?.createdAt ?? ''), { addSuffix: true })}</span>
+                    <span>{formatDistanceToNowStrict(new Date(post?.createdAt ?? ""), { addSuffix: true })}</span>
                   </div>
                   {
-                    post?.location && <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>{post?.location}</span>
-                    </div>
+                    post?.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{post?.location}</span>
+                      </div>
+                    )
                   }
                 </div>
               </div>
@@ -82,17 +85,19 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
 
         <CardContent className="mt-4">
           <div className="space-y-4">
-            {post?.originalPost && post?.content && <p className="ml-2">
-              {post.content}
-            </p>}
+            {post?.originalPost && post?.content && (
+              <p className="ml-2">
+                {post.content}
+              </p>
+            )}
             {
-              post?.originalPost ? <SharedPost post={post.originalPost} /> : <div className={cn(`ml-2 -mb-2 text-sm ${post.background && post?.background}`, { 'h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center': post?.background })}>{post.content}</div>
+              post?.originalPost ? <SharedPost post={post.originalPost} /> : <div className={cn(`ml-2 -mb-2 text-sm ${post.background && post?.background}`, { "h-56 text-2xl font-semibold flex rounded-md justify-center items-center text-center": post?.background })}>{post.content}</div>
             }
 
             <PostMedia
               media={post.media}
               contentType={post.contentType}
-              altText={`Post by ${post.user?.full_name}`}
+              altText={`Post by ${post.user?.fullName}`}
             />
           </div>
         </CardContent>
@@ -119,19 +124,21 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
           <Separator />
 
           {
-            showComments && <div className="w-full space-y-4">
-              <h4 className="font-semibold text-foreground">Comments</h4>
-              <CommentInput post={post} />
-              <CommentItems
-                postId={post.id}
-                totalComment={post?.totalCommentsCount}
-              />
-            </div>
+            showComments && (
+              <div className="w-full space-y-4">
+                <h4 className="font-semibold text-foreground">Comments</h4>
+                <CommentInput post={post} />
+                <CommentItems
+                  postId={post.id}
+                  totalComment={post?.totalCommentsCount}
+                />
+              </div>
+            )
           }
         </CardFooter>
       </Card>
     </>
-  )
+  );
 }
 
-export default PostDetailsPage
+export default PostDetailsPage;

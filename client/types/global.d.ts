@@ -1,8 +1,8 @@
-interface Children{
-    children:React.ReactNode
-}
+type Children = {
+  children: React.ReactNode;
+};
 
-interface EmojiPicker {
+type EmojiPicker = {
   id: string;
   name: string;
   native: string;
@@ -11,4 +11,4 @@ interface EmojiPicker {
   shortcodes: string;
   aliases?: (string)[] | null;
   emoticons?: (string)[] | null;
-}
+};

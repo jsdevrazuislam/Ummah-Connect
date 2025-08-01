@@ -1,75 +1,73 @@
-import { getCurrentLocation } from "@/lib/prayer"
+import { getCurrentLocation } from "@/lib/prayer";
 
-export const fetchReverseGeocode = async (
-  lat: number,
-  lng: number
-): Promise<{ city: string; country: string }> => {
-  const res = await fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
-  if (!res.ok) throw new Error("Failed to fetch location");
+export async function fetchReverseGeocode(lat: number, lng: number): Promise<string> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/reverse-geocode?lat=${lat}&lng=${lng}`);
+  if (!res.ok)
+    throw new Error("Failed to fetch location");
 
   const data = await res.json();
-  return { city: data.city, country: data.country };
-};
-
-export const fetchPrayerTimes = async (date: string) => {
-    const coords = await getCurrentLocation()
-
-    const response = await fetch(
-        `https://api.aladhan.com/v1/timings/${date}?latitude=${coords.latitude}&longitude=${coords.longitude}&method=2`
-    )
-    if (!response.ok) {
-        throw new Error("Failed to fetch prayer times")
-    }
-    const data: PrayerTimesStatsResponse = await response.json()
-    return {
-        date: data.data.date.readable,
-        prayers: {
-            Fajr: data.data.timings.Fajr,
-            Sunrise: data.data.timings.Sunrise,
-            Dhuhr: data.data.timings.Dhuhr,
-            Asr: data.data.timings.Asr,
-            Maghrib: data.data.timings.Maghrib,
-            Isha: data.data.timings.Isha,
-        },
-    }
+  return data?.data;
 }
 
-export const fetchWeeklyPrayerTimes = async () => {
-    const dates = []
-    const today = new Date()
+export async function fetchPrayerTimes(date: string) {
+  const coords = await getCurrentLocation();
 
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today)
-        date.setDate(today.getDate() + i)
-        dates.push(date.toISOString().split('T')[0])
-    }
-
-    const promises = dates.map(date => fetchPrayerTimes(date))
-    return Promise.all(promises)
+  const response = await fetch(
+    `https://api.aladhan.com/v1/timings/${date}?latitude=${coords.latitude}&longitude=${coords.longitude}&method=2`,
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch prayer times");
+  }
+  const data: PrayerTimesStatsResponse = await response.json();
+  return {
+    date: data.data.date.readable,
+    prayers: {
+      Fajr: data.data.timings.Fajr,
+      Sunrise: data.data.timings.Sunrise,
+      Dhuhr: data.data.timings.Dhuhr,
+      Asr: data.data.timings.Asr,
+      Maghrib: data.data.timings.Maghrib,
+      Isha: data.data.timings.Isha,
+    },
+  };
 }
 
-export const fetchMonthlyPrayerTimes = async () => {
-    const today = new Date()
-    const month = today.getMonth() + 1
-    const year = today.getFullYear()
-    const coords = await getCurrentLocation()
+export async function fetchWeeklyPrayerTimes() {
+  const dates = [];
+  const today = new Date();
 
-    const response = await fetch(
-        `https://api.aladhan.com/v1/calendar?latitude=${coords.latitude}&longitude=${coords.longitude}&method=2&month=${month}&year=${year}`
-    )
-    if (!response.ok) {
-        throw new Error("Failed to fetch monthly prayer times")
-    }
-    const data: PrayerTimesMonthlyStatsResponse = await response.json()
-    return data.data.map((day) => ({
-        date: day.date.readable,
-        prayers: {
-            Fajr: day.timings.Fajr,
-            Sunrise: day.timings.Sunrise,
-            Dhuhr: day.timings.Dhuhr,
-            Asr: day.timings.Asr,
-            Maghrib: day.timings.Maghrib,
-            Isha: day.timings.Isha,
-        }
-    }))
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    dates.push(date.toISOString().split("T")[0]);
+  }
+
+  const promises = dates.map(date => fetchPrayerTimes(date));
+  return Promise.all(promises);
+}
+
+export async function fetchMonthlyPrayerTimes() {
+  const today = new Date();
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+  const coords = await getCurrentLocation();
+
+  const response = await fetch(
+    `https://api.aladhan.com/v1/calendar?latitude=${coords.latitude}&longitude=${coords.longitude}&method=2&month=${month}&year=${year}`,
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch monthly prayer times");
+  }
+  const data: PrayerTimesMonthlyStatsResponse = await response.json();
+  return data.data.map(day => ({
+    date: day.date.readable,
+    prayers: {
+      Fajr: day.timings.Fajr,
+      Sunrise: day.timings.Sunrise,
+      Dhuhr: day.timings.Dhuhr,
+      Asr: day.timings.Asr,
+      Maghrib: day.timings.Maghrib,
+      Isha: day.timings.Isha,
+    },
+  }));
 }

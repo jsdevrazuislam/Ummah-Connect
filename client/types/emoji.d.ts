@@ -1,33 +1,33 @@
-interface EmojiMartData {
-  categories: Category[]
-  emojis: { [key: string]: Emoji }
-  aliases: { [key: string]: string }
-  sheet: Sheet
-}
+type EmojiMartData = {
+  categories: Category[];
+  emojis: { [key: string]: Emoji };
+  aliases: { [key: string]: string };
+  sheet: Sheet;
+};
 
-interface Category {
-  id: string
-  emojis: string[]
-  name: string
-}
+type Category = {
+  id: string;
+  emojis: string[];
+  name: string;
+};
 
-interface Emoji {
-  id: string
-  name: string
-  keywords: string[]
-  skins: Skin[]
-  version: number
-  emoticons?: string[]
-}
+type Emoji = {
+  id: string;
+  name: string;
+  keywords: string[];
+  skins: Skin[];
+  version: number;
+  emoticons?: string[];
+};
 
-interface Skin {
-  unified: string
-  native: string
-  x?: number
-  y?: number
-}
+type Skin = {
+  unified: string;
+  native: string;
+  x?: number;
+  y?: number;
+};
 
-interface Sheet {
-  cols: number
-  rows: number
-}
+type Sheet = {
+  cols: number;
+  rows: number;
+};

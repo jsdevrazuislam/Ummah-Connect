@@ -9,15 +9,15 @@ paths:
       tags:
         - Post
       security:
-        - BearerAuth: [] 
+        - BearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data: 
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PostInput'
+              $ref: "#/components/schemas/PostInput"
       responses:
-        '200':
+        "200":
           description: Post Created Successfully
 
   /post/react/:postId:
@@ -26,19 +26,19 @@ paths:
       tags:
         - Post
       security:
-        - BearerAuth: [] 
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReactPostInput'
+              $ref: "#/components/schemas/ReactPostInput"
       responses:
-        '200':
+        "200":
           description: Post react Successfully
 
 components:
-  securitySchemes: 
+  securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
@@ -55,7 +55,7 @@ components:
       properties:
         media:
           type: string
-          format: binary  
+          format: binary
         content:
           type: string
           example: create first post
@@ -74,7 +74,7 @@ components:
       properties:
         react_type:
           type: string
-          format: love  
+          format: love
         icon:
           type: string
           example: ❤️

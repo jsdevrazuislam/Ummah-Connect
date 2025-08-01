@@ -1,13 +1,14 @@
 import { DataTypes, Model } from "sequelize";
+
 import sequelize from "@/config/db";
 
 class StreamChatConversation extends Model {
   public id!: number;
-  public stream_id!: number;
-  public sender_id!: number;
+  public streamId!: number;
+  public senderId!: number;
   public content!: string;
-  public created_at!: Date;
-  public updated_at!: Date;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 StreamChatConversation.init(
@@ -17,7 +18,7 @@ StreamChatConversation.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    stream_id: {
+    streamId: {
       type: DataTypes.INTEGER,
       references: {
         model: "live_streams",
@@ -26,7 +27,7 @@ StreamChatConversation.init(
       allowNull: false,
       onDelete: "CASCADE",
     },
-    sender_id: {
+    senderId: {
       type: DataTypes.INTEGER,
       references: {
         model: "users",
@@ -45,7 +46,7 @@ StreamChatConversation.init(
     modelName: "StreamChatConversation",
     tableName: "stream_chats",
     timestamps: true,
-  }
+  },
 );
 
 export default StreamChatConversation;

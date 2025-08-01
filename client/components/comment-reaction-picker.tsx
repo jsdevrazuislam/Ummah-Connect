@@ -1,26 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
-import { useMutation } from "@tanstack/react-query"
-import { comment_react } from "@/lib/apis/comment"
-import { motion, AnimatePresence } from "framer-motion"
-import { ThumbsUp } from "lucide-react"
-import Image from "next/image"
+import { useMutation } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { ThumbsUp } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { commentReact } from "@/lib/apis/comment";
+import { showError } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 
-
-interface CommentReactionPickerProps {
-  onReactionSelect: (reaction: ReactionType) => void
-  currentReaction: ReactionType
-  size?: "sm" | "default",
-  id: number
-  parentId: number
-  postId: number
-  isReply?: boolean
-}
+type CommentReactionPickerProps = {
+  onReactionSelect: (reaction: ReactionType) => void;
+  currentReaction: ReactionType;
+  size?: "sm" | "default";
+  id: number;
+  parentId: number;
+  postId: number;
+  isReply?: boolean;
+};
 
 export function CommentReactionPicker({
   onReactionSelect,
@@ -29,17 +28,17 @@ export function CommentReactionPicker({
   id,
   postId,
   isReply,
-  parentId
+  parentId,
 }: CommentReactionPickerProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const { mutate } = useMutation({
-    mutationFn: comment_react,
+    mutationFn: commentReact,
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
+      showError(error.message);
+    },
+  });
 
   const reactions = [
     { type: "like", emoji: "/emoji/like.png", label: "Like" },
@@ -49,77 +48,84 @@ export function CommentReactionPicker({
     { type: "sad", emoji: "/emoji/sad.png", label: "Sad" },
     { type: "wow", emoji: "/emoji/wow.png", label: "Wow" },
     { type: "angry", emoji: "/emoji/angry.png", label: "Angry" },
-  ] as const
+  ] as const;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+        setIsOpen(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleReactionClick = (reaction: ReactionType) => {
     if (reaction === currentReaction) {
-      onReactionSelect(null)
-    } else {
-      onReactionSelect(reaction)
+      onReactionSelect(null);
+    }
+    else {
+      onReactionSelect(reaction);
     }
     const payload = {
-      react_type: reaction ?? '',
-      icon: reactions.find((r) => r.type === reaction)?.emoji ?? '',
+      reactType: reaction ?? "",
+      icon: reactions.find(r => r.type === reaction)?.emoji ?? "",
       id,
       postId,
       parentId,
-      isReply
-    }
-    mutate(payload)
-    setIsOpen(false)
-  }
+      isReply,
+    };
+    mutate(payload);
+    setIsOpen(false);
+  };
 
   const handleMainButtonClick = () => {
     if (currentReaction) {
-      handleReactionClick(currentReaction)
-    } else {
-      handleReactionClick("like")
+      handleReactionClick(currentReaction);
     }
-  }
+    else {
+      handleReactionClick("like");
+    }
+  };
 
   const getCurrentReactionEmoji = () => {
-    if (!currentReaction) return null
-    const reaction = reactions.find((r) => r.type === currentReaction)
-    return reaction?.emoji
-  }
+    if (!currentReaction)
+      return null;
+    const reaction = reactions.find(r => r.type === currentReaction);
+    return reaction?.emoji;
+  };
 
   const getCurrentReactionColor = () => {
     switch (currentReaction) {
       case "like":
-        return "text-blue-500"
+        return "text-blue-500";
       case "love":
-        return "text-red-500"
+        return "text-red-500";
       case "haha":
-        return "text-yellow-500"
+        return "text-yellow-500";
       case "care":
-        return "text-orange-500"
+        return "text-orange-500";
       case "sad":
-        return "text-purple-500"
+        return "text-purple-500";
       case "wow":
-        return "text-yellow-500"
+        return "text-yellow-500";
       case "angry":
-        return "text-red-600"
+        return "text-red-600";
       default:
-        return "text-muted-foreground"
+        return "text-muted-foreground";
     }
-  }
+  };
 
   return (
-    <div className="relative -mt-[2px]" ref={pickerRef} onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}>
+    <div
+      className="relative -mt-[2px]"
+      ref={pickerRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
       <Button
         variant="ghost"
         size={size === "sm" ? "sm" : "default"}
@@ -131,11 +137,13 @@ export function CommentReactionPicker({
         onMouseEnter={() => setIsOpen(true)}
         onClick={handleMainButtonClick}
       >
-        {currentReaction ? (
-          <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
-        ) : (
-          <ThumbsUp className="h-4 w-4 mt-1" />
-        )}
+        {currentReaction
+          ? (
+              <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
+            )
+          : (
+              <ThumbsUp className="h-4 w-4 mt-1" />
+            )}
       </Button>
 
       <AnimatePresence>
@@ -148,12 +156,12 @@ export function CommentReactionPicker({
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
           >
             <div className="flex">
-              {reactions.map((reaction) => (
+              {reactions.map(reaction => (
                 <motion.button
                   key={reaction.type}
                   className={cn(
                     "h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full",
-                    currentReaction === reaction.type && "bg-muted scale-110"
+                    currentReaction === reaction.type && "bg-muted scale-110",
                   )}
                   onClick={() => handleReactionClick(reaction.type)}
                   title={reaction.label}
@@ -168,5 +176,5 @@ export function CommentReactionPicker({
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

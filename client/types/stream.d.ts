@@ -1,118 +1,129 @@
- interface LiveStreamResponse {
+type LiveStreamResponse = {
   statusCode: number;
   data?: (LiveStreamData)[] | null;
   message: string;
   success: boolean;
-}
- interface LiveStreamChatsResponse {
+};
+type LiveStreamChatsResponse = {
   statusCode: number;
   data?: {
-    messages: LiveStreamChatData[]
-    totalPages: number
-    currentPage: number
+    messages: LiveStreamChatData[];
+    totalPages: number;
+    currentPage: number;
   };
   message: string;
   success: boolean;
-}
+};
 
- interface LiveStreamChatData {
+type LiveStreamChatData = {
   id: number;
-  stream_id: number;
-  sender_id: number;
+  streamId: number;
+  senderId: number;
   content: string;
   createdAt: string;
   updatedAt: string;
   sender: Sender;
-  status?: string
-}
- interface Sender {
+  status?: string;
+};
+type Sender = {
   id: number;
   username: string;
-  full_name: string;
+  fullName: string;
   avatar: string;
-}
+};
 
-
-interface StartLiveStreamResponse{
+type StartLiveStreamResponse = {
   statusCode: number;
   data?: {
-    stream: LiveStreamData
+    stream: LiveStreamData;
   };
   message: string;
   success: boolean;
-}
+};
 
- interface LiveStreamDetailsResponse {
+type LiveStreamDetailsResponse = {
   statusCode: number;
   data?: {
-    stream: LiveStreamData
-    token: string
-    livekitUrl:string
+    stream: LiveStreamData;
+    token: string;
+    livekitUrl: string;
   } | null;
   message: string;
   success: boolean;
-}
- interface LiveStreamData {
+};
+type LiveStreamData = {
   id: number;
-  user_id: number;
+  userId: number;
   title: string;
   description: string;
   category: string;
   tags?: (string)[] | null;
-  enable_chat: boolean;
-  save_recording: boolean;
-  notify_followers: boolean;
-  room_name: string;
-  is_active: boolean;
-  started_at: string;
-  ended_at?: null;
+  enableChat: boolean;
+  saveRecording: boolean;
+  notifyFollowers: boolean;
+  roomName: string;
+  isActive: boolean;
+  startedAt: string;
+  endedAt?: null;
   createdAt: string;
-  thumbnail?:string,
-  viewers?:number
-  user:{
-    avatar: string,
-    username:string,
-    full_name:string
-    id:number
-    isFollowing: boolean
-  followerCount: string
+  thumbnail?: string;
+  viewers?: number;
+  user: {
+    avatar: string;
+    username: string;
+    fullName: string;
+    id: number;
+    isFollowing: boolean;
+    followerCount: string;
 
-  }
+  };
   updatedAt: string;
-}
+};
 
-
- interface ShortsResponse {
+type ShortsResponse = {
   statusCode: number;
   data: ShortsData;
   message: string;
   success: boolean;
-}
- interface ShortsData {
+};
+type ShortsData = {
   shorts?: (ShortsEntity)[] | null;
   totalPages: number;
   currentPage: number;
   totalItems: number;
-}
- interface ShortsEntity {
+};
+type ShortsEntity = {
   id: number;
   userId: number;
-  video_id: string;
-  thumbnail_url: string;
+  videoId: string;
+  thumbnailUrl: string;
   description: string;
-  is_public: boolean;
+  isPublic: boolean;
   createdAt: string;
   updatedAt: string;
   user: ShortUser;
-  share:number
-  totalCommentsCount:number
-  totalReactionsCount:string
-  isBookmarked: boolean
-  currentUserReaction: string 
-}
- interface ShortUser {
+  share: number;
+  totalCommentsCount: number;
+  totalReactionsCount: string;
+  isFollowing: boolean;
+  isBookmarked: boolean;
+  currentUserReaction: string;
+};
+type ShortUser = {
   id: number;
   username: string;
   avatar?: null;
-  full_name: string;
-}
+  fullName: string;
+};
+
+type QueryOldShortsDataPayload = {
+  pageParams: number[];
+  pages: ShortsResponse[];
+};
+
+type UploadShortsResponse = {
+  data: ShortsEntity;
+  statusCode: number;
+  message: string;
+  success: boolean;
+};

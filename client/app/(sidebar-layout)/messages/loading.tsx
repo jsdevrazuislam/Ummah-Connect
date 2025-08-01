@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ConversationLoadingSkeleton() {
   return (
@@ -9,7 +9,7 @@ export default function ConversationLoadingSkeleton() {
         </div>
 
         <div className="space-y-3">
-          {[...Array(8)].map((_, i) => (
+          {[...Array.from({ length: 8 })].map((_, i) => (
             <div key={i} className="flex items-center space-x-3 p-2 rounded-lg">
               <Skeleton className="h-12 w-12 rounded-full" />
               <div className="flex-1">
@@ -72,5 +72,5 @@ export default function ConversationLoadingSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

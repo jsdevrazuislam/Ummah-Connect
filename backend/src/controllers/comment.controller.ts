@@ -1,40 +1,45 @@
-import ApiError from "@/utils/ApiError";
-import ApiResponse from "@/utils/ApiResponse";
-import asyncHandler from "@/utils/async-handler";
-import { Request, Response } from "express";
-import { Post, Comment, User, Follow } from "@/models";
-import CommentReaction from "@/models/react.models";
-import { emitSocketEvent, SocketEventEnum } from "@/socket";
-import { USER_ATTRIBUTE } from "@/constants";
-import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
-import Short from "@/models/shorts.models";
-import { createAndInvalidateNotification } from "@/utils/notification";
-import { NotificationType } from "@/models/notification.models";
-import { Op } from "sequelize";
-import { DELETE_POST_CACHE } from "@/controllers/post.controller";
+import type { Request, Response } from "express";
 
-export const create_comment = asyncHandler(
+import { Op } from "sequelize";
+
+import { USER_ATTRIBUTE } from "@/constants";
+import { DELETE_POST_CACHE } from "@/controllers/post.controller";
+import { Comment, Follow, Post, User } from "@/models";
+import { NotificationType } from "@/models/notification.models";
+import CommentReaction from "@/models/react.models";
+import Short from "@/models/shorts.models";
+import { emitSocketEvent, SocketEventEnum } from "@/socket";
+import ApiError from "@/utils/api-error";
+import ApiResponse from "@/utils/api-response";
+import asyncHandler from "@/utils/async-handler";
+import { createAndInvalidateNotification } from "@/utils/notification";
+import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
+
+export const createComment = asyncHandler(
   async (req: Request, res: Response) => {
     const { content, type } = req.body;
     const userId = req.user.id;
     const postId = req.params.id;
-    let receiver_id = null
+    let receiverPostId = null;
 
-    if (type === 'short') {
+    if (type === "short") {
       const short = await Short.findOne({ where: { id: postId } });
-      receiver_id = short?.userId
-      if (!short) throw new ApiError(404, "Short not found");
-    } else {
+      receiverPostId = short?.userId;
+      if (!short)
+        throw new ApiError(404, "Short not found");
+    }
+    else {
       const post = await Post.findOne({ where: { id: postId } });
-      receiver_id = post?.authorId
-      if (!post) throw new ApiError(404, "Post not found");
+      receiverPostId = post?.authorId;
+      if (!post)
+        throw new ApiError(404, "Post not found");
     }
 
     const comment = await Comment.create({ content, userId, postId });
 
     const followerCount = await Follow.count({ where: { followingId: userId } });
     const followingCount = await Follow.count({ where: { followerId: userId } });
-    const receiverId = Number(receiver_id)
+    const receiverId = Number(receiverPostId);
 
     if (userId !== receiverId) {
       const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
@@ -42,8 +47,8 @@ export const create_comment = asyncHandler(
       if (mentionUsernames?.length > 0) {
         const mentionedUsers = await User.findAll({
           where: {
-            username: { [Op.in]: mentionUsernames }
-          }
+            username: { [Op.in]: mentionUsernames },
+          },
         });
 
         for (const user of mentionedUsers) {
@@ -56,7 +61,8 @@ export const create_comment = asyncHandler(
             postId: comment.id || null,
           });
         }
-      } else {
+      }
+      else {
         await createAndInvalidateNotification({
           req,
           senderId: userId,
@@ -75,57 +81,57 @@ export const create_comment = asyncHandler(
       ...commentJSON,
       user: {
         id: req.user.id,
-        full_name: req.user.full_name,
+        fullName: req.user.fullName,
         username: req.user.username,
         avatar: req.user.avatar,
         location: req.user?.location,
         bio: req.user?.bio,
-        followers_count: followerCount,
-        following_count: followingCount,
-        isFollowing: false
+        followersCount: followerCount,
+        followingCount,
+        isFollowing: false,
       },
       totalCommentsCount: 0,
       totalReactionsCount: 0,
-      currentUserReaction: null
-    }
+      currentUserReaction: null,
+    };
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } })
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } });
 
     return res.json(
       new ApiResponse(
         200,
         response,
-        "Comment Created"
-      )
+        "Comment Created",
+      ),
     );
-  }
+  },
 );
 
-export const create_reply_comment = asyncHandler(async (req: Request, res: Response) => {
-
+export const createReplyComment = asyncHandler(async (req: Request, res: Response) => {
   const { content, postId } = req.body;
   const userId = req.user.id;
   const parentId = Number(req.params.id);
 
   const post = await Post.findOne({ where: { id: postId } });
-  if (!post) throw new ApiError(404, "Post not found");
+  if (!post)
+    throw new ApiError(404, "Post not found");
 
   const comment = await Comment.create({ content, userId, postId, parentId });
   const totalComments = await Comment.count({
     where: {
-      postId
-    }
-  })
+      postId,
+    },
+  });
 
-  const receiverId = Number(post?.authorId)
+  const receiverId = Number(post?.authorId);
 
   if (userId !== receiverId) {
     const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
     if (mentionUsernames?.length > 0) {
       const mentionedUsers = await User.findAll({
         where: {
-          username: { [Op.in]: mentionUsernames }
-        }
+          username: { [Op.in]: mentionUsernames },
+        },
       });
 
       for (const user of mentionedUsers) {
@@ -138,7 +144,8 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
           postId: comment.id || null,
         });
       }
-    } else {
+    }
+    else {
       await createAndInvalidateNotification({
         req,
         senderId: userId,
@@ -148,7 +155,6 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
         postId: comment.id || null,
       });
     }
-
   }
 
   const commentJSON = comment.toJSON();
@@ -158,43 +164,40 @@ export const create_reply_comment = asyncHandler(async (req: Request, res: Respo
     ...commentJSON,
     user: {
       id: req.user.id,
-      full_name: req.user.full_name,
+      fullName: req.user.fullName,
       username: req.user.username,
       avatar: req.user.avatar,
     },
     parentId,
     createdAt: comment.createdAt,
     totalComments,
-    reactions: { counts: {}, currentUserReaction: null }
-  }
+    reactions: { counts: {}, currentUserReaction: null },
+  };
 
-
-  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } })
-
+  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } });
 
   return res.json(
     new ApiResponse(
       200,
       response,
-      "Comment Created"
-    )
+      "Comment Created",
+    ),
   );
-})
+});
 
+export const editComment = asyncHandler(async (req: Request, res: Response) => {
+  const commentId = req.params.id;
+  const userId = req.user.id;
+  const { postId, content, isReply } = req.body;
 
-export const edit_comment = asyncHandler(async (req: Request, res: Response) => {
-
-  const commentId = req.params.id
-  const userId = req.user.id
-  const { postId, content, isReply } = req.body
-
-  const comment = await Comment.findOne({ where: { id: commentId, postId, userId } })
-  if (!comment) throw new ApiError(400, 'You are not eligible edit this comment')
+  const comment = await Comment.findOne({ where: { id: commentId, postId, userId } });
+  if (!comment)
+    throw new ApiError(400, "You are not eligible edit this comment");
 
   const [, updatedComment] = await Comment.update(
     { content, isEdited: true },
-    { where: { id: commentId }, returning: true }
-  )
+    { where: { id: commentId }, returning: true },
+  );
 
   const response = {
     content: updatedComment[0].content,
@@ -204,70 +207,70 @@ export const edit_comment = asyncHandler(async (req: Request, res: Response) => 
     postId: Number(postId),
     user: {
       id: req.user.id,
-      full_name: req.user.full_name,
+      fullName: req.user.fullName,
       avatar: req.user.avatar,
-      username: req.user.username
+      username: req.user.username,
     },
-    isReply
-  }
+    isReply,
+  };
 
-  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.EDITED_COMMENT, payload: response })
+  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.EDITED_COMMENT, payload: response });
 
-  return res.json(new ApiResponse(200, response, 'Updated comment'))
-})
+  return res.json(new ApiResponse(200, response, "Updated comment"));
+});
 
-export const delete_comment = asyncHandler(async (req: Request, res: Response) => {
-
+export const deleteComment = asyncHandler(async (req: Request, res: Response) => {
   const commentId = req.params.id;
-  const userId = req.user.id
-  const comment = await Comment.findOne({ where: { id: commentId, userId } })
-  if (!comment) throw new ApiError(400, 'You are not eligible to delete this comment')
+  const userId = req.user.id;
+  const comment = await Comment.findOne({ where: { id: commentId, userId } });
+  if (!comment)
+    throw new ApiError(400, "You are not eligible to delete this comment");
 
   await Comment.destroy({
     where: {
-      id: commentId
-    }
-  })
+      id: commentId,
+    },
+  });
 
   const totalComments = await Comment.count({
     where: {
-      postId: comment.postId
-    }
-  })
+      postId: comment.postId,
+    },
+  });
 
-  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: comment.parentId ? true : false, totalComments } })
+  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: !!comment.parentId, totalComments } });
 
-  await DELETE_POST_CACHE()
+  await DELETE_POST_CACHE();
 
   return res.json(
-    new ApiResponse(200, totalComments, 'Comment delete success')
-  )
-})
+    new ApiResponse(200, totalComments, "Comment delete success"),
+  );
+});
 
-export const comment_react = asyncHandler(async (req: Request, res: Response) => {
-  const { react_type, icon, postId, parentId, isReply } = req.body;
+export const commentReact = asyncHandler(async (req: Request, res: Response) => {
+  const { reactType, icon, postId, parentId, isReply } = req.body;
   const commentId = req.params?.commentId;
   const userId = req.user?.id;
 
-  if (!commentId || !react_type || !icon) {
+  if (!commentId || !reactType || !icon) {
     throw new ApiError(400, "Missing required fields");
   }
 
   const [reaction, created] = await CommentReaction.findOrCreate({
     where: { userId, commentId },
-    defaults: { react_type, icon },
+    defaults: { reactType, icon },
   });
 
   if (!created) {
-    await reaction.update({ react_type, icon });
+    await reaction.update({ reactType, icon });
   }
 
   const commentWithStats = await Comment.findOne({
     where: { id: commentId },
     attributes: {
       include: [
-        getCommentUserReactionLiteral(userId, '"Comment"'),
-        getCommentTotalReactionsCountLiteral('"Comment"'),
+        getCommentUserReactionLiteral(userId, "\"Comment\""),
+        getCommentTotalReactionsCountLiteral("\"Comment\""),
       ],
     },
   });
@@ -292,77 +295,74 @@ export const comment_react = asyncHandler(async (req: Request, res: Response) =>
   });
 
   return res.json(
-    new ApiResponse(200, data, "React Successfully")
+    new ApiResponse(200, data, "React Successfully"),
   );
 });
 
-
-export const get_comments = asyncHandler(async (req: Request, res: Response) => {
-
-  const page = Number(req.query.page as string)
-  const limit = Number(req.query.limit as string)
-  const comment_attribute = ['id', 'postId', 'isEdited', 'parentId', 'content', 'createdAt']
-  const skip = (page - 1) * limit
-  const userId = req.user.id
-
+export const getComments = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number(req.query.page as string);
+  const limit = Number(req.query.limit as string);
+  const commentAttribute = ["id", "postId", "isEdited", "parentId", "content", "createdAt"];
+  const skip = (page - 1) * limit;
+  const userId = req.user.id;
 
   const { count, rows: comments } = await Comment.findAndCountAll({
     where: {
       postId: req.params.postId,
-      parentId: null
+      parentId: null,
     },
     offset: skip,
-    limit: limit,
-    order: [['createdAt', 'DESC']],
+    limit,
+    order: [["createdAt", "DESC"]],
     include: [
       {
         model: Comment,
-        as: 'replies',
+        as: "replies",
         required: false,
         include: [
           {
             model: User,
-            as: 'user',
+            as: "user",
             attributes: [
               ...USER_ATTRIBUTE,
-              getFollowerCountLiteral('"user"."id"'),
-              getFollowingCountLiteral('"user"."id"'),
-              getIsFollowingLiteral(userId, '"user"."id"'),
-            ]
-          }
+              getFollowerCountLiteral("\"user\".\"id\""),
+              getFollowingCountLiteral("\"user\".\"id\""),
+              getIsFollowingLiteral(userId, "\"user\".\"id\""),
+            ],
+          },
         ],
         attributes: {
           include: [
-            ...comment_attribute,
-            getCommentTotalReactionsCountLiteral('"Comment"'),
-            getCommentUserReactionLiteral(userId, '"Comment"'),
-          ]
-        }
+            ...commentAttribute,
+            getCommentTotalReactionsCountLiteral("\"Comment\""),
+            getCommentUserReactionLiteral(userId, "\"Comment\""),
+          ],
+        },
       },
       {
         model: User,
-        as: 'user',
+        as: "user",
         attributes: [
           ...USER_ATTRIBUTE,
-          getFollowerCountLiteral('"user"."id"'),
-          getFollowingCountLiteral('"user"."id"'),
-          getIsFollowingLiteral(userId, '"user"."id"'),
-        ]
+          getFollowerCountLiteral("\"user\".\"id\""),
+          getFollowingCountLiteral("\"user\".\"id\""),
+          getIsFollowingLiteral(userId, "\"user\".\"id\""),
+        ],
       },
     ],
     attributes: {
       include: [
-        getCommentTotalReactionsCountLiteral('"Comment"'),
-        getCommentUserReactionLiteral(userId, '"Comment"'),
-      ]
-    }
+        getCommentTotalReactionsCountLiteral("\"Comment\""),
+        getCommentUserReactionLiteral(userId, "\"Comment\""),
+      ],
+    },
   });
 
   return res.json(
     new ApiResponse(200, {
-      comments: comments,
+      comments,
       totalPages: Math.ceil(count / limit),
-      currentPage: page
-    }, 'Comment fetching')
-  )
-})
+      currentPage: page,
+    }, "Comment fetching"),
+  );
+});

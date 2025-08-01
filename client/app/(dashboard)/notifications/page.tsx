@@ -1,10 +1,11 @@
-import React from 'react'
-import NotificationsPage from '@/app/(dashboard)/notifications/notification-client'
+import React from "react";
 
-const Page = () => {
+import NotificationsPage from "@/app/(dashboard)/notifications/notification-client";
+
+function Page() {
   return (
     <NotificationsPage />
-  )
+  );
 }
 
-export default Page
+export default Page;

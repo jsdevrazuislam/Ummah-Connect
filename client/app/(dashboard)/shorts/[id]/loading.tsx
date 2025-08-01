@@ -1,16 +1,16 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ShortsFeedSkeleton() {
   return (
     <div className="w-full max-w-xl mx-auto">
       <div className="flex space-x-2 overflow-x-auto px-4 py-3 no-scrollbar">
-        {[...Array(8)].map((_, i) => (
+        {[...Array.from({ length: 8 })].map((_, i) => (
           <Skeleton key={i} className="h-8 w-20 rounded-full" />
         ))}
       </div>
 
       <div className="space-y-1">
-        {[...Array(5)].map((_, i) => (
+        {[...Array.from({ length: 5 })].map((_, i) => (
           <div key={i} className="relative h-[70vh] w-full bg-gray-900">
             <div className="absolute inset-0 flex items-center justify-center">
               <Skeleton className="h-full w-full rounded-none" />
@@ -36,5 +36,5 @@ export default function ShortsFeedSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }

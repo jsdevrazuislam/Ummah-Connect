@@ -5,20 +5,14 @@ const livekitApiSecret = process.env.LIVEKIT_API_SECRET;
 const livekitUrl = process.env.LIVEKIT_URL;
 export const roomServiceClient = new RoomServiceClient(livekitUrl!, livekitApiKey, livekitApiSecret);
 
-
-export const generateLiveKitToken = async (
-  identity: string,
-  roomName: string,
-  avatar?: string | null,
-  fullName?: string | null
-) => {
+export async function generateLiveKitToken(identity: string, roomName: string, avatar?: string | null, fullName?: string | null) {
   const at = new AccessToken(livekitApiKey, livekitApiSecret, {
-    identity: identity,
+    identity,
     name: fullName || identity,
     ttl: "10m",
     metadata: JSON.stringify({
-      avatar: avatar,
-      fullName: fullName,
+      avatar,
+      fullName,
     }),
   });
 
@@ -27,15 +21,14 @@ export const generateLiveKitToken = async (
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
-    canPublishData: false
+    canPublishData: false,
   });
 
   const token = await at.toJwt();
   return { token, livekitUrl };
-};
+}
 
-
-export const generateLiveToken = async ({
+export async function generateLiveToken({
   roomName,
   userId,
   userName,
@@ -45,14 +38,14 @@ export const generateLiveToken = async ({
   userId: string;
   userName: string;
   isPublisher?: boolean;
-}) => {
+}) {
   const token = new AccessToken(
     livekitApiKey!,
     livekitApiSecret!,
     {
       identity: userId,
       name: userName,
-    }
+    },
   );
 
   token.addGrant({
@@ -64,4 +57,4 @@ export const generateLiveToken = async ({
   });
 
   return await token.toJwt();
-};
+}

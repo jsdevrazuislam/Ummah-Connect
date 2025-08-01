@@ -1,27 +1,30 @@
-import React, { useRef, useState, useEffect } from 'react';
-import Hls, { Level } from 'hls.js';
-import { Play, Pause, Volume2, VolumeX, Check, Monitor, Settings, Gauge, ChevronLeft } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
+import type { Level } from "hls.js";
+
+import { AnimatePresence, motion } from "framer-motion";
+import Hls from "hls.js";
+import { Check, ChevronLeft, Gauge, Monitor, Pause, Play, Settings, Volume2, VolumeX } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Popover,
-  PopoverTrigger,
   PopoverContent,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
-const formatTime = (seconds: number) => {
+function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60)
     .toString()
-    .padStart(2, '0');
+    .padStart(2, "0");
   const secs = Math.floor(seconds % 60)
     .toString()
-    .padStart(2, '0');
+    .padStart(2, "0");
   return `${mins}:${secs}`;
-};
+}
 
-export default function HLSVideoPlayer({ src, poster, className }: { src: string, poster?: string, className?: string }) {
+export default function HLSVideoPlayer({ src, poster, className }: { src: string; poster?: string; className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
@@ -35,14 +38,15 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
   const [selectedLevel, setSelectedLevel] = useState<number>(-1);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showPlayPauseIndicator, setShowPlayPauseIndicator] = useState(false);
-  const [selectedQuality, setSelectedQuality] = useState<string>('Auto');
+  const [selectedQuality, setSelectedQuality] = useState<string>("Auto");
   const [showSettings, setShowSettings] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -59,21 +63,22 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
         setSelectedLevel(data.level);
         const level = hls.levels[data.level];
-        setSelectedQuality(level ? `${level.height}p` : 'Auto');
+        setSelectedQuality(level ? `${level.height}p` : "Auto");
       });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    }
+    else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
     }
 
     const updateTime = () => setCurrentTime(video.currentTime);
     const updateDuration = () => setDuration(video.duration);
 
-    video.addEventListener('timeupdate', updateTime);
-    video.addEventListener('loadedmetadata', updateDuration);
+    video.addEventListener("timeupdate", updateTime);
+    video.addEventListener("loadedmetadata", updateDuration);
 
     return () => {
-      video.removeEventListener('timeupdate', updateTime);
-      video.removeEventListener('loadedmetadata', updateDuration);
+      video.removeEventListener("timeupdate", updateTime);
+      video.removeEventListener("loadedmetadata", updateDuration);
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
@@ -87,18 +92,20 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const togglePlay = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
 
     if (video.paused) {
       video.play();
       setIsPlaying(true);
-    } else {
+    }
+    else {
       video.pause();
       setIsPlaying(false);
     }
@@ -109,7 +116,8 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
 
   const handleVolumeChange = (value: number[]) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
     const newVolume = value[0];
     video.volume = newVolume;
     setVolume(newVolume);
@@ -118,7 +126,8 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
 
   const toggleMute = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
     video.muted = !video.muted;
     setIsMuted(video.muted);
     if (!video.muted && volume === 0) {
@@ -129,14 +138,16 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
 
   const handleSeek = (value: number[]) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
     video.currentTime = value[0];
     setCurrentTime(value[0]);
   };
 
   const changePlaybackRate = (rate: number) => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video)
+      return;
     video.playbackRate = rate;
     setPlaybackRate(rate);
   };
@@ -146,7 +157,7 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
       hlsRef.current.currentLevel = levelIndex;
       setSelectedLevel(levelIndex);
       const level = hlsRef.current.levels[levelIndex];
-      setSelectedQuality(level ? `${level.height}p` : 'Auto');
+      setSelectedQuality(level ? `${level.height}p` : "Auto");
     }
   };
 
@@ -171,11 +182,13 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
             transition={{ duration: 0.2 }}
           >
             <div className="bg-black/50 rounded-full p-6">
-              {isPlaying ? (
-                <Pause className="w-8 h-8 text-white" />
-              ) : (
-                <Play className="w-8 h-8 text-white" />
-              )}
+              {isPlaying
+                ? (
+                    <Pause className="w-8 h-8 text-white" />
+                  )
+                : (
+                    <Play className="w-8 h-8 text-white" />
+                  )}
             </div>
           </motion.div>
         )}
@@ -189,7 +202,7 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
           value={[currentTime]}
           onValueChange={handleSeek}
           className="mb-2"
-          thumbClassName='hidden'
+          thumbClassName="hidden"
         />
 
         <div className="flex justify-between items-center text-white text-sm px-2">
@@ -198,11 +211,13 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
               onClick={togglePlay}
               className="p-1 hover:bg-white/20 rounded-full transition-colors"
             >
-              {isPlaying ? (
-                <Pause className="w-5 h-5" />
-              ) : (
-                <Play className="w-5 h-5" />
-              )}
+              {isPlaying
+                ? (
+                    <Pause className="w-5 h-5" />
+                  )
+                : (
+                    <Play className="w-5 h-5" />
+                  )}
             </button>
 
             <div
@@ -215,11 +230,13 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
                 onClick={toggleMute}
                 className="p-1 hover:bg-white/20 rounded-full transition-colors"
               >
-                {isMuted || volume === 0 ? (
-                  <VolumeX className="w-5 h-5" />
-                ) : (
-                  <Volume2 className="w-5 h-5" />
-                )}
+                {isMuted || volume === 0
+                  ? (
+                      <VolumeX className="w-5 h-5" />
+                    )
+                  : (
+                      <Volume2 className="w-5 h-5" />
+                    )}
               </button>
 
               {showVolumeSlider && (
@@ -238,14 +255,17 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
                     onValueChange={handleVolumeChange}
                     className="h-24 w-2"
                     orientation="vertical"
-                    thumbClassName='hidden'
+                    thumbClassName="hidden"
                   />
                 </motion.div>
               )}
             </div>
 
             <span className="text-xs">
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {formatTime(currentTime)}
+              {" "}
+              /
+              {formatTime(duration)}
             </span>
           </div>
 
@@ -274,23 +294,29 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
                           <span>Speed</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span>{playbackRate}x</span>
-                          {showSpeedMenu ? (
-                            <ChevronLeft className="h-4 w-4" />
-                          ) : null}
+                          <span>
+                            {playbackRate}
+                            x
+                          </span>
+                          {showSpeedMenu
+                            ? (
+                                <ChevronLeft className="h-4 w-4" />
+                              )
+                            : null}
                         </div>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-40 p-2" side="left" align="start">
                       <div className="space-y-1">
-                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
                           <Button
                             key={rate}
                             variant={playbackRate === rate ? "default" : "ghost"}
                             className="w-full justify-start"
                             onClick={() => changePlaybackRate(rate)}
                           >
-                            {rate}x
+                            {rate}
+                            x
                             {playbackRate === rate && <Check className="ml-auto h-4 w-4" />}
                           </Button>
                         ))}
@@ -314,9 +340,11 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
                           </div>
                           <div className="flex items-center gap-2">
                             <span>{selectedQuality}</span>
-                            {showQualityMenu ? (
-                              <ChevronLeft className="h-4 w-4" />
-                            ) : null}
+                            {showQualityMenu
+                              ? (
+                                  <ChevronLeft className="h-4 w-4" />
+                                )
+                              : null}
                           </div>
                         </Button>
                       </PopoverTrigger>
@@ -337,7 +365,8 @@ export default function HLSVideoPlayer({ src, poster, className }: { src: string
                               className="w-full justify-start"
                               onClick={() => switchResolution(idx)}
                             >
-                              {level.height}p
+                              {level.height}
+                              p
                               {selectedLevel === idx && <Check className="ml-auto h-4 w-4" />}
                             </Button>
                           ))}

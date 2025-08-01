@@ -1,12 +1,13 @@
-"use client"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { get_all_posts } from "@/lib/apis/posts"
-import { RefreshCw } from "lucide-react"
-import { useInfiniteQuery } from '@tanstack/react-query';
-import FollowingFeed from "@/components/following-feed"
-import InfiniteScrollPost from "@/components/infinite-scroll-post"
-import { ErrorMessage } from "@/components/api-error"
+"use client";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
+
+import { ErrorMessage } from "@/components/api-error";
+import FollowingFeed from "@/components/following-feed";
+import InfiniteScrollPost from "@/components/infinite-scroll-post";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getAllPosts } from "@/lib/apis/posts";
 
 export function MainFeed() {
   const {
@@ -16,10 +17,10 @@ export function MainFeed() {
     isFetchingNextPage,
     isLoading,
     isError,
-    refetch
+    refetch,
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ['get_all_posts'],
-    queryFn: ({ pageParam = 1 }) => get_all_posts({ page: Number(pageParam) }),
+    queryKey: ["get_all_posts"],
+    queryFn: ({ pageParam = 1 }) => getAllPosts({ page: Number(pageParam) }),
     getNextPageParam: (lastPage) => {
       const nextPage = (lastPage?.data?.currentPage ?? 0) + 1;
       return nextPage <= (lastPage?.data?.totalPages ?? 1) ? nextPage : undefined;
@@ -38,11 +39,12 @@ export function MainFeed() {
   };
 
   if (isError) {
-    return <div className="flex justify-center items-center mt-10">
-      <ErrorMessage type='network' />
-    </div>
+    return (
+      <div className="flex justify-center items-center mt-10">
+        <ErrorMessage type="network" />
+      </div>
+    );
   }
-
 
   return (
     <>
@@ -72,5 +74,5 @@ export function MainFeed() {
         </Tabs>
       </div>
     </>
-  )
+  );
 }

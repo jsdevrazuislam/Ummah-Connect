@@ -1,69 +1,67 @@
 import { getFileType } from "@/lib/utils";
 
-export const loadTempDataForMessage = ({
+export function loadTempDataForMessage({
   user,
   selectedConversation,
   message,
   status,
   id,
   attachments: inputAttachments,
-  key_for_recipient,
-  key_for_sender
+  keyForRecipient,
+  keyForSender,
 }: {
   selectedConversation: MessageSender | null;
   message: string;
   user: User | null;
   status: string;
   id: number;
-  key_for_recipient: string,
-  key_for_sender: string
+  keyForRecipient: string;
+  keyForSender: string;
   attachments?: (Blob | File)[];
-}) => {
+}) {
   const now = new Date().toISOString();
 
   const processedAttachments = inputAttachments
     ? inputAttachments.map((file, index) => {
+        const fileUrl = URL.createObjectURL(file);
 
-      const fileUrl = URL.createObjectURL(file);
+        const fileType = getFileType(file.type || "");
 
-      const fileType = getFileType(file.type || '')
+        const duration = 0;
 
-      const duration = 0;
-
-
-      return {
-        id: id + index,
-        message_id: id,
-        file_url: fileUrl,
-        file_type: fileType,
-        duration: duration,
-        thumbnail_url: '',
-        size_in_bytes: file.size,
-        metadata: {},
-        createdAt: now,
-        updatedAt: now,
-      };
-    })
+        return {
+          id: id + index,
+          messageId: id,
+          fileUrl,
+          fileType,
+          duration,
+          thumbnailUrl: "",
+          sizeInBytes: file.size,
+          metadata: {},
+          createdAt: now,
+          updatedAt: now,
+        };
+      })
     : [];
 
   return {
     id,
-    conversation_id: selectedConversation?.conversationId ?? 0,
-    sender_id: user?.id ?? 0,
-    content: message ?? 'Attachment',
-    key_for_recipient,
-    key_for_sender,
-    parent_message_id: null,
-    sent_at: now,
-    is_deleted: null,
-    deleted_by_id: null,
-    deleted_at: null,
+    conversationId: selectedConversation?.conversationId ?? 0,
+    senderId: user?.id ?? 0,
+    content: message ?? "Attachment",
+    keyForRecipient,
+    keyForSender,
+    parentMessageId: null,
+    sentAt: now,
+    isDeleted: null,
+    deletedById: null,
+    deletedAt: null,
     createdAt: now,
     updatedAt: now,
     status,
     sender: {
       id: user?.id ?? 0,
-      full_name: user?.full_name ?? "",
+      fullName: user?.fullName ?? "",
       avatar: user?.avatar ?? "",
       username: user?.username ?? "",
     },
@@ -71,23 +69,22 @@ export const loadTempDataForMessage = ({
     statuses: [],
     attachments: processedAttachments,
   };
-};
+}
 
-
-export const loadTempDataForStreamChat = (user: User | null, content: string, streamId: number, id: number) => {
+export function loadTempDataForStreamChat(user: User | null, content: string, streamId: number, id: number) {
   return {
     id,
-    stream_id: streamId,
-    sender_id: user?.id ?? 0,
+    streamId,
+    senderId: user?.id ?? 0,
     content,
     createdAt: `${new Date()}`,
     updatedAt: `${new Date()}`,
     sender: {
       id: user?.id ?? 0,
-      username: user?.username ?? '',
-      full_name: user?.full_name ?? '',
-      avatar: user?.avatar ?? ''
+      username: user?.username ?? "",
+      fullName: user?.fullName ?? "",
+      avatar: user?.avatar ?? "",
     },
-    status: 'sending'
-  }
+    status: "sending",
+  };
 }

@@ -1,17 +1,17 @@
-import { comment_react, create_comment, create_reply_comment, delete_comment, edit_comment, get_comments } from '@/controllers/comment.controller'
-import { verify_auth } from '@/middleware/auth.middleware'
-import { validateData } from '@/middleware/validation.middleware'
-import { commentReplySchema, commentSchema, reactSchema } from '@/schemas/post.schema'
-import { Router } from 'express'
+import { Router } from "express";
 
-const router = Router()
+import { commentReact, createComment, createReplyComment, deleteComment, editComment, getComments } from "@/controllers/comment.controller";
+import { verifyAuth } from "@/middleware/auth.middleware";
+import { validateData } from "@/middleware/validation.middleware";
+import { commentReplySchema, commentSchema, reactSchema } from "@/schemas/post.schema";
 
-router.post("/:id", validateData(commentSchema), verify_auth, create_comment)
-router.post("/reply/:id", validateData(commentReplySchema), verify_auth, create_reply_comment)
-router.post("/edit/:id", validateData(commentReplySchema), verify_auth, edit_comment)
-router.post("/react/:commentId", validateData(reactSchema), verify_auth, comment_react)
-router.delete("/delete/:id", verify_auth, delete_comment)
-router.get("/:postId/comments", verify_auth, get_comments)
+const router = Router();
 
-export const basePath = '/comment';
-export default router
+router.post("/:id", validateData(commentSchema), verifyAuth, createComment);
+router.post("/reply/:id", validateData(commentReplySchema), verifyAuth, createReplyComment);
+router.post("/edit/:id", validateData(commentReplySchema), verifyAuth, editComment);
+router.post("/react/:commentId", validateData(reactSchema), verifyAuth, commentReact);
+router.delete("/delete/:id", verifyAuth, deleteComment);
+router.get("/:postId/comments", verifyAuth, getComments);
+
+export default router;

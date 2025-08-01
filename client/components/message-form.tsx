@@ -1,251 +1,275 @@
-import React, { FC, useRef, useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Send, ImageIcon, Paperclip, Smile, Mic, MicOff, Circle, X } from "lucide-react"
-import SocketEventEnum from "@/constants/socket-event"
-import { cn, formatTime } from "@/lib/utils"
+import type { UseMutateFunction } from "@tanstack/react-query";
+import type { FC } from "react";
+
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import { useTheme } from "next-themes"
-import { useSocketStore } from '@/hooks/use-socket'
-import { useStore } from '@/store/store'
-import { ALLOWED_TYPES, MAX_FILE_SIZE } from '@/constants'
-import { UseMutateFunction, useMutation, useQueryClient } from '@tanstack/react-query'
-import { loadTempDataForMessage } from '@/lib/temp-load-data'
-import { addMessageConversation } from '@/lib/update-conversation'
-import Image from 'next/image'
-import { Textarea } from '@/components/ui/textarea'
-import { encryptMessageForBothParties, importPublicKey } from '@/lib/e2ee'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Circle, ImageIcon, Mic, MicOff, Paperclip, Send, Smile, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import Image from "next/image";
+import React, { useRef, useState } from "react";
 
-interface MessageFormProps {
-    handleSendMessage: (e: React.FormEvent) => void
-    showEmojiPicker: boolean
-    setShowEmojiPicker: React.Dispatch<React.SetStateAction<boolean>>
-    emojiPickerRef: React.RefObject<HTMLDivElement | null>
-    setMessage: React.Dispatch<React.SetStateAction<string>>
-    message: string
-    recording: boolean
-    recordingTime: number,
-    selectedConversation: MessageSender | null
-    isPending: boolean
-    sendLoading: boolean
-    stopRecording: () => void
-    startRecording: () => Promise<void>
-    sendAttachmentFun: UseMutateFunction<unknown, Error, FormData, unknown>
-    reply: ReplyMessage | null
-    setReply: React.Dispatch<React.SetStateAction<ReplyMessage | null>>
-}
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ALLOWED_TYPES, MAX_FILE_SIZE } from "@/constants";
+import SocketEventEnum from "@/constants/socket-event";
+import { useSocketStore } from "@/hooks/use-socket";
+import { encryptMessageForBothParties, importPublicKey } from "@/lib/e2ee";
+import { loadTempDataForMessage } from "@/lib/temp-load-data";
+import { showError } from "@/lib/toast";
+import { addMessageConversation } from "@/lib/update-conversation";
+import { cn, formatTime } from "@/lib/utils";
+import { useStore } from "@/store/store";
 
+type MessageFormProps = {
+  handleSendMessage: (e: React.FormEvent) => void;
+  showEmojiPicker: boolean;
+  setShowEmojiPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  emojiPickerRef: React.RefObject<HTMLDivElement | null>;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  message: string;
+  recording: boolean;
+  recordingTime: number;
+  selectedConversation: MessageSender | null;
+  isPending: boolean;
+  sendLoading: boolean;
+  stopRecording: () => void;
+  startRecording: () => Promise<void>;
+  sendAttachmentFun: UseMutateFunction<unknown, Error, FormData, unknown>;
+  reply: ReplyMessage | null;
+  setReply: React.Dispatch<React.SetStateAction<ReplyMessage | null>>;
+};
 
 const MessageForm: FC<MessageFormProps> = ({
-    handleSendMessage,
-    showEmojiPicker,
-    emojiPickerRef,
-    setMessage,
-    setShowEmojiPicker,
-    recording,
-    recordingTime,
-    message,
-    selectedConversation,
-    isPending,
-    sendLoading,
-    stopRecording,
-    startRecording,
-    sendAttachmentFun,
-    reply,
-    setReply
+  handleSendMessage,
+  showEmojiPicker,
+  emojiPickerRef,
+  setMessage,
+  setShowEmojiPicker,
+  recording,
+  recordingTime,
+  message,
+  selectedConversation,
+  isPending,
+  sendLoading,
+  stopRecording,
+  startRecording,
+  sendAttachmentFun,
+  reply,
+  setReply,
 }) => {
+  const { theme } = useTheme();
+  const { socket } = useSocketStore();
+  const { user } = useStore();
+  const { isPending: isSending } = useMutation({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
-    const { theme } = useTheme()
-    const { socket } = useSocketStore()
-    const { user } = useStore()
-    const { isPending: isSending } = useMutation({})
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const queryClient = useQueryClient()
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files).filter((file) => {
+        const isValidType = ALLOWED_TYPES.includes(file.type);
+        const isValidSize = file.size <= MAX_FILE_SIZE;
 
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files).filter(file => {
-                const isValidType = ALLOWED_TYPES.includes(file.type);
-                const isValidSize = file.size <= MAX_FILE_SIZE;
-
-                if (!isValidType) {
-                    alert(`Invalid file type: ${file.type}. Only images (JPEG, PNG, GIF) and videos (MP4, MOV) are allowed.`);
-                }
-
-                if (!isValidSize) {
-                    alert(`File ${file.name} is too large. Maximum size is 5MB.`);
-                }
-
-                return isValidType && isValidSize;
-            });
-
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-
-            setSelectedFiles(prev => [...prev, ...files]);
+        if (!isValidType) {
+          showError(`Invalid file type: ${file.type}. Only images (JPEG, PNG, GIF) and videos (MP4, MOV) are allowed.`);
         }
-    };
 
-    const removeFile = (index: number) => {
-        setSelectedFiles(prev => {
-            const newFiles = [...prev];
-            newFiles.splice(index, 1);
-            return newFiles;
-        });
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (selectedFiles?.length > 0) {
-            if (isPending || sendLoading) return;
-            const recipientKey = await importPublicKey(selectedConversation?.public_key ?? '');
-            const senderKey = await importPublicKey(user?.public_key ?? '');
-            const { content, key_for_recipient, key_for_sender } = await encryptMessageForBothParties(message, senderKey, recipientKey)
-            const tempId = Date.now()
-            const formData = new FormData();
-            for (const file of selectedFiles) {
-                formData.append("media", file);
-            }
-            formData.append("id", String(tempId));
-            formData.append("content", message?.trim())
-            formData.append("conversationId", String(selectedConversation?.conversationId));
-            setSelectedFiles([])
-            const tempMessage = loadTempDataForMessage({ user, message: content, key_for_recipient, key_for_sender, selectedConversation, status: 'sending', id: tempId, attachments: selectedFiles })
-            queryClient.setQueryData(['get_conversation_messages', selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
-                return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0)
-            })
-            sendAttachmentFun(formData)
+        if (!isValidSize) {
+          showError(`File ${file.name} is too large. Maximum size is 5MB.`);
         }
-        handleSendMessage(e)
-    };
 
-    return (
-        <div className='p-4 border-t border-border'>
-            {selectedFiles.length > 0 && (
-                <div className="flex gap-2 p-2 rounded-lg">
-                    {selectedFiles.map((file, index) => (
-                        <div key={index} className="relative">
-                            {file.type.startsWith('image/') ? (
-                                <Image
-                                    src={URL.createObjectURL(file)}
-                                    alt="Preview"
-                                    className="h-16 w-16 object-cover rounded-md"
-                                    width={64}
-                                    height={64}
-                                />
-                            ) : (
-                                <video className="h-16 w-16 object-cover rounded-md">
-                                    <source src={URL.createObjectURL(file)} type={file.type} />
-                                </video>
-                            )}
-                            <button
-                                onClick={() => removeFile(index)}
-                                className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
-                            >
-                                <X className="h-3 w-3 text-white" />
-                            </button>
-                            <div className="text-xs mt-1 truncate w-16">{file.name}</div>
-                        </div>
-                    ))}
-                </div>
-            )}
-            {reply && <div className='flex justify-between items-center pb-4'>
-                <div>
-                    <p>Replying to {reply?.full_name}</p>
-                    <p className='text-sm text-gray-500 dark:text-gray-400'>{reply?.content}</p>
-                </div>
-                <Button onClick={() => setReply(null)} variant='ghost'>
-                    <X />
-                </Button>
-            </div>}
-            <form className="flex relative items-center gap-2">
-                {showEmojiPicker && (
-                    <div ref={emojiPickerRef} className="absolute bottom-14 left-2 z-10">
-                        <Picker
-                            data={emojiData}
-                            onEmojiSelect={(emoji: EmojiPicker) => setMessage(prev => prev + emoji.native)}
-                            theme={theme}
-                            previewPosition="none"
-                            searchPosition="none"
-                        />
-                    </div>
-                )}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
-                    multiple
-                    className="hidden"
-                />
-                <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
-                    <Smile className="h-5 w-5" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                    <Paperclip className="h-5 w-5" />
-                </Button>
-                <Button onClick={() => fileInputRef.current?.click()} type="button" variant="ghost" size="icon" className="shrink-0">
-                    <ImageIcon className="h-5 w-5" />
-                </Button>
-                {recording ? (
-                    <div className="flex items-center gap-2 flex-1 px-4 py-2 bg-red-50 rounded-full">
-                        <Circle className="h-3 w-3 fill-red-500 animate-pulse" />
-                        <span className="text-sm font-medium text-red-500">
-                            Recording: {formatTime(recordingTime)}
-                        </span>
-                    </div>
-                ) : (
-                    <Textarea
-                        placeholder="Type a message..."
-                        value={message}
-                        onChange={(e) => {
-                            setMessage(e.target.value);
-                            if (selectedConversation?.conversationId) {
-                                socket?.emit(SocketEventEnum.TYPING, {
-                                    conversationId: selectedConversation.conversationId,
-                                    userId: user?.id
-                                });
-                            }
-                        }}
-                        onInput={(e) => {
-                            const el = e.currentTarget;
-                            el.style.height = "auto";
-                            el.style.height = `${el.scrollHeight}px`;
-                        }}
-                        className={cn(`flex-1 overflow-y-scroll resize-none`, { "max-h-[80px]": message })}
-                        rows={1}
-                        cols={1}
+        return isValidType && isValidSize;
+      });
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      setSelectedFiles(prev => [...prev, ...files]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedFiles?.length > 0) {
+      if (isPending || sendLoading)
+        return;
+      const recipientKey = await importPublicKey(selectedConversation?.publicKey ?? "");
+      const senderKey = await importPublicKey(user?.publicKey ?? "");
+      const { content, keyForRecipient, keyForSender } = await encryptMessageForBothParties(message, senderKey, recipientKey);
+      const tempId = Date.now();
+      const formData = new FormData();
+      for (const file of selectedFiles) {
+        formData.append("media", file);
+      }
+      formData.append("id", String(tempId));
+      formData.append("content", message?.trim());
+      formData.append("conversationId", String(selectedConversation?.conversationId));
+      setSelectedFiles([]);
+      const tempMessage = loadTempDataForMessage({ user, message: content, keyForRecipient, keyForSender, selectedConversation, status: "sending", id: tempId, attachments: selectedFiles });
+      queryClient.setQueryData(["get_conversation_messages", selectedConversation?.conversationId], (oldData: QueryOldDataPayloadConversation) => {
+        return addMessageConversation(oldData, tempMessage, selectedConversation?.conversationId ?? 0);
+      });
+      sendAttachmentFun(formData);
+    }
+    handleSendMessage(e);
+  };
+
+  return (
+    <div className="p-4 border-t border-border">
+      {selectedFiles.length > 0 && (
+        <div className="flex gap-2 p-2 rounded-lg">
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="relative">
+              {file.type.startsWith("image/")
+                ? (
+                    <Image
+                      src={URL.createObjectURL(file)}
+                      alt="Preview"
+                      className="h-16 w-16 object-cover rounded-md"
+                      width={64}
+                      height={64}
                     />
-                )}
-                {(message.trim() || selectedFiles.length > 0) ? (
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={isPending || sendLoading || isSending}
-                        type="submit"
-                        size="icon"
-                        className="shrink-0"
-                    >
-                        {isSending ? (
-                            <div className="flex items-center justify-center">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : (
-                            <Send className="h-4 w-4" />
-                        )}
-                    </Button>
-                ) : (
-                    recording ? <Button onClick={stopRecording} type="button" variant="ghost" size="icon" className="shrink-0">
-                        <MicOff className="h-5 w-5" />
-                    </Button> : <Button onClick={startRecording} type="button" variant="ghost" size="icon" className="shrink-0">
-                        <Mic className="h-5 w-5" />
-                    </Button>
-                )}
-            </form>
+                  )
+                : (
+                    <video className="h-16 w-16 object-cover rounded-md">
+                      <source src={URL.createObjectURL(file)} type={file.type} />
+                    </video>
+                  )}
+              <button
+                onClick={() => removeFile(index)}
+                className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+              >
+                <X className="h-3 w-3 text-white" />
+              </button>
+              <div className="text-xs mt-1 truncate w-16">{file.name}</div>
+            </div>
+          ))}
         </div>
-    )
-}
+      )}
+      {reply && (
+        <div className="flex justify-between items-center pb-4">
+          <div>
+            <p>
+              Replying to
+              {reply?.fullName}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{reply?.content}</p>
+          </div>
+          <Button onClick={() => setReply(null)} variant="ghost">
+            <X />
+          </Button>
+        </div>
+      )}
+      <form className="flex relative items-center gap-2">
+        {showEmojiPicker && (
+          <div ref={emojiPickerRef} className="absolute bottom-14 left-2 z-10">
+            <Picker
+              data={emojiData}
+              onEmojiSelect={(emoji: EmojiPicker) => setMessage(prev => prev + emoji.native)}
+              theme={theme}
+              previewPosition="none"
+              searchPosition="none"
+            />
+          </div>
+        )}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
+          multiple
+          className="hidden"
+        />
+        <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
+          <Smile className="h-5 w-5" />
+        </Button>
+        <Button type="button" variant="ghost" size="icon" className="shrink-0">
+          <Paperclip className="h-5 w-5" />
+        </Button>
+        <Button onClick={() => fileInputRef.current?.click()} type="button" variant="ghost" size="icon" className="shrink-0">
+          <ImageIcon className="h-5 w-5" />
+        </Button>
+        {recording
+          ? (
+              <div className="flex items-center gap-2 flex-1 px-4 py-2 bg-red-50 rounded-full">
+                <Circle className="h-3 w-3 fill-red-500 animate-pulse" />
+                <span className="text-sm font-medium text-red-500">
+                  Recording:
+                  {" "}
+                  {formatTime(recordingTime)}
+                </span>
+              </div>
+            )
+          : (
+              <Textarea
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (selectedConversation?.conversationId) {
+                    socket?.emit(SocketEventEnum.TYPING, {
+                      conversationId: selectedConversation.conversationId,
+                      userId: user?.id,
+                    });
+                  }
+                }}
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "auto";
+                  el.style.height = `${el.scrollHeight}px`;
+                }}
+                className={cn(`flex-1 overflow-y-scroll resize-none`, { "max-h-[80px]": message })}
+                rows={1}
+                cols={1}
+              />
+            )}
+        {(message.trim() || selectedFiles.length > 0)
+          ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending || sendLoading || isSending}
+                type="submit"
+                size="icon"
+                className="shrink-0"
+              >
+                {isSending
+                  ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )
+                  : (
+                      <Send className="h-4 w-4" />
+                    )}
+              </Button>
+            )
+          : (
+              recording
+                ? (
+                    <Button onClick={stopRecording} type="button" variant="ghost" size="icon" className="shrink-0">
+                      <MicOff className="h-5 w-5" />
+                    </Button>
+                  )
+                : (
+                    <Button onClick={startRecording} type="button" variant="ghost" size="icon" className="shrink-0">
+                      <Mic className="h-5 w-5" />
+                    </Button>
+                  )
+            )}
+      </form>
+    </div>
+  );
+};
 
-export default MessageForm
+export default MessageForm;

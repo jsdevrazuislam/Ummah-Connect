@@ -1,20 +1,21 @@
-import redis from "@/config/redis";
-import { Story } from "@/models";
 import { Op } from "sequelize";
 
-export const purgeExpiredStories = async () => {
-    const now = new Date();
+import redis from "@/config/redis";
+import { Story } from "@/models";
 
-    const expiredStories = await Story.findAll({
-        where: {
-            expiresAt: { [Op.lte]: now },
-        },
-    });
+export async function purgeExpiredStories() {
+  const now = new Date();
 
-    for (const story of expiredStories) {
-        await redis.del(`stories:user:${story.userId}`);
-        await story.destroy();
-    }
+  const expiredStories = await Story.findAll({
+    where: {
+      expiresAt: { [Op.lte]: now },
+    },
+  });
 
-    console.log(`[PurgeStoriesJob] Deleted ${expiredStories.length} expired stories`);
-};
+  for (const story of expiredStories) {
+    await redis.del(`stories:user:${story.userId}`);
+    await story.destroy();
+  }
+
+  console.log(`[PurgeStoriesJob] Deleted ${expiredStories.length} expired stories`);
+}

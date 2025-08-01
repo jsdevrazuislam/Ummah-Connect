@@ -1,14 +1,15 @@
-import { DataTypes, Model } from 'sequelize'
-import sequelize from '@/config/db'
+import { DataTypes, Model } from "sequelize";
+
+import sequelize from "@/config/db";
 
 class MessageAttachment extends Model {
   public id!: number;
-  public message_id!: number;
-  public file_url!: string;
-  public file_type!: 'image' | 'video' | 'audio' | 'pdf' | 'doc';
-  public thumbnail_url?: string;
+  public messageId!: number;
+  public fileUrl!: string;
+  public fileType!: "image" | "video" | "audio" | "pdf" | "doc";
+  public thumbnailUrl?: string;
   public duration?: number;
-  public size_in_bytes?: number;
+  public sizeInBytes?: number;
   public metadata?: Record<string, string>;
   public createdAt!: Date;
   public updatedAt!: Date;
@@ -19,49 +20,49 @@ MessageAttachment.init(
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
-      primaryKey: true
+      primaryKey: true,
     },
-    message_id: {
+    messageId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: "messages",
-        key: "id"
+        key: "id",
       },
-      onDelete: 'CASCADE'
+      onDelete: "CASCADE",
     },
-    file_url: {
+    fileUrl: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
-    file_type: {
-      type: DataTypes.ENUM('image', 'video', 'audio', 'pdf', 'doc', 'text'),
-      defaultValue: 'text'
+    fileType: {
+      type: DataTypes.ENUM("image", "video", "audio", "pdf", "doc", "text"),
+      defaultValue: "text",
     },
-    thumbnail_url: {
+    thumbnailUrl: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     duration: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
-    size_in_bytes: {
+    sizeInBytes: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     metadata: {
       type: DataTypes.JSON,
       allowNull: true,
-      defaultValue: {}
+      defaultValue: {},
     },
   },
   {
     sequelize,
-    tableName: 'message_attachment',
+    tableName: "message_attachment",
     modelName: "MessageAttachment",
-    timestamps: true
-  }
-)
+    timestamps: true,
+  },
+);
 
-export default MessageAttachment
+export default MessageAttachment;

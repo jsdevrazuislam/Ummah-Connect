@@ -1,12 +1,14 @@
 import { cookies } from "next/headers";
-import ApiStrings from "@/lib/apis/api-strings";
+
 import { ACCESS_TOKEN } from "@/constants";
+import ApiStrings from "@/lib/apis/api-strings";
 
 export async function getServerUser() {
   const cookie = await cookies();
   const token = cookie.get(ACCESS_TOKEN)?.value;
 
-  if (!token) return null;
+  if (!token)
+    return null;
 
   try {
     const res = await fetch(
@@ -16,15 +18,17 @@ export async function getServerUser() {
           Authorization: `Bearer ${token}`,
         },
         cache: "no-store",
-      }
+      },
     );
 
-    if (!res.ok) return null;
+    if (!res.ok)
+      return null;
 
     const { data } = await res.json();
 
     return data.user;
-  } catch  {
+  }
+  catch {
     return null;
   }
 }

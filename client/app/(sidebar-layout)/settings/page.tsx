@@ -1,12 +1,14 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Bell, User, Lock } from "lucide-react"
-import AccountForm from "@/app/(sidebar-layout)/settings/account-form"
-import PrivacySettings from "@/app/(sidebar-layout)/settings/privacy-settings"
-import ChangePassword from "@/app/(sidebar-layout)/settings/change-password"
-import Notification from "@/app/(sidebar-layout)/settings/notification"
-import { TwoFactorAuth } from "@/components/2fa"
-import Preferences from "@/app/(sidebar-layout)/settings/preferences"
-import Security from "./security"
+import { Bell, Lock, User } from "lucide-react";
+
+import AccountForm from "@/app/(sidebar-layout)/settings/account-form";
+import ChangePassword from "@/app/(sidebar-layout)/settings/change-password";
+import Notification from "@/app/(sidebar-layout)/settings/notification";
+import Preferences from "@/app/(sidebar-layout)/settings/preferences";
+import PrivacySettings from "@/app/(sidebar-layout)/settings/privacy-settings";
+import { TwoFactorAuth } from "@/components/2fa";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import Security from "./security";
 
 export default function SettingsPage() {
   return (
@@ -45,5 +47,5 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </>
-  )
+  );
 }

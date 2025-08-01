@@ -1,40 +1,39 @@
-import { create } from "zustand"
+import { create } from "zustand";
 
-type UnreadMap = Record<number, number> 
+type UnreadMap = Record<number, number>;
 
-interface ConversationState {
+type ConversationState = {
   unreadCounts: UnreadMap;
   setUnreadCount: (conversationId: number, count: number) => void;
   incrementUnreadCount: (conversationId: number) => void;
   resetUnreadCount: (conversationId: number) => void;
   setBulkUnreadCounts: (data: UnreadMap) => void;
-}
+};
 
-export const useConversationStore = create<ConversationState>((set) => ({
+export const useConversationStore = create<ConversationState>(set => ({
   unreadCounts: {},
 
   setUnreadCount: (conversationId, count) =>
-    set((state) => ({
+    set(state => ({
       unreadCounts: {
         ...state.unreadCounts,
         [conversationId]: count,
       },
     })),
 
-  incrementUnreadCount: (conversationId) =>
-    set((state) => ({
+  incrementUnreadCount: conversationId =>
+    set(state => ({
       unreadCounts: {
         ...state.unreadCounts,
         [conversationId]: (state.unreadCounts[conversationId] || 0) + 1,
       },
     })),
 
-  resetUnreadCount: (conversationId) =>
+  resetUnreadCount: conversationId =>
     set((state) => {
-      const { [conversationId]: _, ...rest } = state.unreadCounts;
-      console.log(_)
-      return { unreadCounts: { ...rest, [conversationId]: 0 } }
+      const { ...rest } = state.unreadCounts;
+      return { unreadCounts: { ...rest, [conversationId]: 0 } };
     }),
 
-  setBulkUnreadCounts: (data) => set(() => ({ unreadCounts: data })),
-}))
+  setBulkUnreadCounts: data => set(() => ({ unreadCounts: data })),
+}));

@@ -1,26 +1,25 @@
-import { create_conversation_for_dm, delete_conversation, delete_message, edit_message, get_all_conversations, get_conversation_message, react_to_message, read_message, remove_reaction_from_message, reply_to_message, send_attachment, send_message, undo_delete_message } from '@/controllers/conversation.controller'
-import { verify_auth } from '@/middleware/auth.middleware'
-import { upload } from '@/middleware/multer.middleware'
-import { validateData } from '@/middleware/validation.middleware'
-import { conversationSchema, readMessageSchema, sendMessageSchema } from '@/schemas/conversation.schema'
-import { Router } from 'express'
+import { Router } from "express";
 
-const router = Router()
+import { createConversationForDm, deleteConversation, deleteMessage, editMessage, getAllConversations, getConversationMessage, reactToMessage, readMessage, removeReactionFromMessage, replyToMessage, sendAttachment, sendMessage, undoDeleteMessage } from "@/controllers/conversation.controller";
+import { verifyAuth } from "@/middleware/auth.middleware";
+import { upload } from "@/middleware/multer.middleware";
+import { validateData } from "@/middleware/validation.middleware";
+import { conversationSchema, readMessageSchema, sendMessageSchema } from "@/schemas/conversation.schema";
 
-router.post("/create", validateData(conversationSchema), verify_auth, create_conversation_for_dm)
-router.get("/", verify_auth, get_all_conversations)
-router.post("/send-message", validateData(sendMessageSchema), verify_auth, send_message)
-router.post("/send-attachment", verify_auth, upload.array("media", 10), send_attachment)
-router.get("/:id", verify_auth, get_conversation_message)
-router.post("/read-message", validateData(readMessageSchema), verify_auth, read_message)
-router.delete("/delete/:id", verify_auth, delete_conversation)
-router.post("/react/:messageId", verify_auth, react_to_message)
-router.delete("/react/:messageId", verify_auth, remove_reaction_from_message)
-router.post("/reply/:parentMessageId", verify_auth, reply_to_message)
-router.put("/edit/:messageId", verify_auth, edit_message)
-router.delete("/message/delete/:messageId", verify_auth, delete_message)
-router.post("/message/undo/:messageId", verify_auth, undo_delete_message)
+const router = Router();
 
+router.post("/create", validateData(conversationSchema), verifyAuth, createConversationForDm);
+router.get("/", verifyAuth, getAllConversations);
+router.post("/send-message", validateData(sendMessageSchema), verifyAuth, sendMessage);
+router.post("/send-attachment", verifyAuth, upload.array("media", 10), sendAttachment);
+router.get("/:id", verifyAuth, getConversationMessage);
+router.post("/read-message", validateData(readMessageSchema), verifyAuth, readMessage);
+router.delete("/delete/:id", verifyAuth, deleteConversation);
+router.post("/react/:messageId", verifyAuth, reactToMessage);
+router.delete("/react/:messageId", verifyAuth, removeReactionFromMessage);
+router.post("/reply/:parentMessageId", verifyAuth, replyToMessage);
+router.put("/edit/:messageId", verifyAuth, editMessage);
+router.delete("/message/delete/:messageId", verifyAuth, deleteMessage);
+router.post("/message/undo/:messageId", verifyAuth, undoDeleteMessage);
 
-export const basePath = '/conversation';
-export default router
+export default router;

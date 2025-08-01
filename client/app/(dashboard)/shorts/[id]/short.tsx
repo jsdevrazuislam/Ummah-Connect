@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react";
 
-const short = () => {
+function short() {
   return (
     <div>short</div>
-  )
+  );
 }
 
-export default short
+export default short;

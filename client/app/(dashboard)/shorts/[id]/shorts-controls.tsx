@@ -1,21 +1,22 @@
-'use client'
+"use client";
 
-import { Volume2, VolumeX, Play, Pause, MoreVertical, Bookmark, Link, Bug } from 'lucide-react'
+import { Bookmark, Bug, Link, MoreVertical, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { ReportModal } from "@/components/report-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { ReportModal } from '@/components/report-modal'
-import { useState } from 'react'
+} from "@/components/ui/tooltip";
 
 export default function ShortsControls({
   isPlaying,
@@ -24,28 +25,24 @@ export default function ShortsControls({
   onMuteUnmute,
   shortId,
 }: {
-  isPlaying: boolean
-  isMuted: boolean
-  shortId?: number
-  onPlayPause: () => void
-  onMuteUnmute: () => void
+  isPlaying: boolean;
+  isMuted: boolean;
+  shortId?: number;
+  onPlayPause: () => void;
+  onMuteUnmute: () => void;
 }) {
-
   const [showReportModal, setShowReportModal] = useState(false);
 
-
-  const handleSaveShort = () => {
-    console.log('Save short clicked')
-  }
+  const handleSaveShort = () => {};
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.href}/${shortId}`)
-    toast.success('Link copied to clipboard')
-  }
+    navigator.clipboard.writeText(`${window.location.href}/${shortId}`);
+    toast.success("Link copied to clipboard");
+  };
 
   const handleReport = () => {
-    setShowReportModal(true)
-  }
+    setShowReportModal(true);
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -60,7 +57,7 @@ export default function ShortsControls({
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>{isPlaying ? 'Pause' : 'Play'}</p>
+            <p>{isPlaying ? "Pause" : "Play"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -74,7 +71,7 @@ export default function ShortsControls({
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>{isMuted ? 'Unmute' : 'Mute'}</p>
+            <p>{isMuted ? "Unmute" : "Mute"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -128,5 +125,5 @@ export default function ShortsControls({
         id={2}
       />
     </TooltipProvider>
-  )
+  );
 }

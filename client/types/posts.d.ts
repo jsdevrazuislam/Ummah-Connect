@@ -1,45 +1,55 @@
-interface PostsResponse {
+type PostsResponse = {
   statusCode: number;
   data?: PostsData;
   message: string;
   success: boolean;
-}
-interface BookmarkPostsResponse {
+};
+type SharePostResponse = {
+  statusCode: number;
+  data?: {
+    share: PostsEntity;
+    sharedPostId: number;
+    postData: PostsEntity;
+  };
+  message: string;
+  success: boolean;
+};
+type BookmarkPostsResponse = {
   statusCode: number;
   data?: BookmarkPostsData;
   message: string;
   success: boolean;
-}
+};
 
-interface BookmarkPostsData{
+type BookmarkPostsData = {
   posts?: BookmarkPostEntity[];
   totalPages: number;
   currentPage: number;
-  user?:User
-}
+  user?: User;
+};
 
-interface BookmarkPostEntity{
-  createdAt:string
-  updatedAt:string
-  id:number
-  userId:number
-  postId:number
-  post:PostsEntity
-}
-interface PostsData {
+type BookmarkPostEntity = {
+  createdAt: string;
+  updatedAt: string;
+  id: number;
+  userId: number;
+  postId: number;
+  post: PostsEntity;
+};
+type PostsData = {
   posts?: PostsEntity[];
   totalPages: number;
   currentPage: number;
-  user?:User
-}
-interface PostsEntity {
+  user?: User;
+};
+type PostsEntity = {
   id: number;
   authorId: number;
   user: PostAuthor;
   content: string;
   timestamp: string;
   createdAt?: string;
-  originalPost: PostsEntity | null
+  originalPost: PostsEntity | null;
   privacy: string;
   background: string;
   isBookmarked: boolean;
@@ -50,34 +60,34 @@ interface PostsEntity {
   media?: string;
   media?: string;
   location: string;
-  createdAt?:string
-  contentType?: 'text' | 'video' | 'audio' | 'picture'
-}
-interface PostAuthor {
+  createdAt?: string;
+  contentType?: "text" | "video" | "audio" | "picture";
+};
+type PostAuthor = {
   id: number;
-  full_name: string;
+  fullName: string;
   username: string;
   avatar?: string;
-  location?:string
-  following_count?:string | number
-  followers_count?:string | number
-  bio:string
+  location?: string;
+  followingCount?: string | number;
+  followersCount?: string | number;
+  bio: string;
   isFollowing?: boolean;
-  privacy_settings?:PrivacySettings
-  public_key?:string
-}
+  privacySettings?: PrivacySettings;
+  publicKey?: string;
+};
 
-interface CommentsResponse{
-  statusCode: number
+type CommentsResponse = {
+  statusCode: number;
   data: {
-    comments: CommentPreview[] | null
-    totalPages:number
-    currentPage:number
-  },
-  message:string,
-  success:boolean
-}
-interface CommentPreview {
+    comments: CommentPreview[] | null;
+    totalPages: number;
+    currentPage: number;
+  };
+  message: string;
+  success: boolean;
+};
+type CommentPreview = {
   id: number;
   userId: number;
   content: string;
@@ -85,100 +95,97 @@ interface CommentPreview {
   replies?: RepliesEntity[];
   repliesCount: number;
   createdAt: string;
-  isEdited:boolean
-  parentId:number
-  postId?: number
-  totalComments?: number
-  totalReactionsCount?: number
-  currentUserReaction: ReactionType
+  isEdited: boolean;
+  parentId: number;
+  postId?: number;
+  totalComments?: number;
+  totalReactionsCount?: number;
+  currentUserReaction: ReactionType;
 
-}
+};
 
-type ReactionType =
-  | "like"
-  | "love"
-  | "haha"
-  | "care"
-  | "sad"
-  | "wow"
-  | "angry"
-  | null;
+type ReactionType
+  = | "like"
+    | "love"
+    | "haha"
+    | "care"
+    | "sad"
+    | "wow"
+    | "angry"
+    | null;
 
-interface RepliesEntity {
+type RepliesEntity = {
   userId: number;
   id: number;
   parentId: number;
-  postId?:number
+  postId?: number;
   content: string;
   user: PostAuthor;
   repliesCount: number;
   createdAt: string;
-  isEdited:boolean
-  totalComments?:number
-  totalReactionsCount?: number
-  currentUserReaction: ReactionType
-}
-interface Counts {
+  isEdited: boolean;
+  totalComments?: number;
+  totalReactionsCount?: number;
+  currentUserReaction: ReactionType;
+};
+type Counts = {
   love: number;
-}
+};
 
-
- interface SuggestionUsers {
+type SuggestionUsers = {
   statusCode: number;
   data?: (SuggestionEntity)[] | null;
   message: string;
   success: boolean;
-}
- interface SuggestionEntity {
+};
+type SuggestionEntity = {
   id: number;
   username: string;
   avatar?: null;
-  full_name: string;
-  follower_count: string;
-  is_following: boolean;
-}
+  fullName: string;
+  followerCount: string;
+  isFollowing: boolean;
+};
 
-
-  interface StoryResponse {
+type StoryResponse = {
   statusCode: number;
   data?: (DataEntity)[] | null;
   message: string;
   success: boolean;
-}
- interface StoryEntity {
+};
+type StoryEntity = {
   id: number;
   username: string;
   avatar?: null;
-  full_name: string;
+  fullName: string;
   stories: StoriesEntity[];
-}
- interface StoriesEntity {
+};
+type StoriesEntity = {
   id: number;
   userId: number;
   mediaUrl: string;
   caption: string;
   createdAt: string;
   updatedAt: string;
-  type: "image" | "text"
-  background: string
-  textColor: string
-}
+  type: "image" | "text";
+  background: string;
+  textColor: string;
+};
 
-
-interface CreateStoryResponse {
+type CreateStoryResponse = {
   statusCode: number;
   data: StoryEntity;
   message: string;
   success: boolean;
-}
+};
 
- interface LocationResponse {
+type LocationResponse = {
   type: string;
   query?: (number)[] | null;
   features: FeaturesEntity[];
   attribution: string;
-}
- interface FeaturesEntity {
+};
+type FeaturesEntity = {
   id: string;
   type: string;
   place_type?: (string)[] | null;
@@ -190,19 +197,19 @@ interface CreateStoryResponse {
   center?: (number)[] | null;
   geometry: Geometry;
   context: ContextEntity[];
-}
- interface Properties {
+};
+type Properties = {
   mapbox_id: string;
   wikidata: string;
-}
- interface Geometry {
+};
+type Geometry = {
   type: string;
   coordinates?: (number)[] | null;
-}
- interface ContextEntity {
+};
+type ContextEntity = {
   id: string;
   mapbox_id: string;
   wikidata: string;
   text: string;
   short_code?: string | null;
-}
+};

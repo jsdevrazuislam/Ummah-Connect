@@ -1,10 +1,11 @@
-import type React from "react"
-import { PrayerTimesWidget } from "@/components/prayer-times-widget"
-import { IslamicQuote } from "@/components/islamic-quote"
+import type React from "react";
 
-interface RightSidebarProps {
-  children?: React.ReactNode
-}
+import { IslamicQuote } from "@/components/islamic-quote";
+import { PrayerTimesWidget } from "@/components/prayer-times-widget";
+
+type RightSidebarProps = {
+  children?: React.ReactNode;
+};
 
 export function RightSidebar({ children }: RightSidebarProps) {
   return (
@@ -13,5 +14,5 @@ export function RightSidebar({ children }: RightSidebarProps) {
       <PrayerTimesWidget />
       <IslamicQuote />
     </div>
-  )
+  );
 }

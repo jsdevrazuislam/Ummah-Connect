@@ -1,12 +1,13 @@
-"use client"
+"use client";
+import { Eye, EyeOff } from "lucide-react";
 import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react"; 
 
-interface InputProps extends React.ComponentProps<"input"> {
+import { cn } from "@/lib/utils";
+
+type InputProps = {
   error?: string;
-  classNameRoot?:string
-}
+  classNameRoot?: string;
+} & React.ComponentProps<"input">;
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, classNameRoot, error, type = "text", ...props }, ref) => {
@@ -20,7 +21,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             "flex h-10 w-full rounded-md border border-input bg-input px-3 py-2 pr-10 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
             error && "border-red-500 focus-visible:ring-red-500/50",
-            className
+            className,
           )}
           ref={ref}
           aria-invalid={!!error}
@@ -29,15 +30,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {isPassword && (
           <button
             type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className={cn("absolute right-2 -translate-y-1/2 text-muted-foreground focus:outline-none", error ? 'top-[30%]' : 'top-1/2')}
+            onClick={() => setShowPassword(prev => !prev)}
+            className={cn("absolute right-2 -translate-y-1/2 text-muted-foreground focus:outline-none", error ? "top-[30%]" : "top-1/2")}
             tabIndex={-1}
           >
-            {showPassword ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
+            {showPassword
+              ? (
+                  <EyeOff className="h-4 w-4" />
+                )
+              : (
+                  <Eye className="h-4 w-4" />
+                )}
           </button>
         )}
         {
@@ -45,7 +48,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         }
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

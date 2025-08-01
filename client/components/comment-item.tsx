@@ -1,27 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Sparkles, MoreHorizontal, Send, Pencil, Trash, Check, X } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { CommentReactionPicker } from "@/components/comment-reaction-picker"
-import { Textarea } from "@/components/ui/textarea"
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { delete_comment, edit_comment, get_comments, reply_comment } from "@/lib/apis/comment"
-import { toast } from "sonner"
-import { useStore } from "@/store/store"
-import {  editCommentToPost } from "@/lib/update-post-data"
-import { Skeleton } from "@/components//ui/skeleton"
-import { InfiniteScroll } from "@/components/infinite-scroll"
-import CardHoverTooltip from "./card-hover-tooltip"
-import { useRouter } from "next/navigation"
-import { formatDistanceToNow } from 'date-fns';
-import Link from "next/link"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { Check, MoreHorizontal, Pencil, Send, Sparkles, Trash, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { Skeleton } from "@/components//ui/skeleton";
+import { CommentReactionPicker } from "@/components/comment-reaction-picker";
+import { InfiniteScroll } from "@/components/infinite-scroll";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { deleteComment, editComment, getComments, replyComment } from "@/lib/apis/comment";
+import { showError } from "@/lib/toast";
+import { editCommentToPost } from "@/lib/update-post-data";
+import { useStore } from "@/store/store";
+
+import CardHoverTooltip from "./card-hover-tooltip";
 
 function parseMentions(content: string): React.ReactNode[] {
-  const parts = content.split(/(@\w+)/g); // splits on @username
+  const parts = content.split(/(@\w+)/g);
   return parts.map((part, index) => {
     if (part.startsWith("@")) {
       const username = part.slice(1);
@@ -39,16 +40,14 @@ function parseMentions(content: string): React.ReactNode[] {
   });
 }
 
+type CommentItemProps = {
+  comment: CommentPreview;
+  isReply?: boolean;
+  postId: number;
 
-interface CommentItemProps {
-  comment: CommentPreview
-  isReply?: boolean
-  postId: number
+};
 
-}
-
-export const CommentItems = ({ postId, totalComment }: { postId: number, totalComment: number | undefined }) => {
-
+export function CommentItems({ postId, totalComment }: { postId: number; totalComment: number | undefined }) {
   const {
     data,
     fetchNextPage,
@@ -58,8 +57,8 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
     isError,
     error,
   } = useInfiniteQuery<CommentsResponse>({
-    queryKey: ['get_comments', postId],
-    queryFn: ({ pageParam = 1 }) => get_comments({ page: Number(pageParam), id: postId, limit: 10 }),
+    queryKey: ["get_comments", postId],
+    queryFn: ({ pageParam = 1 }) => getComments({ page: Number(pageParam), id: postId, limit: 10 }),
     getNextPageParam: (lastPage) => {
       const nextPage = lastPage?.data?.currentPage + 1;
       if (nextPage <= lastPage?.data?.totalPages) {
@@ -68,7 +67,7 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
       return undefined;
     },
     initialPageParam: 1,
-    enabled: postId && totalComment !== 0 ? true : false
+    enabled: !!(postId && totalComment !== 0),
   });
 
   const comments = data?.pages?.flatMap(page => page?.data?.comments ?? []) || [];
@@ -79,33 +78,41 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
     }
   };
 
-
   if (isError) {
-    return <div className="text-red-500 text-center py-4">Error loading posts: {error?.message}</div>;
+    return (
+      <div className="text-red-500 text-center py-4">
+        Error loading posts:
+        {error?.message}
+      </div>
+    );
   }
 
   return (
     <InfiniteScroll className="h-0" hasMore={hasNextPage} isLoading={isFetchingNextPage} onLoadMore={handleLoadMoreComments}>
       {
-        isLoading ? Array(5).fill(5).map((_, index) => (
-          <div key={index} className="flex gap-2">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="flex-1">
-              <Skeleton className="h-8 w-full" />
-            </div>
-          </div>
-        )) : <div className="space-y-4 pt-2">
-          {comments?.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              postId={postId}
-            />
-          ))}
-        </div>
+        isLoading
+          ? Array.from({ length: 5 }).fill(5).map((_, index) => (
+              <div key={index} className="flex gap-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </div>
+            ))
+          : (
+              <div className="space-y-4 pt-2">
+                {comments?.map(comment => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    postId={postId}
+                  />
+                ))}
+              </div>
+            )
       }
 
-      {isFetchingNextPage && Array(5).fill(5).map((_, index) => (
+      {isFetchingNextPage && Array.from({ length: 5 }).fill(5).map((_, index) => (
         <div key={index} className="flex gap-2">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1">
@@ -114,7 +121,7 @@ export const CommentItems = ({ postId, totalComment }: { postId: number, totalCo
         </div>
       ))}
     </InfiniteScroll>
-  )
+  );
 }
 
 function CommentItem({
@@ -122,48 +129,48 @@ function CommentItem({
   isReply = false,
   postId,
 }: CommentItemProps) {
-  const { user } = useStore()
-  const [showReplyForm, setShowReplyForm] = useState(false)
-  const [replyText, setReplyText] = useState("")
-  const [showTranslation, setShowTranslation] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState(comment.content)
-  const [showReplies, setShowReplies] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.currentUserReaction ?? null)
-  const isCurrentUserComment = user && comment.user.username === user.username
-  const router = useRouter()
+  const { user } = useStore();
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const [showReplies, setShowReplies] = useState(false);
+  const [currentReaction, setCurrentReaction] = useState<ReactionType>(comment?.currentUserReaction ?? null);
+  const isCurrentUserComment = user && comment.user.username === user.username;
+  const router = useRouter();
 
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const { mutate, isPending } = useMutation({
-    mutationFn: reply_comment,
+    mutationFn: replyComment,
     onSuccess: () => {
-      setReplyText("")
-      setShowReplyForm(false)
+      setReplyText("");
+      setShowReplyForm(false);
     },
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
+      showError(error.message);
+    },
+  });
 
   const { mutate: editMnFun, isPending: editLoading } = useMutation({
-    mutationFn: edit_comment,
+    mutationFn: editComment,
     onSuccess: (updatedComment, variable) => {
-      queryClient.setQueryData(['get_comments', variable.postId], (oldData: QueryOldDataCommentsPayload) => {
-        return editCommentToPost(oldData, variable.commentId, updatedComment.data)
-      })
-      setIsEditing(false)
+      queryClient.setQueryData(["get_comments", variable.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return editCommentToPost(oldData, variable.commentId, updatedComment.data);
+      });
+      setIsEditing(false);
     },
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
+      showError(error.message);
+    },
+  });
 
   const { mutate: deleteMuFunc } = useMutation({
-    mutationFn: delete_comment,
+    mutationFn: deleteComment,
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
+      showError(error.message);
+    },
+  });
 
   const handleReply = () => {
     if (replyText.trim()) {
@@ -171,10 +178,10 @@ function CommentItem({
         content: replyText,
         postId,
         id: comment.id,
-      }
-      mutate(payload)
+      };
+      mutate(payload);
     }
-  }
+  };
 
   const handleEdit = () => {
     if (editText?.trim()) {
@@ -183,35 +190,36 @@ function CommentItem({
         commentId: comment.id,
         postId,
         isReply,
-      }
-      editMnFun(payload)
+      };
+      editMnFun(payload);
     }
-  }
+  };
 
   const handleDelete = (commentId: number, parentId: number) => {
     const payload = {
       commentId,
-      parentId
-    }
-    deleteMuFunc(payload)
-  }
+      parentId,
+    };
+    deleteMuFunc(payload);
+  };
 
   const handleReaction = (reaction: ReactionType) => {
-    setCurrentReaction(reaction)
-  }
+    setCurrentReaction(reaction);
+  };
 
   return (
 
     <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        { comment?.user?.avatar ? <AvatarImage src={comment?.user?.avatar} alt={comment.user?.full_name} /> : 
-        <AvatarFallback>{comment?.user?.full_name?.charAt(0)}</AvatarFallback>}
+        { comment?.user?.avatar
+          ? <AvatarImage src={comment?.user?.avatar} alt={comment.user?.fullName} />
+          : <AvatarFallback>{comment?.user?.fullName?.charAt(0)}</AvatarFallback>}
       </Avatar>
       <div className="flex-1">
         <div className="bg-muted rounded-lg px-3 py-2">
           <div className="flex justify-between items-center">
             <CardHoverTooltip user={comment.user}>
-              <button onClick={() => router.push(`/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.full_name}</button>
+              <button onClick={() => router.push(`/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.fullName}</button>
             </CardHoverTooltip>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.createdAt))}</span>
@@ -237,31 +245,32 @@ function CommentItem({
             </div>
           </div>
 
-          {isEditing ? (
-            <div className="mt-2">
-              <Textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                className="min-h-[60px] text-sm"
-                disabled={editLoading}
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  Cancel
-                </Button>
-                <Button disabled={editLoading} size="sm" onClick={handleEdit}>
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  Save
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm mt-1">{parseMentions(comment.content)}</p>
-          )}
+          {isEditing
+            ? (
+                <div className="mt-2">
+                  <Input
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    className="text-sm border border-gray-700"
+                    disabled={editLoading}
+                  />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button disabled={editLoading} size="sm" onClick={handleEdit}>
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )
+            : (
+                <p className="text-sm mt-1">{parseMentions(comment.content)}</p>
+              )}
         </div>
 
-        
         <div className="flex gap-4 mt-1 ml-2 items-center">
           <div className="flex items-center gap-1">
             <CommentReactionPicker isReply={isReply} postId={postId} parentId={comment.parentId} id={comment.id} onReactionSelect={handleReaction} currentReaction={currentReaction} size="sm" />
@@ -292,18 +301,21 @@ function CommentItem({
         {showReplyForm && (
           <div className="mt-3 flex gap-2">
             <Avatar className="h-6 w-6">
-              {user?.avatar ?<AvatarImage
-                src={user?.avatar}
-                alt={user?.full_name || "You"}
-              /> : 
-              <AvatarFallback>{user?.full_name?.charAt(0) || "Y"}</AvatarFallback>}
+              {user?.avatar
+                ? (
+                    <AvatarImage
+                      src={user?.avatar}
+                      alt={user?.fullName || "You"}
+                    />
+                  )
+                : <AvatarFallback>{user?.fullName?.charAt(0) || "Y"}</AvatarFallback>}
             </Avatar>
             <div className="flex-1 flex gap-2">
               <Input
                 placeholder="Write a reply..."
                 value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="flex-1 h-8 text-xs"
+                onChange={e => setReplyText(e.target.value)}
+                className="flex-1 text-xs"
                 disabled={isPending}
               />
               <Button size="sm" className="h-8" onClick={handleReply} disabled={!replyText.trim() || isPending}>
@@ -316,13 +328,16 @@ function CommentItem({
         {!isReply && comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
             <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={() => setShowReplies(!showReplies)}>
-              {showReplies ? "Hide" : "Show"} {comment.replies.length}{" "}
+              {showReplies ? "Hide" : "Show"}
+              {" "}
+              {comment.replies.length}
+              {" "}
               {comment?.replies?.length === 1 ? "reply" : "replies"}
             </Button>
 
             {showReplies && (
               <div className="mt-2 space-y-3">
-                {comment.replies.map((reply) => (
+                {comment.replies.map(reply => (
                   <CommentItem
                     key={reply.id}
                     comment={reply}
@@ -336,5 +351,5 @@ function CommentItem({
         )}
       </div>
     </div>
-  )
+  );
 }

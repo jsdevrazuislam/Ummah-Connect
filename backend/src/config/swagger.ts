@@ -1,7 +1,8 @@
-import { Application } from "express";
-import swaggerJsDoc, { Options } from "swagger-jsdoc";
-import swaggerUi from "swagger-ui-express";
+import type { Application } from "express";
+import type { Options } from "swagger-jsdoc";
 
+import swaggerJsDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 
 const options: Options = {
   definition: {
@@ -20,9 +21,8 @@ const options: Options = {
   apis: ["./src/routes/*.ts", "./src/docs/**/*.yaml"],
 };
 
-
 const swaggerSpec = swaggerJsDoc(options);
 
 export default function swagger(app: Application) {
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true}));
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 }

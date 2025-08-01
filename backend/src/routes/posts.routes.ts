@@ -1,25 +1,24 @@
-import { bookmarked_post, create_post, delete_post, delete_post_image, edit_post, get_bookmark_posts, get_following_posts, get_posts, get_single_post, post_react, share, user_suggestion } from '@/controllers/post.controller'
-import { verify_auth } from '@/middleware/auth.middleware'
-import { upload } from '@/middleware/multer.middleware'
-import { validateData } from '@/middleware/validation.middleware'
-import { reactSchema } from '@/schemas/post.schema'
-import { Router } from 'express'
+import { Router } from "express";
 
-const router = Router()
+import { bookmarkedPost, createPost, deletePost, deletePostImage, editPost, getBookmarkPosts, getFollowingPosts, getPosts, getSinglePost, postReact, share, userSuggestion } from "@/controllers/post.controller";
+import { verifyAuth } from "@/middleware/auth.middleware";
+import { upload } from "@/middleware/multer.middleware";
+import { validateData } from "@/middleware/validation.middleware";
+import { reactSchema } from "@/schemas/post.schema";
 
-router.post("/", verify_auth, upload.single("media"), create_post)
-router.get("/" , verify_auth, get_posts)
-router.get("/post-details/:id" , verify_auth, get_single_post)
-router.post("/react/:postId" , validateData(reactSchema), verify_auth, post_react)
-router.post("/share/:postId", verify_auth, share)
-router.post("/bookmark/:postId", verify_auth, bookmarked_post)
-router.get("/bookmark/posts", verify_auth, get_bookmark_posts)
-router.put("/edit/:postId", verify_auth,  upload.single("media"),  edit_post)
-router.delete("/delete/:postId", verify_auth, delete_post)
-router.delete("/delete/media/:postId", verify_auth, delete_post_image)
-router.get("/following/posts", verify_auth, get_following_posts)
-router.get("/suggest", verify_auth, user_suggestion)
+const router = Router();
 
+router.post("/", verifyAuth, upload.single("media"), createPost);
+router.get("/", verifyAuth, getPosts);
+router.get("/post-details/:id", verifyAuth, getSinglePost);
+router.post("/react/:postId", validateData(reactSchema), verifyAuth, postReact);
+router.post("/share/:postId", verifyAuth, share);
+router.post("/bookmark/:postId", verifyAuth, bookmarkedPost);
+router.get("/bookmark/posts", verifyAuth, getBookmarkPosts);
+router.put("/edit/:postId", verifyAuth, upload.single("media"), editPost);
+router.delete("/delete/:postId", verifyAuth, deletePost);
+router.delete("/delete/media/:postId", verifyAuth, deletePostImage);
+router.get("/following/posts", verifyAuth, getFollowingPosts);
+router.get("/suggest", verifyAuth, userSuggestion);
 
-export const basePath = '/post';
-export default router
+export default router;

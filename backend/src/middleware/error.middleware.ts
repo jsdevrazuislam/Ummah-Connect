@@ -1,14 +1,9 @@
-import ApiError from "@/utils/ApiError";
-import { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
-export const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response
-) => {
+import ApiError from "@/utils/api-error";
 
-console.log("💥 Error middleware triggered");
-
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
+  console.log("App Error", err);
 
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json(err.toJSON());
@@ -20,4 +15,4 @@ console.log("💥 Error middleware triggered");
     success: false,
     ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {}),
   });
-};
+}

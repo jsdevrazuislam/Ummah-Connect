@@ -1,148 +1,149 @@
-import { DataTypes, Model } from 'sequelize'
-import sequelize from '@/config/db'
-import RecoveryCodes from '@/models/recoverycodes.models';
+import { DataTypes, Model } from "sequelize";
 
+import type RecoveryCodes from "@/models/recoverycodes.models";
+
+import sequelize from "@/config/db";
 
 class User extends Model {
-    public id!: number;
-    public username!: string;
-    public public_key!: string;
-    public full_name!: string;
-    public avatar!: string;
-    public cover!: string;
-    public location!: string;
-    public website!: string;
-    public role!: string;
-    public email!: string;
-    public refresh_token!: string;
-    public password!: string;
-    public gender!: string;
-    public bio!: string;
-    public longitude!: number;
-    public latitude!: number;
-    public is_verified!: boolean;
-    public verified_identity!: boolean;
-    public privacy_settings!: {
-        message:string
-    }
-    public notification_preferences!: object
-    public is_two_factor_enabled!: boolean
-    public two_factor_secret!: string
-    public is_saved_backup_codes!:boolean
-    public recoveryCodes!: RecoveryCodes[]
-    public last_seen_at!: Date
+  public id!: number;
+  public username!: string;
+  public publicKey!: string;
+  public fullName!: string;
+  public avatar!: string;
+  public cover!: string;
+  public location!: string;
+  public website!: string;
+  public role!: string;
+  public email!: string;
+  public refreshToken!: string;
+  public password!: string;
+  public gender!: string;
+  public bio!: string;
+  public longitude!: number;
+  public latitude!: number;
+  public isVerified!: boolean;
+  public verifiedIdentity!: boolean;
+  public privacySettings!: {
+    message: string;
+  };
+
+  public notificationPreferences!: object;
+  public isTwoFactorEnabled!: boolean;
+  public twoFactorSecret!: string;
+  public recoveryCodes!: RecoveryCodes[];
+  public lastSeenAt!: Date;
 }
 
 User.init(
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
-        username: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique: true
-        },
-        full_name: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        email: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique: true
-        },
-        password: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        bio: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        avatar: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        cover: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        location: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        latitude:{
-             type: DataTypes.INTEGER,
-             allowNull: true
-        },
-        longitude:{
-             type: DataTypes.INTEGER,
-             allowNull: true
-        },
-        website: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        public_key: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
-        role: {
-            type: DataTypes.ENUM('user', 'admin', 'super-admin'),
-            defaultValue: 'user'
-        },
-        gender: {
-            type: DataTypes.ENUM('male', 'female'),
-            defaultValue: 'male'
-        },
-        refresh_token: DataTypes.STRING,
-        privacy_settings: {
-            type: DataTypes.JSONB,
-            defaultValue: {},
-            allowNull: false,
-        },
-        notification_preferences: {
-            type: DataTypes.JSONB,
-            defaultValue: {},
-            allowNull: false,
-        },
-        is_verified: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
-        },
-        verified_identity: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
-        },
-        is_two_factor_enabled: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
-        },
-        two_factor_secret: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        last_seen_at:{
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW,
-            allowNull: true
-        }
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    {
-        sequelize,
-        modelName: 'User',
-        tableName: 'users',
-        timestamps: true,
-        indexes: [
-            {
-                unique: true,
-                fields: ['email', 'username']
-            }
-        ]
-    }
-)
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    fullName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    bio: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    avatar: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    cover: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    location: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    latitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    publicKey: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    role: {
+      type: DataTypes.ENUM("user", "admin", "super-admin"),
+      defaultValue: "user",
+    },
+    gender: {
+      type: DataTypes.ENUM("male", "female"),
+      defaultValue: "male",
+    },
+    refreshToken: DataTypes.STRING,
+    privacySettings: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      allowNull: false,
+    },
+    notificationPreferences: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      allowNull: false,
+    },
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    verifiedIdentity: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    isTwoFactorEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    lastSeenAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: "User",
+    tableName: "users",
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ["email", "username"],
+      },
+    ],
+  },
+);
 
-export default User
+export default User;

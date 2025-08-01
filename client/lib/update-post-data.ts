@@ -1,9 +1,8 @@
 function updatePostInQueryData(
   oldData: QueryOldDataPayload | undefined,
   postId: number,
-  data: PostsEntity
+  data: PostsEntity,
 ) {
-
   const updatedPages = oldData?.pages?.map((page) => {
     const updatedPosts = page?.data?.posts?.map((post) => {
       if (post.id === postId) {
@@ -21,26 +20,26 @@ function updatePostInQueryData(
         ...page.data,
         posts: updatedPosts,
       },
-    }
-  })
-
+    };
+  });
 
   return {
     ...oldData,
-    pages: updatedPages
+    pages: updatedPages,
   };
 }
 
 export function addCommentToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   postId: number | undefined,
-  newComment: CommentPreview
+  newComment: CommentPreview,
 ) {
-  if (!oldData || !postId) return oldData;
+  if (!oldData || !postId)
+    return oldData;
 
   const updatedPages = oldData.pages.map((page) => {
     const existingComments = page.data.comments ?? [];
-    const shouldAddComment = existingComments.length === 0 || existingComments.some((c) => c.postId === postId);
+    const shouldAddComment = existingComments.length === 0 || existingComments.some(c => c.postId === postId);
 
     if (shouldAddComment) {
       return {
@@ -61,14 +60,12 @@ export function addCommentToPost(
   };
 }
 
-
 export function addReplyCommentToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
-  newComment: RepliesEntity) {
-
+  newComment: RepliesEntity,
+) {
   const updatedPages = oldData?.pages?.map((page) => {
-
     const updatedComments = page?.data?.comments?.map((comment) => {
       if (comment.id === commentId) {
         return {
@@ -83,187 +80,176 @@ export function addReplyCommentToPost(
       ...page,
       data: {
         ...page.data,
-        comments: updatedComments
-      }
+        comments: updatedComments,
+      },
     };
-  })
+  });
 
   return {
     ...oldData,
-    pages: updatedPages
+    pages: updatedPages,
   };
 }
-
 
 export function addCommentReactionToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   parentId: number,
   isReply: boolean | undefined,
-  amount: number | string
+  amount: number | string,
 ) {
-
   const updatedPages = oldData?.pages?.map((page) => {
     const updatedComments = page?.data?.comments?.map((comment) => {
       if (comment.id === commentId) {
         return {
           ...comment,
-          totalReactionsCount: amount
-        }
+          totalReactionsCount: amount,
+        };
       }
       if (isReply && comment.id === parentId) {
-
         const updatedReplies = comment?.replies?.map((replyComment) => {
           if (replyComment.parentId === parentId && replyComment.id === commentId) {
             return {
               ...replyComment,
-              totalReactionsCount: amount
-            }
+              totalReactionsCount: amount,
+            };
           }
-          return replyComment
-        })
+          return replyComment;
+        });
 
         return {
           ...comment,
-          replies: updatedReplies
-        }
+          replies: updatedReplies,
+        };
       }
-      return comment
-    })
+      return comment;
+    });
 
     return {
       ...page,
       data: {
         ...page.data,
-        comments: updatedComments
-      }
-    }
-  })
-
+        comments: updatedComments,
+      },
+    };
+  });
 
   return {
     ...oldData,
-    pages: updatedPages
-  }
+    pages: updatedPages,
+  };
 }
 
 export function editCommentToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
-  updatedComment: UpdatedCommentPayload) {
-
+  updatedComment: UpdatedCommentPayload,
+) {
   const updatedPages = oldData?.pages?.map((page) => {
-
     const updatedComments = page?.data?.comments?.map((comment) => {
       if (comment.id === commentId) {
         return {
           ...comment,
-          ...updatedComment
-        }
+          ...updatedComment,
+        };
       }
 
       if (updatedComment.isReply) {
-
         const updatedRepliesComments = comment?.replies?.map((reply) => {
-
           if (reply.parentId === updatedComment.parentId && reply.id === updatedComment.id) {
             return {
               ...reply,
-              ...updatedComment
-            }
+              ...updatedComment,
+            };
           }
 
-          return reply
-        })
+          return reply;
+        });
 
         return {
           ...comment,
-          replies: updatedRepliesComments
-        }
+          replies: updatedRepliesComments,
+        };
       }
-      return comment
-    })
+      return comment;
+    });
 
     return {
       ...page,
       data: {
         ...page.data,
-        comments: updatedComments
-      }
-    }
-  })
-
+        comments: updatedComments,
+      },
+    };
+  });
 
   return {
     ...oldData,
-    pages: updatedPages
-  }
+    pages: updatedPages,
+  };
 }
 
 export function deleteCommentToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   parentId: number,
-  isReply: boolean) {
-
+  isReply: boolean,
+) {
   const updatedPages = oldData?.pages?.map((page) => {
-
     const updatedComments = page?.data?.comments?.map((commentData) => {
-
       if (isReply && commentData.id === parentId) {
-        const updatedRepliesComments = commentData?.replies?.filter((repComment) => repComment.id !== commentId)
+        const updatedRepliesComments = commentData?.replies?.filter(repComment => repComment.id !== commentId);
         return {
           ...commentData,
-          replies: updatedRepliesComments
-        }
+          replies: updatedRepliesComments,
+        };
       }
 
       if (!isReply && commentData.id === commentId) {
         return null;
       }
-      return commentData
-    }).filter(Boolean)
-
+      return commentData;
+    }).filter(Boolean);
 
     return {
       ...page,
       data: {
         ...page.data,
-        comments: updatedComments
-      }
-    }
-
-  })
+        comments: updatedComments,
+      },
+    };
+  });
   return {
     ...oldData,
-    pages: updatedPages
-  }
+    pages: updatedPages,
+  };
 }
 
 export function incrementDecrementCommentCount(
   oldData: QueryOldDataPayload | undefined,
   postId: number | undefined,
   amount: number,
-  actions: "inc" | "dec" = "inc"
+  actions: "inc" | "dec" = "inc",
 ) {
-  if (!oldData || !postId) return oldData
+  if (!oldData || !postId)
+    return oldData;
 
   const updatedPages = oldData.pages?.map((page) => {
     const updatedPosts = page?.data?.posts?.map((post) => {
       if (post.id === postId) {
-        const newCount =
-          actions === "inc"
+        const newCount
+          = actions === "inc"
             ? Number(post.totalCommentsCount) + amount
-            : Number(post.totalCommentsCount) - amount
+            : Number(post.totalCommentsCount) - amount;
 
         return {
           ...post,
           totalCommentsCount: Math.max(newCount, 0),
-        }
+        };
       }
 
-      return post
-    })
+      return post;
+    });
 
     return {
       ...page,
@@ -271,13 +257,13 @@ export function incrementDecrementCommentCount(
         ...page.data,
         posts: updatedPosts,
       },
-    }
-  })
+    };
+  });
 
   return {
     ...oldData,
     pages: updatedPages,
-  }
+  };
 }
 
 export default updatePostInQueryData;

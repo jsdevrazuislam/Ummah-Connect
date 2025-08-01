@@ -1,82 +1,82 @@
-import { Model, DataTypes } from "sequelize";
-import sequelize from "@/config/db"; 
+import { DataTypes, Model } from "sequelize";
+
+import sequelize from "@/config/db";
 
 class LiveStream extends Model {
-    public id!:number
-    public user_id!:number
-    public title!:string
-    public description!:string
-    public category!:string
-    public tags!:string[]
-    public save_recording!:boolean
-    public enable_chat!:boolean
-    public notify_followers!:boolean
-    public room_name!:string
-    public is_active!:boolean
-    public started_at!:Date
-    public ended_at!:Date
-    public created_at!:Date
-    public updated_at!:Date
-
+  public id!: number;
+  public userId!: number;
+  public title!: string;
+  public description!: string;
+  public category!: string;
+  public tags!: string[];
+  public saveRecording!: boolean;
+  public enableChat!: boolean;
+  public notifyFollowers!: boolean;
+  public roomName!: string;
+  public isActive!: boolean;
+  public startedAt!: Date;
+  public endedAt!: Date;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 LiveStream.init(
   {
-    id:{
-        type:DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    user_id: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
     title: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     description: {
-        type: DataTypes.TEXT,
-        allowNull: false
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
     category: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     tags: {
-      type: DataTypes.ARRAY(DataTypes.STRING), 
+      type: DataTypes.ARRAY(DataTypes.STRING),
       defaultValue: [],
     },
-    enable_chat: {
+    enableChat: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    save_recording: {
+    saveRecording: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    notify_followers: {
+    notifyFollowers: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    room_name: {
+    roomName: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    is_active: {
+    isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    started_at: DataTypes.DATE,
-    ended_at: DataTypes.DATE,
+    startedAt: DataTypes.DATE,
+    endedAt: DataTypes.DATE,
   },
   {
     sequelize,
     modelName: "LiveStream",
     tableName: "live_streams",
     timestamps: true,
-  }
+  },
 );
 
 export default LiveStream;

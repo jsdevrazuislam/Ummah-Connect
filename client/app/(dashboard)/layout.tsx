@@ -1,12 +1,13 @@
-import React from 'react'
-import { SocialMediaLayout } from '@/components/layouts/main-layout'
+import React from "react";
 
-const MainLayout = ({ children }: { children: React.ReactNode }) => {
+import { SocialMediaLayout } from "@/components/layouts/main-layout";
+
+function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <SocialMediaLayout>
       {children}
     </SocialMediaLayout>
-  )
+  );
 }
 
-export default MainLayout
+export default MainLayout;
