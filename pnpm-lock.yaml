@@ -15,6 +15,9 @@ importers:
       concurrently:
         specifier: ^9.2.0
         version: 9.2.0
+      eslint:
+        specifier: ^9.31.0
+        version: 9.32.0(jiti@2.4.2)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
