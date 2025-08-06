@@ -43,6 +43,7 @@ function setupSocketListeners(socket: Socket) {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
   joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
   joinRoom(socket, SocketEventEnum.JOIN_LIVE_STREAM, "live_stream");
+  joinRoom(socket, SocketEventEnum.JOIN_LIVE_SHORT, "short");
 }
 
 function initializeSocketIO({ io }: InitializeSocketIOOptions): void {

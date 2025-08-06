@@ -5,7 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Check, MoreHorizontal, Pencil, Send, Sparkles, Trash, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Skeleton } from "@/components//ui/skeleton";
 import { CommentReactionPicker } from "@/components/comment-reaction-picker";
@@ -41,7 +41,7 @@ function parseMentions(content: string): React.ReactNode[] {
 }
 
 type CommentItemProps = {
-  comment: CommentPreview;
+  comment: CommentPreview | null;
   isReply?: boolean;
   postId: number;
 
@@ -70,7 +70,10 @@ export function CommentItems({ postId, totalComment }: { postId: number; totalCo
     enabled: !!(postId && totalComment !== 0),
   });
 
-  const comments = data?.pages?.flatMap(page => page?.data?.comments ?? []) || [];
+  const comments = useMemo(
+    () => data?.pages.flatMap(page => page?.data?.comments) ?? [],
+    [data],
+  );
 
   const handleLoadMoreComments = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -103,7 +106,7 @@ export function CommentItems({ postId, totalComment }: { postId: number; totalCo
               <div className="space-y-4 pt-2">
                 {comments?.map(comment => (
                   <CommentItem
-                    key={comment.id}
+                    key={comment?.id}
                     comment={comment}
                     postId={postId}
                   />
@@ -129,6 +132,8 @@ function CommentItem({
   isReply = false,
   postId,
 }: CommentItemProps) {
+  if (!comment)
+    return;
   const { user } = useStore();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");

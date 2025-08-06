@@ -12,6 +12,7 @@ export type VideoPlayerHandle = {
 };
 type VideoPlayerProps = {
   videoUrl: string;
+  thumbnailUrl?: string;
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
@@ -21,7 +22,16 @@ type VideoPlayerProps = {
 };
 
 const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-  ({ videoUrl, autoPlay = false, muted = false, loop = true, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
+  ({
+    videoUrl,
+    autoPlay = false,
+    muted = false,
+    loop = true,
+    onReady,
+    onLoadedMetadata,
+    onTimeUpdate,
+    thumbnailUrl,
+  }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -84,7 +94,9 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           onReady?.();
         });
 
-        video.addEventListener("canplay", () => setIsLoading(false));
+        video.addEventListener("canplay", () => {
+          setIsLoading(false);
+        });
       }
     }, [videoUrl]);
 
@@ -116,13 +128,15 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
 
     return (
       <div className="relative w-full h-full">
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+        {isLoading && autoPlay && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-white border-t-transparent animate-spin rounded-full" />
           </div>
         )}
+
         <video
-          preload={autoPlay ? "auto" : "none"}
+          poster={thumbnailUrl}
+          preload={autoPlay ? "auto" : "metadata"}
           ref={videoRef}
           className="w-full h-full object-cover"
           autoPlay={autoPlay}

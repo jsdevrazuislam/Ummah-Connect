@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import React from "react";
+import React, { useMemo } from "react";
 
 import { ErrorMessage } from "@/components/api-error";
 import InfiniteScrollPost from "@/components/infinite-scroll-post";
@@ -26,7 +26,10 @@ function FollowingFeed() {
     gcTime: 1000 * 60 * 5,
   });
 
-  const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
+  const posts = useMemo(
+    () => data?.pages.flatMap(page => page?.data?.posts) ?? [],
+    [data],
+  );
 
   const loadMorePosts = () => {
     if (hasNextPage && !isFetchingNextPage) {

@@ -50,7 +50,7 @@ function FollowButton({ isFollowing, id, className, iconClassName }: { isFollowi
   };
 
   return (
-    <Button className={cn(className)} onClick={handleFollow} size="sm">
+    <Button disabled={user?.id === id} className={cn(className)} onClick={handleFollow} size="sm">
       <UserPlus className={cn("h-4 w-4", iconClassName)} />
       {follow ? "Unfollow" : "Follow"}
     </Button>

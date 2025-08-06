@@ -1,11 +1,7 @@
-import React from "react";
-
-import ShortsLists from "@/app/(dashboard)/shorts/shorts-list";
+import { redirect } from "next/navigation";
 
 function Page() {
-  return (
-    <ShortsLists />
-  );
+  return redirect(`/shorts/1`);
 }
 
 export default Page;

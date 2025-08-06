@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Heart,
@@ -22,9 +22,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import SocketEventEnum from "@/constants/socket-event";
+import { useSocketStore } from "@/hooks/use-socket";
 import { createComment } from "@/lib/apis/comment";
-import { reactPost } from "@/lib/apis/posts";
+import { postReactShort } from "@/lib/apis/stream";
 import { showError } from "@/lib/toast";
+import { updateShortInQueryData } from "@/lib/update-stream-data";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
 
@@ -46,17 +49,16 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
   const titleTextRef = useRef<HTMLParagraphElement>(null);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(currentShort?.currentUserReaction ?? false);
   const [showPlayPauseOverlay, setShowPlayPauseOverlay] = useState(false);
   const [overlayIconType, setOverlayIconType] = useState<"play" | "pause" | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const { user } = useStore();
+  const { socket } = useSocketStore();
+  const queryClient = useQueryClient();
 
   const { mutate } = useMutation({
-    mutationFn: reactPost,
-    onSuccess: (updateData) => {
-      console.log(updateData);
-    },
+    mutationFn: postReactShort,
     onError: (error) => {
       showError(error.message);
     },
@@ -85,8 +87,8 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
   useEffect(() => {
     if (titleTextRef.current && titleContainerRef.current) {
       const isOverflowing
-                = titleTextRef.current.scrollHeight > titleContainerRef.current.clientHeight
-                  || titleTextRef.current.scrollWidth > titleContainerRef.current.clientWidth;
+        = titleTextRef.current.scrollHeight > titleContainerRef.current.clientHeight
+          || titleTextRef.current.scrollWidth > titleContainerRef.current.clientWidth;
       setIsOverflowing(isOverflowing);
     }
   }, [expanded, currentShort?.description]);
@@ -110,14 +112,24 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
   };
 
   const handleLike = () => {
-    const payload = {
-      reactType: "love",
-      icon: "❤️",
-      id: currentShort?.id ?? 0,
-      type: "short",
-    };
-    mutate(payload);
-    setLiked(true);
+    if (!currentShort?.id)
+      return;
+
+    const shortId = currentShort.id;
+    const wasReacted = !!currentShort.currentUserReaction;
+    const newReaction = wasReacted ? "" : "love";
+    const previousReaction = currentShort.currentUserReaction;
+
+    queryClient.setQueryData(["get_shorts"], (oldData: QueryOldShortsDataPayload) =>
+      updateShortInQueryData(oldData, shortId, newReaction, previousReaction));
+
+    mutate({
+      id: shortId,
+      reactType: newReaction ?? "",
+      icon: newReaction ? "❤️" : "",
+    });
+
+    setLiked(!wasReacted);
   };
 
   const handleMute = () => {
@@ -152,6 +164,15 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
     }
   }, [isActive]);
 
+  useEffect(() => {
+    if (!socket)
+      return;
+    socket.emit(SocketEventEnum.JOIN_LIVE_SHORT, currentShort?.id?.toString());
+    return () => {
+      socket.off(SocketEventEnum.JOIN_LIVE_SHORT);
+    };
+  }, [socket, currentShort]);
+
   if (!currentShort)
     return;
 
@@ -159,20 +180,25 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
 
     <div className="relative h-full w-full max-w-[350px] mx-auto snap-start">
       <div className="relative bg-black rounded-lg h-[calc(100vh-90px)] overflow-hidden">
-        <VideoPlayer
-          ref={playerRef}
-          autoPlay={isActive}
-          muted={isMuted}
-          onLoadedMetadata={dur => setDuration(dur)}
-          onTimeUpdate={(time) => {
-            if (!isSeeking)
-              setCurrentTime(time);
-            if (playerRef.current?.isPlaying())
-              setIsPlaying(true);
-            else setIsPlaying(false);
-          }}
-          videoUrl={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${currentShort?.videoId}.m3u8`}
-        />
+        {
+          isActive && (
+            <VideoPlayer
+              thumbnailUrl={currentShort.thumbnailUrl}
+              ref={playerRef}
+              autoPlay={isActive}
+              muted={isMuted}
+              onLoadedMetadata={dur => setDuration(dur)}
+              onTimeUpdate={(time) => {
+                if (!isSeeking)
+                  setCurrentTime(time);
+                if (playerRef.current?.isPlaying())
+                  setIsPlaying(true);
+                else setIsPlaying(false);
+              }}
+              videoUrl={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${currentShort?.videoId}.m3u8`}
+            />
+          )
+        }
 
         <div className="absolute inset-0 z-10" onClick={handlePlayPauseClick}>
           <AnimatePresence>
@@ -197,7 +223,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
         <div className="absolute z-30 bottom-8 left-4 right-16">
-          <Link href={`/profile/${currentShort?.user?.username}`} className="flex items-center space-x-2 mb-2 cursor-pointer">
+          <Link href={`/${currentShort?.user?.username}`} className="flex items-center space-x-2 mb-2 cursor-pointer">
             <Avatar className="h-8 w-8">
               {currentShort?.user?.avatar && <AvatarImage src={currentShort?.user?.avatar} />}
               {!currentShort?.user?.avatar && <AvatarFallback>{currentShort?.user?.fullName?.charAt(0)}</AvatarFallback>}
@@ -249,7 +275,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
           shortId={currentShort?.id}
         />
 
-        <div className="absolute bottom-3 left-0 right-0 px-4">
+        <div className="absolute bottom-3 left-0 right-0 z-10 px-4">
           <Slider
             min={0}
             max={duration}
@@ -295,7 +321,7 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
                 <Avatar className="h-8 w-8">
-                  { user?.avatar
+                  {user?.avatar
                     ? <AvatarImage src={user?.avatar} alt={user?.fullName} />
                     : <AvatarFallback>{user?.fullName?.charAt(0)}</AvatarFallback>}
                 </Avatar>

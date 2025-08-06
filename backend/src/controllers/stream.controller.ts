@@ -10,17 +10,26 @@ import {
 } from "@/config/livekit";
 import redis from "@/config/redis";
 import { SocketEventEnum } from "@/constants";
-import { LiveStream, LiveStreamBan, Shorts, User } from "@/models";
+import { NOTIFICATION_CACHE } from "@/controllers/notification.controller";
+import { LiveStream, LiveStreamBan, Notification, Reaction, Shorts, User } from "@/models";
+import Short from "@/models/shorts.models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/api-error";
 import ApiResponse from "@/utils/api-response";
 import asyncHandler from "@/utils/async-handler";
 import cloudinary, { getThumbnailFromVideo } from "@/utils/cloudinary";
+import { getOrSetCache } from "@/utils/helper";
 import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
 
-const REDIS_KEY = (userId: number | string) => `user:${userId}`;
+const STREAM_USER_CACHE_KEY = (userId: number | string) => `user:${userId}`;
+
+export async function DELETE_SHORT_CACHE() {
+  const keys = await redis.keys(`shorts:*`);
+  if (keys.length > 0)
+    await redis.del(...keys);
+}
 
 export const getStreamToken = asyncHandler(
   async (req: Request, res: Response) => {
@@ -185,10 +194,9 @@ export const startChatLiveStream = asyncHandler(
   async (req: Request, res: Response) => {
     const { streamId, senderId, content } = req.body;
 
-    console.log(isSpam(senderId, content));
-    // if (isSpam(senderId, content)) {
-    //   throw new ApiError(400, "Please avoid spamming. Otherwise er ban you from our platform");
-    // }
+    if (isSpam(senderId, content)) {
+      throw new ApiError(400, "Please avoid spamming. Otherwise er ban you from our platform");
+    }
 
     const stream = await LiveStream.findOne({ where: { id: streamId } });
     if (!stream)
@@ -477,7 +485,7 @@ export const uploadShort = asyncHandler(async (req: Request, res: Response) => {
     currentUserReaction: null,
   };
 
-  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
+  const keys = await redis.keys(`${STREAM_USER_CACHE_KEY(req.user.id)}:shorts:*`);
   if (keys.length > 0)
     await redis.del(...keys);
 
@@ -488,74 +496,48 @@ export const getShorts = asyncHandler(async (req: Request, res: Response) => {
   const page = Number.parseInt(req.query.page as string) || 1;
   const limit = Number.parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
-  const cacheKey = `${REDIS_KEY(req.user.id)}:shorts:page:${page}:limit:${limit}`;
+  const cacheKey = `shorts:page:${page}:limit:${limit}:user=${req.user.id}`;
 
   const cached = await redis.get(cacheKey);
   if (cached) {
     return res.json(new ApiResponse(200, JSON.parse(cached), "Shorts fetched (cached)"));
   }
 
-  const { rows: shorts, count } = await Shorts.findAndCountAll({
-    where: { isPublic: true },
-    include: [
-      { model: User, as: "user", attributes: ["id", "username", "avatar", "fullName"] },
-    ],
-    attributes: {
+  const result = await getOrSetCache(cacheKey, async () => {
+    const { rows: shorts, count } = await Shorts.findAndCountAll({
+      where: { isPublic: true },
       include: [
-        getTotalCommentsCountLiteral("\"Short\""),
-        getTotalReactionsCountLiteral("\"Short\""),
-        getIsBookmarkedLiteral(req.user.id, "\"Short\""),
-        getUserReactionLiteral(req.user.id, "\"Short\""),
-        getIsFollowingLiteral(req.user.id, "\"Short\".\"userId\""),
+        { model: User, as: "user", attributes: ["id", "username", "avatar", "fullName"] },
       ],
-    },
-    order: [["createdAt", "DESC"]],
-    limit,
-    offset,
-  });
+      attributes: {
+        include: [
+          getTotalCommentsCountLiteral("\"Short\""),
+          getTotalReactionsCountLiteral("\"Short\""),
+          getIsBookmarkedLiteral(req.user.id, "\"Short\""),
+          getUserReactionLiteral(req.user.id, "\"Short\""),
+          getIsFollowingLiteral(req.user.id, "\"Short\".\"userId\""),
+        ],
+      },
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+    });
 
-  const result = {
-    shorts,
-    totalPages: Math.ceil(count / limit),
-    currentPage: page,
-    totalItems: count,
-  };
+    const result = {
+      shorts,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalItems: count,
+    };
 
-  await redis.set(cacheKey, JSON.stringify(result), "EX", 60 * 5);
+    return result;
+  }, 60 * 60 * 24);
 
   return res.json(
     new ApiResponse(
       200,
       result,
       "Shorts fetched",
-    ),
-  );
-});
-
-export const getSingleShort = asyncHandler(async (req: Request, res: Response) => {
-  const short = await Shorts.findOne({
-    where: { isPublic: true, id: req.params.id },
-    include: [
-      { model: User, as: "user", attributes: ["id", "username", "avatar", "fullName"] },
-    ],
-    attributes: {
-      include: [
-        getTotalCommentsCountLiteral("\"Short\""),
-        getTotalReactionsCountLiteral("\"Short\""),
-        getIsBookmarkedLiteral(req.user.id, "\"Short\""),
-        getUserReactionLiteral(req.user.id, "\"Short\""),
-      ],
-    },
-  });
-
-  if (!short)
-    throw new ApiError(404, "Short Not Found");
-
-  return res.json(
-    new ApiResponse(
-      200,
-      short,
-      "Short fetched",
     ),
   );
 });
@@ -570,9 +552,106 @@ export const deleteShort = asyncHandler(async (req: Request, res: Response) => {
 
   await short.destroy();
 
-  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
-  if (keys.length > 0)
-    await redis.del(...keys);
+  await cloudinary.uploader.destroy(short.videoId, {
+    // eslint-disable-next-line camelcase
+    resource_type: "auto",
+  });
+
+  await DELETE_SHORT_CACHE();
 
   return res.json(new ApiResponse(200, {}, "Short deleted"));
+});
+
+export const videoReact = asyncHandler(async (req: Request, res: Response) => {
+  const { reactType, icon } = req.body;
+  const postId = req.params?.videoId;
+  const userId = req.user?.id;
+
+  const existingReaction = await Reaction.findOne({
+    where: { userId, postId },
+  });
+
+  if (existingReaction) {
+    if (!reactType && !icon) {
+      await existingReaction.destroy();
+    }
+    else {
+      await existingReaction.update({
+        reactType: reactType || null,
+        icon: icon || null,
+      });
+    }
+  }
+  else {
+    await Reaction.create({ userId, postId, reactType, icon });
+  }
+
+  const postWithStats = await Short.findOne({
+    where: { id: postId },
+    attributes: {
+      include: [
+        getTotalReactionsCountLiteral("\"Short\""),
+        getUserReactionLiteral(userId, "\"Short\""),
+      ],
+    },
+  });
+
+  if (!postWithStats)
+    throw new ApiError(404, "Post not found");
+  const receiverId = Number(postWithStats.userId);
+
+  if (userId !== receiverId) {
+    let notification = await Notification.findOne({
+      where: {
+        senderId: userId,
+        receiverId,
+        postId,
+        type: "like",
+      },
+    });
+
+    if (notification) {
+      await notification.update({
+        icon,
+        isRead: false,
+        updatedAt: new Date(),
+      });
+    }
+    else {
+      notification = await Notification.create({
+        senderId: userId,
+        receiverId,
+        type: "shortLike",
+        icon,
+        postId,
+      });
+    }
+
+    emitSocketEvent({
+      req,
+      roomId: `user:${receiverId}`,
+      event: SocketEventEnum.NOTIFY_USER,
+      payload: {
+        ...notification.toJSON(),
+        sender: {
+          avatar: req.user?.avatar,
+          fullName: req.user.fullName,
+        },
+      },
+    });
+  }
+
+  const postData = postWithStats.toJSON();
+
+  emitSocketEvent({
+    req,
+    roomId: `short_${postId}`,
+    event: SocketEventEnum.SHORT_REACT,
+    payload: { postData, postId: Number(postId) },
+  });
+
+  await DELETE_SHORT_CACHE();
+  await NOTIFICATION_CACHE(userId);
+
+  return res.json(new ApiResponse(200, postData, "React Successfully"));
 });

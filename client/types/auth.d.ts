@@ -33,6 +33,7 @@ type User = {
   title?: null;
   refreshToken: string;
   isVerified: boolean;
+  isDeleteAccount: boolean;
   verifiedIdentity: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,7 +46,7 @@ type User = {
   isTwoFactorEnabled: boolean;
   privacySettings: PrivacySettings;
   notificationPreferences: NotificationPreference;
-  is_saved_backup_codes: boolean;
+  isSavedBackupCodes: boolean;
   isFollowing: boolean;
   status?: string;
   totalPosts: number;
@@ -65,24 +66,24 @@ type JwtResponsePayload = {
 };
 
 type NotificationPreference = {
-  push_notification: boolean;
-  email_notification: boolean;
-  prayer_time_notification: boolean;
-  like_post: boolean;
-  comment_post: boolean;
+  pushNotification: boolean;
+  emailNotification: boolean;
+  prayerTimeNotification: boolean;
+  likePost: boolean;
+  commentPost: boolean;
   mention: boolean;
-  new_follower: boolean;
+  newFollower: boolean;
   dm: boolean;
-  islamic_event: boolean;
+  islamicEvent: boolean;
 };
 
 type PrivacySettings = {
   message: string;
-  post_see: string;
-  active_status: boolean;
-  read_receipts: boolean;
-  location_share: boolean;
-  private_account: boolean;
+  postSee: string;
+  activeStatus: boolean;
+  readReceipts: boolean;
+  locationShare: boolean;
+  privateAccount: boolean;
 };
 
 type UserStats = {
@@ -91,4 +92,43 @@ type UserStats = {
   following_count: number;
   totalLikes: number;
   totalBookmarks: number;
+};
+
+type DiscoverPeopleResponse = {
+  statusCode: number;
+  data: DiscoverPeopleData;
+  message: string;
+  success: boolean;
+};
+type DiscoverPeopleData = {
+  page: number;
+  totalPages: number;
+  total: number;
+  users?: (PeopleEntry)[] | null;
+};
+type PeopleEntry = {
+  id: number;
+  username: string;
+  fullName: string;
+  avatar?: string | null;
+  location: string;
+  title?: null;
+  interests: string[];
+  cover?: string | null;
+  bio?: string | null;
+  followersCount: string;
+  followingCount: string;
+  postsCount: string;
+  isFollowing: boolean;
+  verifiedIdentity: boolean;
+  dob: string;
+};
+
+type DiscoverParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  location?: string;
+  title?: string;
+  interests?: string[];
 };

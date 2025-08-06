@@ -1,6 +1,6 @@
 import cron from "node-cron";
 
-import { purgeDeletedMessages } from "@/jobs/purge-deleted-messages";
+import { hardDeleteOldAccounts, purgeDeletedMessages } from "@/jobs/purge-deleted-messages";
 import { purgeExpiredStories } from "@/jobs/purge-deleted-stories";
 
 // Production
@@ -9,4 +9,5 @@ import { purgeExpiredStories } from "@/jobs/purge-deleted-stories";
 
 // Dev Mode
 cron.schedule("*/5 * * * *", purgeDeletedMessages);
+cron.schedule("*/5 * * * *", hardDeleteOldAccounts);
 cron.schedule("*/5 * * * *", purgeExpiredStories);

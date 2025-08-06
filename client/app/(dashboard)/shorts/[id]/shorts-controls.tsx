@@ -36,7 +36,7 @@ export default function ShortsControls({
   const handleSaveShort = () => {};
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.href}/${shortId}`);
+    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL}/shorts/${shortId}`);
     toast.success("Link copied to clipboard");
   };
 

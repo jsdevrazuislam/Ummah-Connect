@@ -69,3 +69,26 @@ export async function requestOtp(email: string) {
   const response = await api.post(ApiStrings.REQUEST_OTP, { email });
   return response.data;
 }
+export async function explorePeoples({ page = 1, limit = 10, search, location, title, interests }: DiscoverParams): Promise<DiscoverPeopleResponse> {
+  const params: Record<string, any> = {
+    page,
+    limit,
+  };
+
+  if (search)
+    params.search = search;
+  if (location)
+    params.location = location;
+  if (title)
+    params.title = title;
+  if (interests && interests.length > 0)
+    params.interests = interests;
+
+  const response = await api.get<DiscoverPeopleResponse>(ApiStrings.DISCOVER_PEOPLE, { params });
+  return response.data;
+}
+
+export async function deleteAccount() {
+  const response = await api.delete(ApiStrings.DELETE_ACCOUNT);
+  return response.data;
+}

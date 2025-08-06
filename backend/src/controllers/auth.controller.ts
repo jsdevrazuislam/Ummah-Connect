@@ -1,12 +1,13 @@
 import type { Request, Response } from "express";
 
 import qrcode from "qrcode";
-import { Op } from "sequelize";
+import { literal, Op } from "sequelize";
 import speakeasy from "speakeasy";
 
 import type { JwtResponse, LocationResponse } from "@/types/auth";
 import type { UploadedFiles } from "@/types/global";
 
+import redis from "@/config/redis";
 import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import { Follow, Otp, Post, Reaction, RecoveryCodes, User } from "@/models";
 import BookmarkPost from "@/models/bookmark.models";
@@ -21,7 +22,7 @@ import {
   hashPassword,
 } from "@/utils/auth-helper";
 import { removeOldImageOnCloudinary, uploadFileOnCloudinary } from "@/utils/cloudinary";
-import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode } from "@/utils/helper";
+import { compareRecoveryCode, generateRecoveryCodes, generateSixDigitCode, getOrSetCache } from "@/utils/helper";
 import { sendEmail } from "@/utils/send-email";
 import { getFollowerCountLiteral, getFollowingCountLiteral, getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 
@@ -29,6 +30,18 @@ const options = {
   httpOnly: true,
   secure: true,
 };
+
+export async function DELETE_USER_CACHE() {
+  await redis.keys("discover:people:*").then((keys) => {
+    if (keys.length > 0) {
+      redis.del(...keys);
+    }
+  });
+}
+
+export async function DELETE_USER_SUMMARY_CACHE(userId: number) {
+  await redis.del(`user:profile:summary:${userId}`);
+}
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { email, fullName, password, username, publicKey, gender = "male", location, latitude, longitude } = req.body;
@@ -76,6 +89,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     { name: fullName, year: new Date().getFullYear(), verifiedUrl },
     9,
   );
+
+  await DELETE_USER_CACHE();
 
   return res.json(
     new ApiResponse(200, {}, "Register Successfully. Please verify your email!"),
@@ -174,6 +189,8 @@ export const loginWith2FA = asyncHandler(async (req: Request, res: Response) => 
     BookmarkPost.count({ where: { userId } }),
   ]);
 
+  await DELETE_USER_SUMMARY_CACHE(userId);
+
   return res
     .cookie("access_token", accessToken, options)
     .cookie("refresh_token", refreshToken, options)
@@ -207,48 +224,60 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user.id;
 
-  const followerCount = await Follow.count({ where: { followerId: userId } });
-  const followingCount = await Follow.count({ where: { followingId: userId } });
-  const user = await User.findOne({
-    where: { id: req.user.id },
-    attributes: {
-      exclude: ["password", "twoFactorSecret"],
-    },
-  });
+  const cacheKey = `user:profile:summary:${userId}`;
 
-  if (!user)
-    throw new ApiError(404, "Not found user");
+  const responseData = await getOrSetCache(
+    cacheKey,
+    async () => {
+      const followerCount = await Follow.count({ where: { followerId: userId } });
+      const followingCount = await Follow.count({ where: { followingId: userId } });
+      const user = await User.findOne({
+        where: { id: req.user.id },
+        attributes: {
+          exclude: ["password", "twoFactorSecret"],
+        },
+      });
 
-  const totalPosts = await Post.count({
-    where: { authorId: userId },
-  });
+      if (!user)
+        throw new ApiError(404, "Not found user");
 
-  const totalLikes = await Reaction.count({
-    include: [
-      {
-        model: Post,
-        as: "post",
+      const totalPosts = await Post.count({
         where: { authorId: userId },
-        attributes: [],
-      },
-    ],
-  });
+      });
 
-  const totalBookmarks = await BookmarkPost.count({
-    where: { userId },
-  });
+      const totalLikes = await Reaction.count({
+        include: [
+          {
+            model: Post,
+            as: "post",
+            where: { authorId: userId },
+            attributes: [],
+          },
+        ],
+      });
+
+      const totalBookmarks = await BookmarkPost.count({
+        where: { userId },
+      });
+
+      const responseData = {
+        user: {
+          ...user.toJSON(),
+          followingCount: followerCount,
+          followersCount: followingCount,
+          totalPosts,
+          totalLikes,
+          totalBookmarks,
+        },
+      };
+
+      return responseData;
+    },
+    60 * 60 * 24,
+  );
 
   return res.json(
-    new ApiResponse(200, {
-      user: {
-        ...user?.toJSON(),
-        followingCount: followerCount,
-        followersCount: followingCount,
-        totalPosts,
-        totalLikes,
-        totalBookmarks,
-      },
-    }, "Fetching User Success"),
+    new ApiResponse(200, responseData, "Fetching User Success"),
   );
 });
 
@@ -306,6 +335,9 @@ export const updateCurrentUserInfo = asyncHandler(async (req: Request, res: Resp
 
   const safeUser = updateUser[1][0].get({ plain: true });
   delete safeUser.password;
+
+  await DELETE_USER_CACHE();
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
 
   return res.json(
     new ApiResponse(200, safeUser, "Update Profile Success"),
@@ -417,6 +449,8 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
     { where: { id: req.user.id } },
   );
 
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+
   return res.json(
     new ApiResponse(200, null, "Password Change Successfully"),
   );
@@ -441,6 +475,9 @@ export const updatePrivacySettings = asyncHandler(async (req: Request, res: Resp
       returning: true,
     },
   );
+
+  await DELETE_USER_CACHE();
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
 
   return res.json(
     new ApiResponse(200, updateData[0], "Update Settings"),
@@ -469,6 +506,8 @@ export const updateNotificationPreferences = asyncHandler(async (req: Request, r
       returning: true,
     },
   );
+
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
 
   return res.json(
     new ApiResponse(200, updateData[0], "Update Settings"),
@@ -529,6 +568,8 @@ export const verify2FA = asyncHandler(async (req: Request, res: Response) => {
     { where: { id: userId } },
   );
 
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+
   return res.json(
     new ApiResponse(200, plainCodes, "2FA verified and enabled successfully"),
   );
@@ -539,6 +580,8 @@ export const disable2FA = asyncHandler(async (req: Request, res: Response) => {
     { isTwoFactorEnabled: false, twoFactorSecret: null },
     { where: { id: req.user.id } },
   );
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+
   return res.json(new ApiResponse(200, null, "2FA disabled successfully"));
 });
 
@@ -604,6 +647,8 @@ export const recover2FA = asyncHandler(async (req: Request, res: Response) => {
 
   const safeUser = updatedUser[1][0].get({ plain: true });
   delete safeUser.password;
+
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
 
   return res
     .cookie("access_token", accessToken, options)
@@ -711,6 +756,8 @@ export const verify2FAOtp = asyncHandler(async (req: Request, res: Response) => 
   const safeUser = updatedUser[1][0].get({ plain: true });
   delete safeUser.password;
 
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+
   return res
     .cookie("access_token", accessToken, options)
     .cookie("refresh_token", refreshToken, options)
@@ -740,5 +787,110 @@ export const getPlaceName = asyncHandler(async (req: Request, res: Response) => 
 
   return res.json(
     new ApiResponse(200, `${city}, ${country}`),
+  );
+});
+
+export const discoverPeople = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 20;
+  const offset = (page - 1) * limit;
+
+  const { search, location, title, interests } = req.query;
+
+  const cacheKey = `discover:people:${page}:${limit}:${search || ""}:${location || ""}:${title || ""}:${interests || ""}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return res.json(new ApiResponse(200, JSON.parse(cached), "Cache Response"));
+  }
+
+  const where: any = {};
+
+  if (search) {
+    where[Op.or] = [
+      { fullName: { [Op.iLike]: `%${search}%` } },
+      { username: { [Op.iLike]: `%${search}%` } },
+    ];
+  }
+
+  if (location) {
+    where.location = { [Op.iLike]: `%${location}%` };
+  }
+
+  if (title) {
+    where.title = { [Op.iLike]: `%${title}%` };
+  }
+
+  if (interests) {
+    const interestsArray = (interests as string).split(",").map(i => i.trim());
+    where.interests = {
+      [Op.overlap]: interestsArray,
+    };
+  }
+
+  const { rows: users, count: total } = await User.findAndCountAll({
+    where,
+    limit,
+    offset,
+    attributes: [
+      "id",
+      "username",
+      "fullName",
+      "avatar",
+      "location",
+      "title",
+      "interests",
+      "cover",
+      "bio",
+      "dob",
+      "verifiedIdentity",
+      [literal(`(SELECT COUNT(*) FROM "follows" WHERE "follows"."followingId" = "User"."id")`), "followersCount"],
+      [literal(`(SELECT COUNT(*) FROM "follows" WHERE "follows"."followerId" = "User"."id")`), "followingCount"],
+      [literal(`(SELECT COUNT(*) FROM "posts" WHERE "posts"."authorId" = "User"."id")`), "postsCount"],
+      [literal(`EXISTS (
+      SELECT 1 FROM "follows"
+      WHERE "follows"."followerId" = ${req.user.id}
+      AND "follows"."followingId" = "User"."id"
+    )`), "isFollowing"],
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+
+  const result = {
+    page,
+    totalPages: Math.ceil(total / limit),
+    total,
+    users,
+  };
+
+  await redis.set(cacheKey, JSON.stringify(result), "EX", 600);
+
+  return res.json(new ApiResponse(200, result, "Users fetched"));
+});
+
+export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  await User.update(
+    {
+      isDeleteAccount: true,
+      deletedAt: new Date(),
+    },
+    { where: { id: userId } },
+  );
+
+  await sendEmail(
+    "Account Deleted",
+    req.user.email,
+    req.user.fullName,
+    { name: req.user.fullName, year: new Date().getFullYear(), url: process.env.CLIENT_URL },
+    9,
+  );
+
+  await DELETE_USER_CACHE();
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Account deletion scheduled successfully"),
   );
 });

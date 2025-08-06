@@ -32,6 +32,11 @@ class User extends Model {
   public twoFactorSecret!: string;
   public recoveryCodes!: RecoveryCodes[];
   public lastSeenAt!: Date;
+  public deletedAt!: Date;
+  public isDeleteAccount!: boolean;
+  public interests!: string[];
+  public dob!: string;
+  public title!: string;
 }
 
 User.init(
@@ -63,6 +68,10 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     avatar: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -86,6 +95,18 @@ User.init(
     website: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    isDeleteAccount: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    dob: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    interests: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
     },
     publicKey: {
       type: DataTypes.TEXT,
@@ -129,6 +150,10 @@ User.init(
     lastSeenAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      allowNull: true,
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
   },

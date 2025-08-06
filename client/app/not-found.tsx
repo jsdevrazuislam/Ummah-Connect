@@ -46,13 +46,13 @@ export default function NotFound() {
             <p className="text-sm text-muted-foreground mb-4">Or try one of these popular sections:</p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/feed" className="flex items-center gap-2">
+                <Link href="/" className="flex items-center gap-2">
                   <MessageCircle className="w-3 h-3" />
                   Feed
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/discover" className="flex items-center gap-2">
+                <Link href="/discover-people" className="flex items-center gap-2">
                   <Search className="w-3 h-3" />
                   Discover
                 </Link>

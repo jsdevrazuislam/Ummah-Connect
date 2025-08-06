@@ -177,7 +177,7 @@ function AccountForm() {
                   </div>
                   <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-2 mt-4">
                     <Avatar className="h-20 w-20">
-                      <Image width={80} height={80} src={selectAvatar || "/placeholder.svg"} alt="Profile" />
+                      <Image width={80} height={80} src={selectAvatar || "/placeholder.svg"} alt={user?.fullName ?? ""} />
                     </Avatar>
                     <div className="space-y-2">
                       <ImageUpload

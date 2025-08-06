@@ -10,14 +10,14 @@ import {
   Home,
   Menu,
   MessageCircle,
+  Users,
   Video,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { LeftSidebar } from "@/components/left-sidebar";
-import { RightSidebar } from "@/components/right-sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
+import LeftSidebar from "@/components/left-sidebar";
+import RightSidebar from "@/components/right-sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { useStore } from "@/store/store";
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
+  { href: "/discover-people", icon: Users, label: "Discover" },
   { href: "/shorts", icon: Video, label: "Shorts" },
   { href: "/live", icon: Video, label: "Live" },
 ];
@@ -93,7 +94,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
         <div>
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4 flex-1">
-              <Link href="/" className="flex items-center space-x-2">
+              <Link aria-label="Logo" href="/" className="flex items-center space-x-2">
                 <h1 className="text-lg md:text-xl font-bold">
                   Ummah Connect
                 </h1>
@@ -109,6 +110,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                     href={item.href}
                     className={`flex flex-col items-center justify-center px-4 py-2 rounded-lg transition-colors relative ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     }`}
+                    aria-label={`Navigation ${item.label}`}
                   >
                     <item.icon className="h-6 w-6" />
                     {isActive && (
@@ -121,8 +123,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 
             <div className="flex items-center space-x-2 flex-1 justify-end">
               <div className="hidden md:flex items-center space-x-2">
-                <ThemeToggle />
-                <Link href="/notifications">
+                <Link href="/notifications" aria-label="Notification">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
@@ -133,7 +134,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                   </Button>
                 </Link>
 
-                <Link href="/messages">
+                <Link href="/messages" aria-label="Messages">
                   <Button size="sm" variant="ghost" className="rounded-full w-10 h-10 relative">
                     <MessageCircle className="h-5 w-5" />
                     {totalUnread > 0 && (
@@ -154,7 +155,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   {moreNavItems.map(item => (
                     <DropdownMenuItem key={item.href} asChild>
-                      <Link href={item.href} className="flex items-center">
+                      <Link href={item.href} aria-label={`Dropdown Menu For ${item.label}`} className="flex items-center">
                         <item.icon className="h-4 w-4 mr-3" />
                         <span>{item.label}</span>
                         {(item.label === "Notifications" && unreadCount > 0)
@@ -175,7 +176,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      {user?.avatar && <AvatarImage src={user?.avatar} />}
+                      {user?.avatar && <AvatarImage src={user?.avatar} alt={user?.fullName} />}
                       {!user?.avatar && <AvatarFallback>{user?.fullName?.charAt(0)}</AvatarFallback>}
                     </Avatar>
                   </Button>
@@ -197,7 +198,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings">Settings</Link>
+                    <Link aria-label="Settings" href="/settings">Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>

@@ -8,6 +8,8 @@ const publicRoutes = [
   "/register",
   "/verify-email",
   "/forgot-password",
+  "/terms",
+  "/privacy",
 ];
 
 export async function middleware(req: NextRequest) {

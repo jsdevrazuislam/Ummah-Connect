@@ -5,7 +5,8 @@ import { Op } from "sequelize";
 import sequelize from "@/config/db";
 import redis from "@/config/redis";
 import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
-import { REDIS_KEY } from "@/controllers/notification.controller";
+import { DELETE_USER_SUMMARY_CACHE } from "@/controllers/auth.controller";
+import { NOTIFICATION_CACHE_KEY } from "@/controllers/notification.controller";
 import { Follow, Notification, Post, Reaction, User } from "@/models";
 import BookmarkPost from "@/models/bookmark.models";
 import { NotificationType } from "@/models/notification.models";
@@ -100,11 +101,8 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     currentUserReaction: null,
   };
 
-  await redis.keys("posts:public:*").then((keys) => {
-    if (keys.length > 0) {
-      redis.del(...keys);
-    }
-  });
+  await DELETE_USER_SUMMARY_CACHE(req.user.id);
+  await DELETE_POST_CACHE();
 
   return res.json(new ApiResponse(200, postData, "Post Created Successfully"));
 });
@@ -145,9 +143,9 @@ export const postReact = asyncHandler(async (req: Request, res: Response) => {
 
   if (!postWithStats)
     throw new ApiError(404, "Post not found");
-  const receiverId = postWithStats.authorId;
+  const receiverId = Number(postWithStats.authorId);
 
-  if (userId !== Number(receiverId)) {
+  if (userId !== receiverId) {
     let notification = await Notification.findOne({
       where: {
         senderId: userId,
@@ -198,8 +196,9 @@ export const postReact = asyncHandler(async (req: Request, res: Response) => {
   });
 
   await DELETE_POST_CACHE();
+  await DELETE_USER_SUMMARY_CACHE(receiverId);
 
-  const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
+  const keys = await redis.keys(`${NOTIFICATION_CACHE_KEY(userId)}*`);
   if (keys.length > 0)
     await redis.del(...keys);
 

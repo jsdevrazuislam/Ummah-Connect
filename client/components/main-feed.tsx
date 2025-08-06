@@ -1,13 +1,22 @@
 "use client";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useMemo } from "react";
 
 import { ErrorMessage } from "@/components/api-error";
-import FollowingFeed from "@/components/following-feed";
 import InfiniteScrollPost from "@/components/infinite-scroll-post";
+import { PostSkeleton } from "@/components/post-skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllPosts } from "@/lib/apis/posts";
+
+const FollowingFeed = dynamic(() => import("@/components/following-feed"), { ssr: false, loading: () => (
+  <>
+    <PostSkeleton />
+    <PostSkeleton />
+  </>
+) });
 
 export function MainFeed() {
   const {
@@ -30,7 +39,10 @@ export function MainFeed() {
     gcTime: 1000 * 60 * 5,
   });
 
-  const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
+  const posts = useMemo(
+    () => data?.pages.flatMap(page => page?.data?.posts) ?? [],
+    [data],
+  );
 
   const loadMorePosts = () => {
     if (hasNextPage && !isFetchingNextPage) {

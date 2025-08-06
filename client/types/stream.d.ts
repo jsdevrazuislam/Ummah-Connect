@@ -86,6 +86,12 @@ type ShortsResponse = {
   message: string;
   success: boolean;
 };
+type ShortReactResponse = {
+  statusCode: number;
+  data: ShortsEntity;
+  message: string;
+  success: boolean;
+};
 type ShortsData = {
   shorts?: (ShortsEntity)[] | null;
   totalPages: number;

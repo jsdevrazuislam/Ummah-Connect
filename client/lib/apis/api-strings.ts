@@ -13,6 +13,8 @@ const ApiStrings = {
   DISABLE_2FA: "/auth/2fa/disable",
   RECOVER_LOGIN: "/auth/recover-login",
   REQUEST_OTP: "/auth/request-otp",
+  DELETE_ACCOUNT: "/auth/account-delete",
+  DISCOVER_PEOPLE: "/auth/discover-people",
   EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts
   ALL_POSTS: "/post/",
@@ -60,6 +62,7 @@ const ApiStrings = {
   GET_SHORTS: "/stream/shorts",
   UPLOAD_SHORT: "/stream/upload-short",
   DELETE_STREAM: "/stream/short",
+  REACT_SHORT: "/stream/short",
   // report
   REPORT: "/report/",
   BAN_USER: (id: number) => `/report/ban/${id}`,

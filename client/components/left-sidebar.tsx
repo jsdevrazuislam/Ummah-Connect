@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore } from "@/store/store";
 
-export function LeftSidebar() {
+export default function LeftSidebar() {
   const { setIsOpen, hijriDate, user, location } = useStore();
 
   const [currentTime, setCurrentTime] = useState(new Date());

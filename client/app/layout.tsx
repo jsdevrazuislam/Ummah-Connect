@@ -3,10 +3,9 @@ import type React from "react";
 
 // eslint-disable-next-line camelcase
 import { Noto_Sans } from "next/font/google";
-
-import "./globals.css";
 import { Toaster } from "sonner";
 
+import "./globals.css";
 import CallRejectedModal from "@/components/call-rejected-modal";
 import IncomingCallNotification from "@/components/incoming-call-modal";
 import { StreamEndedModal } from "@/components/live-stream-end-modal-for-viewers";

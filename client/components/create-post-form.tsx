@@ -219,7 +219,7 @@ export function CreatePostForm() {
                 ? (
                     <Image
                       src={URL.createObjectURL(selectedFile) || "/placeholder.svg"}
-                      alt="Selected"
+                      alt={user?.fullName ?? ""}
                       className="w-full h-full object-cover"
                       width={200}
                       height={200}

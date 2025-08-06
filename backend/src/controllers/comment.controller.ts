@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 
 import { USER_ATTRIBUTE } from "@/constants";
 import { DELETE_POST_CACHE } from "@/controllers/post.controller";
+import { DELETE_SHORT_CACHE } from "@/controllers/stream.controller";
 import { Comment, Follow, Post, User } from "@/models";
 import { NotificationType } from "@/models/notification.models";
 import CommentReaction from "@/models/react.models";
@@ -95,7 +96,12 @@ export const createComment = asyncHandler(
       currentUserReaction: null,
     };
 
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } });
+    if (type !== "short")
+      emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } });
+
+    if (type === "short") {
+      await DELETE_SHORT_CACHE();
+    }
 
     return res.json(
       new ApiResponse(

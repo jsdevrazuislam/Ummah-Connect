@@ -5,7 +5,12 @@ import Notification from "@/models/notification.models";
 import ApiResponse from "@/utils/api-response";
 import asyncHandler from "@/utils/async-handler";
 
-export const REDIS_KEY = (userId: number) => `notifications:user:${userId}`;
+export const NOTIFICATION_CACHE_KEY = (userId: number) => `notifications:user:${userId}`;
+export async function NOTIFICATION_CACHE(userId: number) {
+  const keys = await redis.keys(`${NOTIFICATION_CACHE_KEY(userId)}*`);
+  if (keys.length > 0)
+    await redis.del(...keys);
+}
 
 export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user.id;
@@ -13,7 +18,7 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
   const limit = Number.parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
 
-  const cacheKey = `${REDIS_KEY(userId)}:page:${page}:limit:${limit}`;
+  const cacheKey = `${NOTIFICATION_CACHE_KEY(userId)}:page:${page}:limit:${limit}`;
   const cached = await redis.get(cacheKey);
 
   if (cached) {
@@ -56,6 +61,7 @@ export const markAllRead = asyncHandler(async (req: Request, res: Response) => {
     { where: { receiverId: userId, isRead: false } },
   );
 
+  await NOTIFICATION_CACHE(userId);
   res.json(new ApiResponse(200, {}, "All notifications marked as read"));
 });
 
@@ -76,9 +82,7 @@ export const deleteNotification = asyncHandler(async (req: Request, res: Respons
 
   await notification.destroy();
 
-  const keys = await redis.keys(`${REDIS_KEY(userId)}*`);
-  if (keys.length > 0)
-    await redis.del(...keys);
+  await NOTIFICATION_CACHE(userId);
 
   res.json(new ApiResponse(200, null, "Notification deleted"));
 });

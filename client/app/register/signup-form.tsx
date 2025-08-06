@@ -32,6 +32,7 @@ type Location = {
 function SignupForm() {
   const [location, setLocation] = useState<Location | null>(null);
   const { user } = useStore();
+  const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<SignupFormData>({
     resolver: zodResolver(registerSchema),
@@ -49,10 +50,11 @@ function SignupForm() {
     },
   });
   const onSubmit = async (data: SignupFormData) => {
+    setLoading(true);
     const key = await generateKeyPair();
     const exportedPublicKey = await exportPublicKey(key.publicKey);
     const payload = {
-      fullName: `${data.first_name} ${data.last_name}`,
+      fullName: `${data.firstName} ${data.lastName}`,
       email: data.email,
       password: data.password,
       username: data.username,
@@ -63,25 +65,31 @@ function SignupForm() {
     };
     mutate(payload);
     await saveToIndexedDB("privateKey", key.privateKey);
+    setLoading(false);
   };
 
   useEffect(() => {
     if (!user) {
       (async () => {
-        const { latitude, longitude } = await getCurrentLocation();
-        const location = await fetchReverseGeocode(latitude, longitude);
-        setLocation({
-          latitude,
-          location,
-          longitude,
-        });
+        try {
+          const { latitude, longitude } = await getCurrentLocation();
+          const location = await fetchReverseGeocode(latitude, longitude);
+          setLocation({
+            latitude,
+            location,
+            longitude,
+          });
+        }
+        catch {
+          setLocation(null);
+        }
       })();
     }
   }, [user]);
 
   return (
     <>
-      <LoadingOverlay loading={isPending} />
+      <LoadingOverlay loading={isPending || loading} />
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
@@ -91,10 +99,10 @@ function SignupForm() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Input id="first-name" placeholder="muhammad" {...register("first_name")} error={errors.first_name?.message} />
+                <Input id="first-name" placeholder="muhammad" {...register("firstName")} error={errors.firstName?.message} />
               </div>
               <div className="space-y-2">
-                <Input id="last-name" placeholder="abdullah" {...register("last_name")} error={errors.last_name?.message} />
+                <Input id="last-name" placeholder="abdullah" {...register("lastName")} error={errors.lastName?.message} />
               </div>
             </div>
             <div className="space-y-2">
@@ -107,7 +115,7 @@ function SignupForm() {
               <Input id="password" placeholder="password" type="password" {...register("password")} error={errors.password?.message} />
             </div>
             <div className="space-y-2">
-              <Input id="confirm-password" placeholder="confirm password" type="password" {...register("confirm_password")} error={errors.confirm_password?.message} />
+              <Input id="confirm-password" placeholder="confirm password" type="password" {...register("confirmPassword")} error={errors.confirmPassword?.message} />
             </div>
             <div className="flex items-center space-x-2">
               <Controller

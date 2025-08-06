@@ -7,7 +7,7 @@ type RightSidebarProps = {
   children?: React.ReactNode;
 };
 
-export function RightSidebar({ children }: RightSidebarProps) {
+export default function RightSidebar({ children }: RightSidebarProps) {
   return (
     <div className="hidden lg:block space-y-6 sticky top-0 h-screen overflow-y-auto">
       {children}

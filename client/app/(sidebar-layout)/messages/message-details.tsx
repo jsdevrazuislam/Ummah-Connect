@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, MessageSquare, Plus, Search, Users } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ErrorMessage } from "@/components/api-error";
@@ -13,7 +14,6 @@ import ConversationSkeleton from "@/components/conversation-loading";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import Loader from "@/components/loader";
-import MessageForm from "@/components/message-form";
 import MessageItem from "@/components/message-item";
 import TypingIndicator from "@/components/type-indicator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,6 +30,8 @@ import { showError } from "@/lib/toast";
 import { addMessageConversation, replaceMessageInConversation, replaceSendMessageInConversation, updatedUnReadCount } from "@/lib/update-conversation";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
+
+const MessageForm = dynamic(() => import("@/components/message-form"), { ssr: false });
 
 export default function ConversationPage() {
   const [message, setMessage] = useState("");
@@ -102,7 +104,10 @@ export default function ConversationPage() {
     enabled: !!selectedConversation?.conversationId,
   });
 
-  const messages = messagesData?.pages.flatMap(page => page?.data?.messages) ?? [];
+  const messages = useMemo(
+    () => messagesData?.pages.flatMap(page => page?.data?.messages) ?? [],
+    [messagesData],
+  );
 
   const { mutate: readMessageFun } = useMutation({
     mutationFn: readMessage,

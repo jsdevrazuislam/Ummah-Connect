@@ -21,7 +21,7 @@ export default antfu({
     "node/prefer-global/process": ["off"],
     "n/prefer-global/buffer": ["error", "always"],
     "n/no-process-env": ["error", {
-      allowedVariables: ["NEXT_PUBLIC_API_BASE_URL", "ACCESS_TOKEN_SECRET", "NEXT_PUBLIC_ENCRYPTION_SECRET", "NEXT_PUBLIC_CLOUD_NAME", "MAPBOX_TOKEN", "OPENWEATHER_API_KEY", "NEXT_PUBLIC_SITE_URL"],
+      allowedVariables: ["NEXT_PUBLIC_API_BASE_URL", "ACCESS_TOKEN_SECRET", "NEXT_PUBLIC_ENCRYPTION_SECRET", "NEXT_PUBLIC_CLOUD_NAME", "MAPBOX_TOKEN", "OPENWEATHER_API_KEY", "NEXT_PUBLIC_SITE_URL", "NODE_ENV"],
     }],
     "perfectionist/sort-imports": ["error", {
       tsconfigRootDir: ".",

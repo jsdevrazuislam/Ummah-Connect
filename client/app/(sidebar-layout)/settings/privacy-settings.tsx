@@ -21,12 +21,12 @@ function PrivacySettings() {
   const { handleSubmit, control } = useForm<PrivacyFormData>({
     resolver: zodResolver(privacySettingsSchema),
     defaultValues: {
-      activeStatus: user?.privacySettings?.active_status ?? false,
-      locationShare: user?.privacySettings?.location_share ?? false,
+      activeStatus: user?.privacySettings?.activeStatus ?? false,
+      locationShare: user?.privacySettings?.locationShare ?? false,
       message: user?.privacySettings?.message ?? "followers",
-      postSee: user?.privacySettings?.post_see ?? "everyone",
-      privateAccount: user?.privacySettings?.private_account ?? false,
-      readReceipts: user?.privacySettings?.read_receipts ?? false,
+      postSee: user?.privacySettings?.postSee ?? "everyone",
+      privateAccount: user?.privacySettings?.privateAccount ?? false,
+      readReceipts: user?.privacySettings?.readReceipts ?? false,
 
     },
   });

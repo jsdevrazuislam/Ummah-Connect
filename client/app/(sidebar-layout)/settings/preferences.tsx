@@ -1,8 +1,10 @@
 "use client";
+import { useMutation } from "@tanstack/react-query";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import React, { useState } from "react";
 
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -13,10 +15,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { deleteAccount } from "@/lib/apis/auth";
+import { showError } from "@/lib/toast";
+import { useStore } from "@/store/store";
 
 function Preferences() {
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState("en");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, setUser } = useStore();
+
+  const { isPending, mutate } = useMutation({
+    mutationFn: deleteAccount,
+    onError: (error) => {
+      showError(error.message);
+    },
+  });
+
+  const handleDeleteAccount = () => {
+    mutate();
+    if (user)
+      setUser({ ...user, isDeleteAccount: true });
+  };
 
   return (
     <>
@@ -31,7 +51,7 @@ function Preferences() {
               <Label>Theme</Label>
               <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
             </div>
-            <Select value={theme} onValueChange={setTheme}>
+            <Select value={theme ?? "system"} onValueChange={setTheme}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -85,9 +105,19 @@ function Preferences() {
           <CardDescription>Irreversible and destructive actions</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive">Delete Account</Button>
+          <Button onClick={() => setIsModalOpen(true)} variant="destructive">Delete Account</Button>
         </CardContent>
       </Card>
+
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="Are you sure you want to delete your account?"
+        description="This will permanently remove your profile, messages, stories, and all data. This action is irreversible."
+        type="delete"
+        isLoading={isPending}
+      />
     </>
   );
 }

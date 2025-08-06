@@ -127,7 +127,7 @@ function EditPostModel({
                     {deleteLoading && <LoadingUi title="Delete image" />}
                     <Image
                       src={selectedImage || "/placeholder.svg"}
-                      alt="Post image"
+                      alt={post?.content}
                       className="w-full h-auto max-h-[200px] object-cover"
                       width={100}
                       height={200}

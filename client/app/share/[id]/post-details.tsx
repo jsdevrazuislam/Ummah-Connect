@@ -47,7 +47,7 @@ function PostDetailsPage({ post }: { post: PostsEntity }) {
               <Avatar className="h-12 w-12 ring-2 ring-primary/10">
                 {
                   post?.user?.avatar
-                    ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.avatar} />
+                    ? <AvatarImage src={post?.user?.avatar} alt={post?.user?.fullName} />
                     : (
                         <AvatarFallback>
                           {post?.user?.fullName?.charAt(0)}

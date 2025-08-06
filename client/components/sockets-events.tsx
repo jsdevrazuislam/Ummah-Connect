@@ -12,6 +12,7 @@ import { readMessage } from "@/lib/apis/conversation";
 import { showError } from "@/lib/toast";
 import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addMessageStatusToMessage, addUnReadCount, removeConversation, removeMessageReactionInConversation, toggleMessageDeleteState, updateMessageContentInConversation, updateMessageReactionInConversation, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
+import { updateShortInQueryData } from "@/lib/update-stream-data";
 import { useStore } from "@/store/store";
 
 function SocketEvents() {
@@ -456,6 +457,18 @@ function SocketEvents() {
     });
     return () => {
       socket.off(SocketEventEnum.READ_MESSAGE);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket)
+      return;
+    socket.on(SocketEventEnum.SHORT_REACT, ({ postData, postId }) => {
+      queryClient.setQueryData(["get_shorts"], (oldData: QueryOldShortsDataPayload) =>
+        updateShortInQueryData(oldData, postId, postData.currentUserReaction, postData?.totalReactionsCount));
+    });
+    return () => {
+      socket.off(SocketEventEnum.SHORT_REACT);
     };
   }, [socket]);
 

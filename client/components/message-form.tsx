@@ -135,7 +135,7 @@ const MessageForm: FC<MessageFormProps> = ({
                 ? (
                     <Image
                       src={URL.createObjectURL(file)}
-                      alt="Preview"
+                      alt={user?.fullName ?? ""}
                       className="h-16 w-16 object-cover rounded-md"
                       width={64}
                       height={64}

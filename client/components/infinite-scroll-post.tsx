@@ -73,4 +73,4 @@ const InfiniteScrollPost: FC<InfiniteScrollPostProps> = ({
   );
 };
 
-export default InfiniteScrollPost;
+export default React.memo(InfiniteScrollPost);

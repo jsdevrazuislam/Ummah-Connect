@@ -359,8 +359,9 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-2">
                 <Avatar>
-                  <AvatarImage src={stream?.user?.avatar || "/placeholder.svg"} alt={stream?.user?.fullName} />
-                  <AvatarFallback>{stream?.user?.fullName?.charAt(0)}</AvatarFallback>
+                  {stream?.user?.avatar
+                    ? <AvatarImage src={stream?.user?.avatar} alt={stream?.user?.fullName} />
+                    : <AvatarFallback>{stream?.user?.fullName?.charAt(0)}</AvatarFallback>}
                 </Avatar>
                 <div className="mr-2">
                   <div className="font-medium">{stream?.user?.fullName}</div>
@@ -441,8 +442,9 @@ export default function LiveStreamPage({ id, stream, token, livekitUrl }: { id: 
                                 ? messages?.map(message => (
                                     <div key={message?.id} className={cn("flex gap-2 group relative", { "opacity-70": message?.status === "sending" || message?.status === "failed" })}>
                                       <Avatar className="h-6 w-6">
-                                        <AvatarImage src={message?.sender?.avatar || "/placeholder.svg"} alt={message?.sender?.fullName} />
-                                        <AvatarFallback>{message?.sender?.fullName?.charAt(0)}</AvatarFallback>
+                                        {message?.sender?.avatar
+                                          ? <AvatarImage src={message?.sender?.avatar} alt={message?.sender?.fullName} />
+                                          : <AvatarFallback>{message?.sender?.fullName?.charAt(0)}</AvatarFallback>}
                                       </Avatar>
 
                                       <div className="-mt-1 flex-1">

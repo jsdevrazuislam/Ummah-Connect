@@ -14,21 +14,11 @@ type ToastOptions = {
   position?: "top-center" | "top-right" | "top-left" | "bottom-center" | "bottom-right" | "bottom-left";
   duration?: number;
   dismissible?: boolean;
-};
-
-/**
- * Parses an error string into a structured object with a title and an optional description.
- * This function is primarily used internally by `showError` to format error messages.
- *
- * @param {string} error - The raw error message string.
- * @returns {{ title: string; description?: string }} An object containing the formatted title and description.
- */
-function parseError(error: string): { title: string; description?: string } {
-  return {
-    title: "Error",
-    description: error,
+  action?: {
+    label: string;
+    onClick: () => void;
   };
-}
+};
 
 /**
  * Displays a success toast notification.
@@ -69,16 +59,14 @@ export function showSuccess(
  * @param {boolean} [options.dismissible] - Whether the toast can be dismissed. Defaults to true.
  */
 export function showError(error: string, options?: ToastOptions) {
-  const { title, description } = parseError(error);
-
-  showError(options?.title || title, {
-    description: options?.description || description,
+  toast.error("Error", {
+    description: error,
     position: options?.position || "top-right",
     duration: options?.duration || 4000,
     dismissible: options?.dismissible ?? true,
     action: {
       label: "Cancel",
-      onClick: () => {}, // This action doesn't do anything specific on click
+      onClick: () => {},
     },
   });
 }

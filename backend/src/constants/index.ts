@@ -10,6 +10,7 @@ const SocketEventEnum = Object.freeze({
   JOIN_POST: "joinPost",
   JOIN_CONVERSATION: "joinConversation",
   JOIN_LIVE_STREAM: "joinLiveStream",
+  JOIN_LIVE_SHORT: "joinShort",
   HOST_LEFT_LIVE_STREAM: "hostLeftLiveStream",
   HOST_JOIN_LIVE_STREAM: "hostJointLiveStream",
   HOST_END_LIVE_STREAM: "hostEndLiveStream",
@@ -46,6 +47,7 @@ const SocketEventEnum = Object.freeze({
   DELETE_CONVERSATION_MESSAGE: "delete_conversation_message",
   UNDO_DELETE_CONVERSATION_MESSAGE: "undo_conversation_message",
   READ_MESSAGE: "read_message",
+  SHORT_REACT: "shortReact",
 
 });
 

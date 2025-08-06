@@ -16,33 +16,37 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className={cn("relative w-full", classNameRoot)}>
-        <input
-          type={isPassword && showPassword ? "text" : type}
-          className={cn(
-            "flex h-10 w-full rounded-md border border-input bg-input px-3 py-2 pr-10 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-            error && "border-red-500 focus-visible:ring-red-500/50",
-            className,
+
+        <div className="flex items-center justify-between">
+          <input
+            type={isPassword && showPassword ? "text" : type}
+            className={cn(
+              "flex h-10 w-full rounded-md border border-input bg-input px-3 py-2 pr-10 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+              error && "border-red-500 focus-visible:ring-red-500/50",
+              className,
+            )}
+            ref={ref}
+            aria-invalid={!!error}
+            {...props}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(prev => !prev)}
+              className={cn("absolute right-4")}
+              tabIndex={-1}
+            >
+              {showPassword
+                ? (
+                    <EyeOff className="h-4 w-4" />
+                  )
+                : (
+                    <Eye className="h-4 w-4" />
+                  )}
+            </button>
           )}
-          ref={ref}
-          aria-invalid={!!error}
-          {...props}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(prev => !prev)}
-            className={cn("absolute right-2 -translate-y-1/2 text-muted-foreground focus:outline-none", error ? "top-[30%]" : "top-1/2")}
-            tabIndex={-1}
-          >
-            {showPassword
-              ? (
-                  <EyeOff className="h-4 w-4" />
-                )
-              : (
-                  <Eye className="h-4 w-4" />
-                )}
-          </button>
-        )}
+        </div>
+
         {
           error && <p className="text-red-500 text-sm mt-2">{error}</p>
         }

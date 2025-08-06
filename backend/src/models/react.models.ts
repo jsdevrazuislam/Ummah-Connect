@@ -27,7 +27,7 @@ Reaction.init(
       onDelete: "CASCADE",
     },
     reactType: {
-      type: DataTypes.ENUM("love", "care", "sad", "like", "haha", "wow", "angry"),
+      type: DataTypes.ENUM("love", "care", "sad", "like", "haha", "wow", "angry", ""),
       allowNull: true,
     },
     icon: {

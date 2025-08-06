@@ -24,6 +24,7 @@ export const useSocketStore = create<SocketState>(set => ({
     const { socket } = useSocketStore.getState();
     if (socket) {
       socket.disconnect();
+      socket.close();
       set({ socket: null });
     }
   },

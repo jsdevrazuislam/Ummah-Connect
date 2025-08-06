@@ -1,27 +1,32 @@
-const spamCache = new Map<string, { messages: string[]; lastMessageTime: number }>();
+const spamCache = new Map<string, { messages: string[]; lastMessageTime?: number }>();
 
 export function isSpam(userId: string, content: string): boolean {
   const now = Date.now();
-  const user = spamCache.get(userId) || { messages: [], lastMessageTime: now };
+  const user = spamCache.get(userId) || { messages: [] };
 
-  user.messages.push(content);
-  if (user.messages.length > 5)
-    user.messages.shift();
+  if (user.lastMessageTime !== undefined) {
+    const timeDiff = now - user.lastMessageTime;
+    if (timeDiff < 500) {
+      return true;
+    }
+  }
 
-  const timeDiff = now - user.lastMessageTime;
   user.lastMessageTime = now;
 
-  spamCache.set(userId, user);
+  user.messages.push(content);
+  if (user.messages.length > 5) {
+    user.messages.shift();
+  }
 
-  if (timeDiff < 500)
+  if (user.messages.length === 5 && user.messages.every(msg => msg === content)) {
     return true;
-
-  if (user.messages.every(msg => msg === content))
-    return true;
+  }
 
   const bannedWords = ["buy now", "subscribe", "click here", "visit my channel"];
-  if (bannedWords.some(w => content.toLowerCase().includes(w)))
+  if (bannedWords.some(w => content.toLowerCase().includes(w))) {
     return true;
+  }
 
+  spamCache.set(userId, user);
   return false;
 }

@@ -83,6 +83,11 @@ export async function getShorts({
   return response.data;
 }
 
+export async function postReactShort(payload: ReactPayload): Promise<ShortReactResponse> {
+  const response = await api.post<ShortReactResponse>(`${ApiStrings.REACT_SHORT}/${payload.id}`, { reactType: payload.reactType, icon: payload.icon });
+  return response.data;
+}
+
 export async function deleteStory(id: number) {
   const response = await api.delete(`${ApiStrings.DELETE_STORY}/${id}`);
   return response.data;

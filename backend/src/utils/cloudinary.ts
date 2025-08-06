@@ -51,7 +51,7 @@ export function getThumbnailFromVideo(videoUrl: string, type: string) {
   const publicIdWithExtension = urlParts.slice(urlParts.indexOf("upload") + 1).join("/");
   const publicId = publicIdWithExtension.split(".")[0];
 
-  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/w_300,h_200,c_thumb,q_auto,f_jpg/${publicId}.png`;
+  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/w_350,h_600,c_thumb,q_auto,f_jpg/${publicId}.png`;
 }
 
 export async function removeOldImageOnCloudinary(url: string) {

@@ -4,6 +4,7 @@ import type { ChangeEvent } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
@@ -20,7 +21,7 @@ import { uploadShorts } from "@/lib/apis/stream";
 import { showError, showSuccess } from "@/lib/toast";
 import { addShortVideo } from "@/lib/update-stream-data";
 
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function UploadShortModal() {
@@ -30,6 +31,7 @@ export function UploadShortModal() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const resetForm = () => {
     setDescription("");
@@ -48,6 +50,7 @@ export function UploadShortModal() {
       showSuccess("Short uploaded successfully!");
       resetForm();
       setOpen(false);
+      router.replace(`/shorts/${data?.data?.id}`);
     },
     onError: (error) => {
       showError(error.message || "Failed to upload short");

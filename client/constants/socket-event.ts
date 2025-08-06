@@ -4,6 +4,7 @@ const SocketEventEnum = Object.freeze({
   SOCKET_ERROR: "socketError",
   POST_REACT: "post_react",
   JOIN_POST: "joinPost",
+  JOIN_LIVE_SHORT: "joinShort",
   COMMENT_REACT: "commentReact",
   CREATE_COMMENT: "createComment",
   EDITED_COMMENT: "edited_comment",
@@ -41,6 +42,7 @@ const SocketEventEnum = Object.freeze({
   DELETE_CONVERSATION_MESSAGE: "delete_conversation_message",
   UNDO_DELETE_CONVERSATION_MESSAGE: "undo_conversation_message",
   READ_MESSAGE: "read_message",
+  SHORT_REACT: "shortReact",
 });
 
 export default SocketEventEnum;

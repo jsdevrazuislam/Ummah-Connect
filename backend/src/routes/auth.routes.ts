@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { changePassword, disable2FA, enable2FA, getMe, getPlaceName, getUserDetails, getUserProfile, loginWith2FA, logout, recover2FA, register, requestEmailOtp, updateCurrentUserInfo, updateNotificationPreferences, updatePrivacySettings, verify2FA, verify2FAOtp, verifyEmail } from "@/controllers/auth.controller";
+import { changePassword, deleteAccount, disable2FA, discoverPeople, enable2FA, getMe, getPlaceName, getUserDetails, getUserProfile, loginWith2FA, logout, recover2FA, register, requestEmailOtp, updateCurrentUserInfo, updateNotificationPreferences, updatePrivacySettings, verify2FA, verify2FAOtp, verifyEmail } from "@/controllers/auth.controller";
 import { verifyAuth } from "@/middleware/auth.middleware";
 import { upload } from "@/middleware/multer.middleware";
 import { validateData } from "@/middleware/validation.middleware";
@@ -28,5 +28,7 @@ router.post("/2fa/verify", validateData(tokenSchema), verifyAuth, verify2FA);
 router.post("/2fa/disable", verifyAuth, disable2FA);
 router.post("/request-otp", validateData(emailSchema), requestEmailOtp);
 router.post("/2fa/email-verify", validateData(email2FALoginSchema), verify2FAOtp);
+router.get("/discover-people", verifyAuth, discoverPeople);
+router.delete("/account-delete", verifyAuth, deleteAccount);
 
 export default router;

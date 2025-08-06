@@ -139,7 +139,7 @@ export function CommentReactionPicker({
       >
         {currentReaction
           ? (
-              <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4 mt-1" />
+              <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji icon" className="h-4 w-4 mt-1" />
             )
           : (
               <ThumbsUp className="h-4 w-4 mt-1" />

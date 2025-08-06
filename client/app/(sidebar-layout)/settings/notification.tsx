@@ -43,15 +43,15 @@ function Notification() {
   };
 
   useEffect(() => {
-    setValue("comment_post", user?.notificationPreferences?.comment_post ?? false);
+    setValue("commentPost", user?.notificationPreferences?.commentPost ?? false);
     setValue("dm", user?.notificationPreferences?.dm ?? false);
-    setValue("email_notification", user?.notificationPreferences?.email_notification ?? false);
-    setValue("islamic_event", user?.notificationPreferences?.islamic_event ?? false);
-    setValue("like_post", user?.notificationPreferences?.like_post ?? false);
+    setValue("emailNotification", user?.notificationPreferences?.emailNotification ?? false);
+    setValue("islamicEvent", user?.notificationPreferences?.islamicEvent ?? false);
+    setValue("likePost", user?.notificationPreferences?.likePost ?? false);
     setValue("mention", user?.notificationPreferences?.mention ?? false);
-    setValue("new_follower", user?.notificationPreferences?.new_follower ?? false);
-    setValue("prayer_time_notification", user?.notificationPreferences?.prayer_time_notification ?? false);
-    setValue("push_notification", user?.notificationPreferences?.push_notification ?? false);
+    setValue("newFollower", user?.notificationPreferences?.newFollower ?? false);
+    setValue("prayerTimeNotification", user?.notificationPreferences?.prayerTimeNotification ?? false);
+    setValue("pushNotification", user?.notificationPreferences?.pushNotification ?? false);
   }, [user]);
 
   return (
@@ -70,7 +70,7 @@ function Notification() {
                   <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
                 </div>
                 <Controller
-                  name="push_notification"
+                  name="pushNotification"
                   control={control}
                   render={({ field }) => (
                     <Switch id="push_notification" checked={field.value} onCheckedChange={field.onChange} />
@@ -83,7 +83,7 @@ function Notification() {
                   <p className="text-sm text-muted-foreground">Receive notifications via email</p>
                 </div>
                 <Controller
-                  name="email_notification"
+                  name="emailNotification"
                   control={control}
                   render={({ field }) => (
                     <Switch id="email_notification" checked={field.value} onCheckedChange={field.onChange} />
@@ -96,7 +96,7 @@ function Notification() {
                   <p className="text-sm text-muted-foreground">Receive notifications for prayer times</p>
                 </div>
                 <Controller
-                  name="prayer_time_notification"
+                  name="prayerTimeNotification"
                   control={control}
                   render={({ field }) => (
                     <Switch id="prayer_time_notification" checked={field.value} onCheckedChange={field.onChange} />
@@ -150,7 +150,7 @@ function Notification() {
                     <p className="text-sm text-muted-foreground">{description}</p>
                   </div>
                   <Controller
-                    name={name as "dm" | "islamic_event" | "like_post" | "comment_post" | "mention" | "new_follower" | "push_notification" | "email_notification" | "prayer_time_notification"}
+                    name={name as "dm" | "islamicEvent" | "likePost" | "commentPost" | "mention" | "newFollower" | "pushNotification" | "emailNotification" | "prayerTimeNotification"}
                     control={control}
                     render={({ field }) => (
                       <Switch id={id} checked={field.value} onCheckedChange={field.onChange} />

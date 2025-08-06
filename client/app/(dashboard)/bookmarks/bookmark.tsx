@@ -1,6 +1,7 @@
 "use client";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Bookmark } from "lucide-react";
+import { useMemo } from "react";
 
 import { ErrorMessage } from "@/components/api-error";
 import { InfiniteScroll } from "@/components/infinite-scroll";
@@ -28,7 +29,10 @@ export default function BookmarksPage() {
     gcTime: 1000 * 60 * 5,
   });
 
-  const posts = data?.pages.flatMap(page => page?.data?.posts) ?? [];
+  const posts = useMemo(
+    () => data?.pages.flatMap(page => page?.data?.posts) ?? [],
+    [data],
+  );
 
   const loadMorePosts = () => {
     if (hasNextPage && !isFetchingNextPage) {
