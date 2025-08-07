@@ -98,6 +98,7 @@ type CommentPreview = {
   isEdited: boolean;
   parentId: number;
   postId?: number;
+  shortId?: number;
   totalComments?: number;
   totalReactionsCount?: number;
   currentUserReaction: ReactionType;
@@ -119,6 +120,7 @@ type RepliesEntity = {
   id: number;
   parentId: number;
   postId?: number;
+  shortId?: number;
   content: string;
   user: PostAuthor;
   repliesCount: number;

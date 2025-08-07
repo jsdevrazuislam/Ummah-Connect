@@ -43,6 +43,10 @@ const SocketEventEnum = Object.freeze({
   UNDO_DELETE_CONVERSATION_MESSAGE: "undo_conversation_message",
   READ_MESSAGE: "read_message",
   SHORT_REACT: "shortReact",
+  CREATE_SHORT_COMMENT: "createShortComment",
+  SHORT_REPLY_COMMENT: "shortReplyComment",
+  SHORT_EDITED_COMMENT: "shortEditedComment",
+  SHORT_DELETE_COMMENT: "shortDeleteComment",
 });
 
 export default SocketEventEnum;

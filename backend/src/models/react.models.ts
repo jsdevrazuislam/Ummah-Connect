@@ -5,6 +5,7 @@ import sequelize from "@/config/db";
 class Reaction extends Model {
   public userId!: number;
   public postId!: number;
+  public shortId!: number;
   public reactType!: string;
   public icon!: string;
 }
@@ -17,6 +18,11 @@ Reaction.init(
       onDelete: "CASCADE",
     },
     postId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      onDelete: "CASCADE",
+    },
+    shortId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       onDelete: "CASCADE",

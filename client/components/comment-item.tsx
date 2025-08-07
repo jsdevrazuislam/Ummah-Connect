@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { Skeleton } from "@/components//ui/skeleton";
+import CardHoverTooltip from "@/components/card-hover-tooltip";
 import { CommentReactionPicker } from "@/components/comment-reaction-picker";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,9 +18,8 @@ import { Input } from "@/components/ui/input";
 import { deleteComment, editComment, getComments, replyComment } from "@/lib/apis/comment";
 import { showError } from "@/lib/toast";
 import { editCommentToPost } from "@/lib/update-post-data";
+import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
-
-import CardHoverTooltip from "./card-hover-tooltip";
 
 function parseMentions(content: string): React.ReactNode[] {
   const parts = content.split(/(@\w+)/g);
@@ -47,7 +47,7 @@ type CommentItemProps = {
 
 };
 
-export function CommentItems({ postId, totalComment }: { postId: number; totalComment: number | undefined }) {
+export function CommentItems({ postId, totalComment, isShort = false }: { postId: number; totalComment: number | undefined; isShort?: boolean }) {
   const {
     data,
     fetchNextPage,
@@ -58,7 +58,7 @@ export function CommentItems({ postId, totalComment }: { postId: number; totalCo
     error,
   } = useInfiniteQuery<CommentsResponse>({
     queryKey: ["get_comments", postId],
-    queryFn: ({ pageParam = 1 }) => getComments({ page: Number(pageParam), id: postId, limit: 10 }),
+    queryFn: ({ pageParam = 1 }) => getComments({ page: Number(pageParam), id: postId, limit: 10, type: isShort ? "short" : "post" }),
     getNextPageParam: (lastPage) => {
       const nextPage = lastPage?.data?.currentPage + 1;
       if (nextPage <= lastPage?.data?.totalPages) {
@@ -183,6 +183,7 @@ function CommentItem({
         content: replyText,
         postId,
         id: comment.id,
+        type: comment.shortId ? "short" : "post",
       };
       mutate(payload);
     }
@@ -195,6 +196,7 @@ function CommentItem({
         commentId: comment.id,
         postId,
         isReply,
+        type: comment.shortId ? "short" : "post",
       };
       editMnFun(payload);
     }
@@ -214,14 +216,14 @@ function CommentItem({
 
   return (
 
-    <div className={`flex gap-2 ${isReply ? "ml-8 mt-3" : ""}`}>
+    <div className={cn(`flex gap-2`, { "ml-8 mt-3": isReply && !comment.shortId })}>
       <Avatar className="h-8 w-8 flex-shrink-0">
         { comment?.user?.avatar
           ? <AvatarImage src={comment?.user?.avatar} alt={comment.user?.fullName} />
           : <AvatarFallback>{comment?.user?.fullName?.charAt(0)}</AvatarFallback>}
       </Avatar>
-      <div className="flex-1">
-        <div className="bg-muted rounded-lg px-3 py-2">
+      <div className={cn("flex-1", { "min-w-0": comment.shortId })}>
+        <div className={cn(`bg-muted rounded-lg px-3 py-2`, { "w-full max-w-[300px]": comment.shortId })}>
           <div className="flex justify-between items-center">
             <CardHoverTooltip user={comment.user}>
               <button onClick={() => router.push(`/${comment?.user?.username}`)} className="font-medium capitalize text-sm cursor-pointer hover:underline">{comment?.user?.fullName}</button>
@@ -272,7 +274,7 @@ function CommentItem({
                 </div>
               )
             : (
-                <p className="text-sm mt-1">{parseMentions(comment.content)}</p>
+                <p className={cn("text-sm mt-1", { "break-words whitespace-pre-wrap": comment.shortId })}>{parseMentions(comment.content)}</p>
               )}
         </div>
 

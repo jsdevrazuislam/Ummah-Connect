@@ -22,6 +22,7 @@ type EditCommentPayload = {
   commentId: number;
   postId: number;
   isReply?: boolean;
+  type?: string;
 };
 
 type DeletePostCommentPayload = {
@@ -40,4 +41,5 @@ type ReplyCommentPayload = {
   content: string;
   postId: number;
   id: number;
+  type?: string;
 };

@@ -23,8 +23,6 @@ import { getOrSetCache } from "@/utils/helper";
 import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
 
-const STREAM_USER_CACHE_KEY = (userId: number | string) => `user:${userId}`;
-
 export async function DELETE_SHORT_CACHE() {
   const keys = await redis.keys(`shorts:*`);
   if (keys.length > 0)
@@ -485,10 +483,7 @@ export const uploadShort = asyncHandler(async (req: Request, res: Response) => {
     currentUserReaction: null,
   };
 
-  const keys = await redis.keys(`${STREAM_USER_CACHE_KEY(req.user.id)}:shorts:*`);
-  if (keys.length > 0)
-    await redis.del(...keys);
-
+  await DELETE_SHORT_CACHE();
   res.json(new ApiResponse(200, responseData, "Short uploaded successfully"));
 });
 
@@ -511,10 +506,10 @@ export const getShorts = asyncHandler(async (req: Request, res: Response) => {
       ],
       attributes: {
         include: [
-          getTotalCommentsCountLiteral("\"Short\""),
-          getTotalReactionsCountLiteral("\"Short\""),
+          getTotalCommentsCountLiteral("\"Short\"", "shortId"),
+          getTotalReactionsCountLiteral("\"Short\"", "shortId"),
           getIsBookmarkedLiteral(req.user.id, "\"Short\""),
-          getUserReactionLiteral(req.user.id, "\"Short\""),
+          getUserReactionLiteral(req.user.id, "\"Short\"", "shortId"),
           getIsFollowingLiteral(req.user.id, "\"Short\".\"userId\""),
         ],
       },
@@ -564,11 +559,11 @@ export const deleteShort = asyncHandler(async (req: Request, res: Response) => {
 
 export const videoReact = asyncHandler(async (req: Request, res: Response) => {
   const { reactType, icon } = req.body;
-  const postId = req.params?.videoId;
+  const shortId = req.params?.videoId;
   const userId = req.user?.id;
 
   const existingReaction = await Reaction.findOne({
-    where: { userId, postId },
+    where: { userId, shortId },
   });
 
   if (existingReaction) {
@@ -583,15 +578,15 @@ export const videoReact = asyncHandler(async (req: Request, res: Response) => {
     }
   }
   else {
-    await Reaction.create({ userId, postId, reactType, icon });
+    await Reaction.create({ userId, shortId, reactType, icon });
   }
 
   const postWithStats = await Short.findOne({
-    where: { id: postId },
+    where: { id: shortId },
     attributes: {
       include: [
-        getTotalReactionsCountLiteral("\"Short\""),
-        getUserReactionLiteral(userId, "\"Short\""),
+        getTotalReactionsCountLiteral("\"Short\"", "shortId"),
+        getUserReactionLiteral(userId, "\"Short\"", "shortId"),
       ],
     },
   });
@@ -605,7 +600,7 @@ export const videoReact = asyncHandler(async (req: Request, res: Response) => {
       where: {
         senderId: userId,
         receiverId,
-        postId,
+        shortId,
         type: "like",
       },
     });
@@ -623,7 +618,7 @@ export const videoReact = asyncHandler(async (req: Request, res: Response) => {
         receiverId,
         type: "shortLike",
         icon,
-        postId,
+        shortId,
       });
     }
 
@@ -645,9 +640,9 @@ export const videoReact = asyncHandler(async (req: Request, res: Response) => {
 
   emitSocketEvent({
     req,
-    roomId: `short_${postId}`,
+    roomId: `short_${shortId}`,
     event: SocketEventEnum.SHORT_REACT,
-    payload: { postData, postId: Number(postId) },
+    payload: { postData, postId: Number(shortId) },
   });
 
   await DELETE_SHORT_CACHE();

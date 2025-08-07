@@ -12,7 +12,7 @@ import { readMessage } from "@/lib/apis/conversation";
 import { showError } from "@/lib/toast";
 import { addedConversation, addLastMessage, addMessageConversation, addMessageConversationLiveStream, addMessageStatusToMessage, addUnReadCount, removeConversation, removeMessageReactionInConversation, toggleMessageDeleteState, updateMessageContentInConversation, updateMessageReactionInConversation, updateParticipantCount } from "@/lib/update-conversation";
 import updatePostInQueryData, { addCommentReactionToPost, addCommentToPost, addReplyCommentToPost, deleteCommentToPost, editCommentToPost, incrementDecrementCommentCount } from "@/lib/update-post-data";
-import { updateShortInQueryData } from "@/lib/update-stream-data";
+import { addCommentToShort, incrementDecrementShortCommentCount, updateShortInQueryData } from "@/lib/update-stream-data";
 import { useStore } from "@/store/store";
 
 function SocketEvents() {
@@ -49,6 +49,24 @@ function SocketEvents() {
     if (!socket)
       return;
 
+    socket.on(SocketEventEnum.CREATE_SHORT_COMMENT, (payload: CreateCommentPayload) => {
+      queryClient.setQueryData(["get_comments", payload?.data?.shortId], (oldData: QueryOldDataCommentsPayload) => {
+        return addCommentToShort(oldData, payload?.data?.shortId, payload.data);
+      });
+      queryClient.setQueryData(["get_shorts"], (oldData: QueryOldShortsDataPayload) => {
+        return incrementDecrementShortCommentCount(oldData, payload?.data?.shortId, 1, "inc");
+      });
+    });
+
+    return () => {
+      socket.off(SocketEventEnum.CREATE_SHORT_COMMENT);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket)
+      return;
+
     socket.on(SocketEventEnum.CREATE_COMMENT, (payload: CreateCommentPayload) => {
       queryClient.setQueryData(["get_comments", payload?.data?.postId], (oldData: QueryOldDataCommentsPayload) => {
         return addCommentToPost(oldData, payload?.data?.postId, payload.data);
@@ -60,6 +78,25 @@ function SocketEvents() {
 
     return () => {
       socket.off(SocketEventEnum.CREATE_COMMENT);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket)
+      return;
+
+    socket.on(SocketEventEnum.SHORT_REPLY_COMMENT, (payload: CreateCommentReplyPayload) => {
+      queryClient.setQueryData(["get_comments", payload?.data?.shortId], (oldData: QueryOldDataCommentsPayload) => {
+        return addReplyCommentToPost(oldData, payload.data.parentId, payload.data);
+      });
+
+      queryClient.setQueryData(["get_shorts"], (oldData: QueryOldShortsDataPayload) => {
+        return incrementDecrementShortCommentCount(oldData, payload?.data?.shortId, 1, "inc");
+      });
+    });
+
+    return () => {
+      socket.off(SocketEventEnum.SHORT_REPLY_COMMENT);
     };
   }, [socket]);
 
@@ -100,6 +137,19 @@ function SocketEvents() {
   useEffect(() => {
     if (!socket)
       return;
+    socket.on(SocketEventEnum.SHORT_EDITED_COMMENT, (payload: UpdatedCommentPayload) => {
+      queryClient.setQueryData(["get_comments", payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
+        return editCommentToPost(oldData, payload.id, payload);
+      });
+    });
+    return () => {
+      socket.off(SocketEventEnum.SHORT_EDITED_COMMENT);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket)
+      return;
     socket.on(SocketEventEnum.EDITED_COMMENT, (payload: UpdatedCommentPayload) => {
       queryClient.setQueryData(["get_comments", payload?.postId], (oldData: QueryOldDataCommentsPayload) => {
         return editCommentToPost(oldData, payload.id, payload);
@@ -107,6 +157,24 @@ function SocketEvents() {
     });
     return () => {
       socket.off(SocketEventEnum.EDITED_COMMENT);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket)
+      return;
+    socket.on(SocketEventEnum.SHORT_DELETE_COMMENT, (payload: DeleteCommentPayload) => {
+      queryClient.setQueryData(["get_comments", payload?.shortId], (oldData: QueryOldDataCommentsPayload) => {
+        if (!oldData)
+          return { pageParams: [], pages: [] };
+        return deleteCommentToPost(oldData, payload.id, payload.parentId, payload.isReply);
+      });
+      queryClient.setQueryData(["get_shorts"], (oldData: QueryOldShortsDataPayload) => {
+        return incrementDecrementShortCommentCount(oldData, payload?.shortId, 1, "dec");
+      });
+    });
+    return () => {
+      socket.off(SocketEventEnum.SHORT_DELETE_COMMENT);
     };
   }, [socket]);
 

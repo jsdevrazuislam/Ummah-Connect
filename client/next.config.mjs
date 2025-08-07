@@ -18,7 +18,7 @@ const nextConfig = {
               media-src 'self' https://res.cloudinary.com blob:;
               img-src 'self' data: https: http: https://res.cloudinary.com;
               font-src 'self' https://fonts.gstatic.com;
-              connect-src 'self' https://fonts.googleapis.com wss://social-media-app-t8htg4xd.livekit.cloud https://api.aladhan.com/v1/timings https://fonts.gstatic.com https://res.cloudinary.com http://res.cloudinary.com ${
+              connect-src 'self' https://fonts.googleapis.com wss://social-media-app-t8htg4xd.livekit.cloud https://api.aladhan.com https://fonts.gstatic.com https://res.cloudinary.com http://res.cloudinary.com ${
                 isDev ? "http://localhost:8000 ws://localhost:8000" : "https://ummah-connect.onrender.com wss://ummah-connect.onrender.com"
               };
               frame-src 'none';

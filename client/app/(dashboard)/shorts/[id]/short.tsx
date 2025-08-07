@@ -133,12 +133,6 @@ export default function ShortPage({ id }: { id: number }) {
         <VideoOff className="h-10 w-10 mb-3" />
         <p className="text-lg font-semibold">Short not found</p>
         <p className="text-sm mt-1">The requested short video doesn't exist.</p>
-        <Button
-          onClick={() => router.push("/shorts")}
-          className="mt-4"
-        >
-          Browse Shorts
-        </Button>
       </div>
     );
   }

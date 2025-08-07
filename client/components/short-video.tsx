@@ -16,6 +16,7 @@ import type { VideoPlayerHandle } from "@/app/(dashboard)/shorts/[id]/player";
 
 import VideoPlayer from "@/app/(dashboard)/shorts/[id]/player";
 import ShortsControls from "@/app/(dashboard)/shorts/[id]/shorts-controls";
+import { CommentItems } from "@/components/comment-item";
 import FollowButton from "@/components/follow-button";
 import { ShareVideoDialog } from "@/components/share-video-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -291,32 +292,24 @@ export default function ShortVideo({ currentShort, isActive }: VideoShortsProps)
         </div>
 
         {showComments && (
-          <div className="absolute inset-0 bg-black/80 z-50 flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b border-white/10">
-              <h3 className="text-white font-medium">Comments 40</h3>
+          <div className="absolute inset-0 bg-black/80 z-50 flex flex-col w-full max-w-[350px]">
+            <div className="flex justify-between items-center p-2 border-b border-white/10">
+              <h3 className="text-white font-medium">
+                Comments
+                <span className="ml-1 inline-block">
+                  {currentShort?.totalCommentsCount}
+                </span>
+              </h3>
               <Button variant="ghost" size="icon" className="text-white" onClick={() => setShowComments(false)}>
                 <MessageCircle className="h-5 w-5" />
               </Button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {
-                [...Array.from({ length: 100 })].map((_, i) => (
-                  <div key={i} className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium text-sm">user123</span>
-                        <span className="text-white/50 text-xs">2h ago</span>
-                      </div>
-                      <p className="text-white text-sm mt-1">MashaAllah, beautiful architecture!</p>
-                    </div>
-                  </div>
-                ))
-              }
-
+            <div className="flex-1 overflow-y-auto space-y-4 break-words">
+              <CommentItems
+                postId={currentShort.id}
+                totalComment={currentShort?.totalCommentsCount}
+                isShort={true}
+              />
             </div>
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">

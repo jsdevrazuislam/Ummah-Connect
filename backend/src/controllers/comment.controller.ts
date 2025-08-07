@@ -22,8 +22,9 @@ export const createComment = asyncHandler(
     const userId = req.user.id;
     const postId = req.params.id;
     let receiverPostId = null;
+    const isTypeShort = type === "short";
 
-    if (type === "short") {
+    if (isTypeShort) {
       const short = await Short.findOne({ where: { id: postId } });
       receiverPostId = short?.userId;
       if (!short)
@@ -36,7 +37,7 @@ export const createComment = asyncHandler(
         throw new ApiError(404, "Post not found");
     }
 
-    const comment = await Comment.create({ content, userId, postId });
+    const comment = await Comment.create({ content, userId, ...(isTypeShort ? { shortId: postId } : { postId }) });
 
     const followerCount = await Follow.count({ where: { followingId: userId } });
     const followingCount = await Follow.count({ where: { followerId: userId } });
@@ -96,11 +97,12 @@ export const createComment = asyncHandler(
       currentUserReaction: null,
     };
 
-    if (type !== "short")
+    if (!isTypeShort)
       emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } });
 
-    if (type === "short") {
+    if (isTypeShort) {
       await DELETE_SHORT_CACHE();
+      emitSocketEvent({ req, roomId: `short_${postId}`, event: SocketEventEnum.CREATE_SHORT_COMMENT, payload: { data: response } });
     }
 
     return res.json(
@@ -114,22 +116,28 @@ export const createComment = asyncHandler(
 );
 
 export const createReplyComment = asyncHandler(async (req: Request, res: Response) => {
-  const { content, postId } = req.body;
+  const { content, postId, type } = req.body;
   const userId = req.user.id;
+  const isTypeShort = type === "short";
   const parentId = Number(req.params.id);
+  let receiverPostId = null;
 
-  const post = await Post.findOne({ where: { id: postId } });
-  if (!post)
-    throw new ApiError(404, "Post not found");
+  if (isTypeShort) {
+    const short = await Short.findOne({ where: { id: postId } });
+    receiverPostId = short?.userId;
+    if (!short)
+      throw new ApiError(404, "Short not found");
+  }
+  else {
+    const post = await Post.findOne({ where: { id: postId } });
+    receiverPostId = post?.authorId;
+    if (!post)
+      throw new ApiError(404, "Post not found");
+  }
 
-  const comment = await Comment.create({ content, userId, postId, parentId });
-  const totalComments = await Comment.count({
-    where: {
-      postId,
-    },
-  });
+  const comment = await Comment.create({ content, userId, ...(isTypeShort ? { shortId: postId } : { postId }), parentId });
 
-  const receiverId = Number(post?.authorId);
+  const receiverId = Number(receiverPostId);
 
   if (userId !== receiverId) {
     const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
@@ -163,11 +171,8 @@ export const createReplyComment = asyncHandler(async (req: Request, res: Respons
     }
   }
 
-  const commentJSON = comment.toJSON();
-  delete commentJSON.userId;
-
   const response = {
-    ...commentJSON,
+    ...comment.toJSON(),
     user: {
       id: req.user.id,
       fullName: req.user.fullName,
@@ -176,11 +181,17 @@ export const createReplyComment = asyncHandler(async (req: Request, res: Respons
     },
     parentId,
     createdAt: comment.createdAt,
-    totalComments,
-    reactions: { counts: {}, currentUserReaction: null },
+    totalReactionsCount: "0",
+    currentUserReaction: null,
   };
 
-  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } });
+  if (isTypeShort) {
+    emitSocketEvent({ req, roomId: `short_${postId}`, event: SocketEventEnum.SHORT_REPLY_COMMENT, payload: { data: response } });
+    await DELETE_SHORT_CACHE();
+  }
+  else {
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } });
+  }
 
   return res.json(
     new ApiResponse(
@@ -194,9 +205,10 @@ export const createReplyComment = asyncHandler(async (req: Request, res: Respons
 export const editComment = asyncHandler(async (req: Request, res: Response) => {
   const commentId = req.params.id;
   const userId = req.user.id;
-  const { postId, content, isReply } = req.body;
+  const { postId, content, isReply, type } = req.body;
+  const isTypeShort = type === "short";
 
-  const comment = await Comment.findOne({ where: { id: commentId, postId, userId } });
+  const comment = await Comment.findOne({ where: { id: commentId, ...(isTypeShort ? { shortId: postId } : { postId }), userId } });
   if (!comment)
     throw new ApiError(400, "You are not eligible edit this comment");
 
@@ -220,7 +232,13 @@ export const editComment = asyncHandler(async (req: Request, res: Response) => {
     isReply,
   };
 
-  emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.EDITED_COMMENT, payload: response });
+  if (isTypeShort) {
+    await DELETE_SHORT_CACHE();
+    emitSocketEvent({ req, roomId: `short_${postId}`, event: SocketEventEnum.SHORT_EDITED_COMMENT, payload: response });
+  }
+  else {
+    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.EDITED_COMMENT, payload: response });
+  }
 
   return res.json(new ApiResponse(200, response, "Updated comment"));
 });
@@ -240,13 +258,18 @@ export const deleteComment = asyncHandler(async (req: Request, res: Response) =>
 
   const totalComments = await Comment.count({
     where: {
-      postId: comment.postId,
+      ...(comment.shortId ? { shortId: comment.shortId } : { postId: comment.postId }),
     },
   });
 
-  emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: !!comment.parentId, totalComments } });
-
-  await DELETE_POST_CACHE();
+  if (comment.shortId) {
+    await DELETE_SHORT_CACHE();
+    emitSocketEvent({ req, roomId: `short_${comment.shortId}`, event: SocketEventEnum.SHORT_DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: !!comment.parentId, totalComments } });
+  }
+  else {
+    emitSocketEvent({ req, roomId: `post_${comment.postId}`, event: SocketEventEnum.DELETE_COMMENT, payload: { ...comment.toJSON(), isReply: !!comment.parentId, totalComments } });
+    await DELETE_POST_CACHE();
+  }
 
   return res.json(
     new ApiResponse(200, totalComments, "Comment delete success"),
@@ -254,7 +277,7 @@ export const deleteComment = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const commentReact = asyncHandler(async (req: Request, res: Response) => {
-  const { reactType, icon, postId, parentId, isReply } = req.body;
+  const { reactType, icon, parentId, isReply } = req.body;
   const commentId = req.params?.commentId;
   const userId = req.user?.id;
 
@@ -286,19 +309,37 @@ export const commentReact = asyncHandler(async (req: Request, res: Response) => 
   }
 
   const data = commentWithStats.toJSON();
+  const postId = commentWithStats.postId ? commentWithStats.postId : commentWithStats.shortId;
 
-  emitSocketEvent({
-    req,
-    roomId: `post_${postId}`,
-    event: SocketEventEnum.COMMENT_REACT,
-    payload: {
-      data,
-      postId: Number(postId),
-      commentId: Number(commentId),
-      parentId: Number(parentId),
-      isReply: Boolean(isReply),
-    },
-  });
+  if (commentWithStats.postId) {
+    emitSocketEvent({
+      req,
+      roomId: `post_${postId}`,
+      event: SocketEventEnum.COMMENT_REACT,
+      payload: {
+        data,
+        postId,
+        commentId: Number(commentId),
+        parentId: Number(parentId),
+        isReply: Boolean(isReply),
+      },
+    });
+  }
+  else {
+    emitSocketEvent({
+      req,
+      roomId: `short_${postId}`,
+      event: SocketEventEnum.COMMENT_REACT,
+      payload: {
+        data,
+        postId,
+        commentId: Number(commentId),
+        parentId: Number(parentId),
+        isReply: Boolean(isReply),
+      },
+    });
+    await DELETE_SHORT_CACHE();
+  }
 
   return res.json(
     new ApiResponse(200, data, "React Successfully"),
@@ -308,13 +349,14 @@ export const commentReact = asyncHandler(async (req: Request, res: Response) => 
 export const getComments = asyncHandler(async (req: Request, res: Response) => {
   const page = Number(req.query.page as string);
   const limit = Number(req.query.limit as string);
+  const isTypeShort = req.query.type === "short";
   const commentAttribute = ["id", "postId", "isEdited", "parentId", "content", "createdAt"];
   const skip = (page - 1) * limit;
   const userId = req.user.id;
 
   const { count, rows: comments } = await Comment.findAndCountAll({
     where: {
-      postId: req.params.postId,
+      ...(isTypeShort ? { shortId: req.params.postId } : { postId: req.params.postId }),
       parentId: null,
     },
     offset: skip,

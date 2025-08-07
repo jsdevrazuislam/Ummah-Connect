@@ -93,7 +93,7 @@ type ShortReactResponse = {
   success: boolean;
 };
 type ShortsData = {
-  shorts?: (ShortsEntity)[] | null;
+  shorts: ShortsEntity[];
   totalPages: number;
   currentPage: number;
   totalItems: number;

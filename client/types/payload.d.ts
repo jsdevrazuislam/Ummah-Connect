@@ -75,6 +75,7 @@ type DeleteCommentPayload = {
   id: number;
   userId: number;
   postId: number;
+  shortId: number;
   isEdited: boolean;
   parentId: number;
   content: string;

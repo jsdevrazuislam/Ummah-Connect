@@ -96,20 +96,19 @@ function CommentInput({
   return (
     <>
       <div className="flex gap-3">
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8 mt-1">
           {
             user?.avatar
-              ? <AvatarImage src={user?.avatar} alt="You" />
+              ? <AvatarImage src={user?.avatar} alt={user?.fullName} />
               : (
                   <AvatarFallback>
-                    {user?.fullName?.charAt(2)}
+                    {user?.fullName?.charAt(0)}
                   </AvatarFallback>
                 )
           }
 
         </Avatar>
         <div className="flex-1 flex gap-2 relative" ref={suggestionsRef}>
-
           <div
             ref={highlightRef}
             className="absolute inset-0 whitespace-pre-wrap break-words text-sm p-2 pointer-events-none text-transparent"

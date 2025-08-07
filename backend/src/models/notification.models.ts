@@ -17,6 +17,7 @@ export class Notification extends Model {
   public senderId!: number;
   public receiverId!: number;
   public postId?: number;
+  public shortId?: number;
   public type!: NotificationType;
   public message!: string;
   public icon!: string;
@@ -42,6 +43,10 @@ Notification.init(
       allowNull: false,
     },
     postId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    shortId: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },

@@ -7,12 +7,12 @@ export async function createComment(payload: CommentPayload) {
 }
 
 export async function replyComment(payload: ReplyCommentPayload) {
-  const response = await api.post(ApiStrings.REPLY_COMMENT(payload.id), { content: payload.content, postId: payload.postId });
+  const response = await api.post(ApiStrings.REPLY_COMMENT(payload.id), { content: payload.content, postId: payload.postId, type: payload.type });
   return response.data;
 }
 
 export async function editComment(payload: EditCommentPayload) {
-  const response = await api.post(ApiStrings.EDIT_COMMENT(payload.commentId), { content: payload.content, postId: payload.postId, isReply: payload.isReply });
+  const response = await api.post(ApiStrings.EDIT_COMMENT(payload.commentId), { content: payload.content, postId: payload.postId, isReply: payload.isReply, type: payload.type });
   return response.data;
 }
 
@@ -26,7 +26,7 @@ export async function commentReact(payload: ReactPayload) {
   return response.data;
 }
 
-export async function getComments({ page = 2, limit = 10, id }: { page: number; limit: number; id: number }): Promise<CommentsResponse> {
-  const response = await api.get<CommentsResponse>(ApiStrings.GET_COMMENTS(id), { params: { page, limit } });
+export async function getComments({ page = 2, limit = 10, id, type }: { page: number; limit: number; id: number; type: string }): Promise<CommentsResponse> {
+  const response = await api.get<CommentsResponse>(ApiStrings.GET_COMMENTS(id), { params: { page, limit, type } });
   return response.data;
 }

@@ -60,21 +60,45 @@ export function addCommentToPost(
   };
 }
 
+/**
+ * Adds a reply to a specific comment in paginated comment data.
+ * Efficiently finds the target comment and updates only the necessary page.
+ *
+ * @param oldData - The existing paginated comments data.
+ * @param commentId - The ID of the comment to reply to.
+ * @param newComment - The reply object to insert.
+ * @returns Updated query data with the new reply added.
+ */
 export function addReplyCommentToPost(
   oldData: QueryOldDataCommentsPayload | undefined,
   commentId: number,
   newComment: RepliesEntity,
 ) {
-  const updatedPages = oldData?.pages?.map((page) => {
-    const updatedComments = page?.data?.comments?.map((comment) => {
-      if (comment.id === commentId) {
-        return {
-          ...comment,
-          replies: [newComment, ...(comment.replies ?? [])],
-        };
-      }
-      return comment;
-    });
+  if (!oldData)
+    return oldData;
+
+  let found = false;
+
+  const updatedPages = oldData.pages.map((page) => {
+    if (found)
+      return page;
+
+    const comments = page?.data?.comments ?? [];
+    const index = comments.findIndex(comment => comment.id === commentId);
+
+    if (index === -1)
+      return page;
+
+    found = true;
+
+    const targetComment = comments[index];
+    const updatedComment = {
+      ...targetComment,
+      replies: [newComment, ...(targetComment.replies ?? [])],
+    };
+
+    const updatedComments = [...comments];
+    updatedComments[index] = updatedComment;
 
     return {
       ...page,
@@ -225,6 +249,16 @@ export function deleteCommentToPost(
   };
 }
 
+/**
+ * Optimistically increments or decrements the total comment count of a post in paginated query data.
+ * Stops early as soon as the post is found (O(1) in practical terms).
+ *
+ * @param oldData - The current paginated data for posts.
+ * @param postId - The ID of the post to update.
+ * @param amount - The amount to increment/decrement.
+ * @param actions - Whether to 'inc' or 'dec' the count (default is 'inc').
+ * @returns Updated query data with the post's comment count changed.
+ */
 export function incrementDecrementCommentCount(
   oldData: QueryOldDataPayload | undefined,
   postId: number | undefined,
@@ -234,22 +268,33 @@ export function incrementDecrementCommentCount(
   if (!oldData || !postId)
     return oldData;
 
-  const updatedPages = oldData.pages?.map((page) => {
-    const updatedPosts = page?.data?.posts?.map((post) => {
-      if (post.id === postId) {
-        const newCount
-          = actions === "inc"
-            ? Number(post.totalCommentsCount) + amount
-            : Number(post.totalCommentsCount) - amount;
+  let found = false;
 
-        return {
-          ...post,
-          totalCommentsCount: Math.max(newCount, 0),
-        };
-      }
+  const updatedPages = oldData.pages.map((page) => {
+    if (found)
+      return page; // skip other pages
 
-      return post;
-    });
+    const posts = page?.data?.posts ?? [];
+    const index = posts.findIndex(post => post.id === postId);
+
+    if (index === -1)
+      return page;
+
+    found = true;
+
+    const targetPost = posts[index];
+    const updatedPost = {
+      ...targetPost,
+      totalCommentsCount: Math.max(
+        (actions === "inc"
+          ? Number(targetPost.totalCommentsCount) + amount
+          : Number(targetPost.totalCommentsCount) - amount),
+        0,
+      ),
+    };
+
+    const updatedPosts = [...posts];
+    updatedPosts[index] = updatedPost;
 
     return {
       ...page,
