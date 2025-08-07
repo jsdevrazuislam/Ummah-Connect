@@ -1,48 +1,52 @@
-import { Socket, Server } from "socket.io";
-import { Request } from "express";
-import { User } from "@/models";
-import { decode_token } from "@/utils/auth-helper";
-import { JwtResponse } from "@/types/auth";
-import { SocketEventEnum } from "@/constants";
+import type { Request } from "express";
+import type { Server, Socket } from "socket.io";
+
+import type { JwtResponse } from "@/types/auth";
+
 import redis from "@/config/redis";
-import { getConversationUserIds } from "@/utils/query";
+import { SocketEventEnum } from "@/constants";
+import { User } from "@/models";
 import { runSocketEvents } from "@/socket/socket-events";
+import { decodeToken } from "@/utils/auth-helper";
+import { getConversationUserIds } from "@/utils/query";
 
 declare module "socket.io" {
+  // eslint-disable-next-line ts/consistent-type-definitions
   interface Socket {
     user?: User;
   }
 }
 
-interface SocketAuth {
+type SocketAuth = {
   token?: string;
-}
+};
 
-export interface InitializeSocketIOOptions {
+export type InitializeSocketIOOptions = {
   io: Server;
-}
+};
 
-interface EmitSocketEventParams<T> {
+type EmitSocketEventParams<T> = {
   req: Request;
   roomId: string;
   event: string;
   payload: T;
-}
+};
 
-const joinRoom = (socket: Socket, eventEnum: string, roomPrefix: string) => {
+function joinRoom(socket: Socket, eventEnum: string, roomPrefix: string) {
   socket.on(eventEnum, (id) => {
     console.log(`User joined the ${roomPrefix} room. ${roomPrefix}Id: ${id}`);
     socket.join(`${roomPrefix}_${id}`);
   });
-};
+}
 
-const setupSocketListeners = (socket: Socket) => {
+function setupSocketListeners(socket: Socket) {
   joinRoom(socket, SocketEventEnum.JOIN_POST, "post");
   joinRoom(socket, SocketEventEnum.JOIN_CONVERSATION, "conversation");
   joinRoom(socket, SocketEventEnum.JOIN_LIVE_STREAM, "live_stream");
-};
+  joinRoom(socket, SocketEventEnum.JOIN_LIVE_SHORT, "short");
+}
 
-const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
+function initializeSocketIO({ io }: InitializeSocketIOOptions): void {
   io.on("connection", async (socket: Socket) => {
     try {
       const auth = socket.handshake.auth as SocketAuth;
@@ -53,9 +57,9 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
 
       if (token && process.env.ACCESS_TOKEN_SECRET) {
         try {
-          const decodedToken = decode_token(
+          const decodedToken = decodeToken(
             token,
-            process.env.ACCESS_TOKEN_SECRET
+            process.env.ACCESS_TOKEN_SECRET,
           ) as JwtResponse;
 
           user = await User.findOne({ where: { id: decodedToken.id } });
@@ -85,9 +89,10 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
 
           socket.join(`user:${userId}`);
           console.log(
-            `Authenticated user connected userId: ${user.id.toString()}`
+            `Authenticated user connected userId: ${user.id.toString()}`,
           );
-        } catch (error) {
+        }
+        catch (error) {
           console.error("Invalid token provided:", error);
         }
       }
@@ -106,32 +111,34 @@ const initializeSocketIO = ({ io }: InitializeSocketIOOptions): void => {
         console.log("Unauthenticated user connected");
       }
 
-      runSocketEvents(socket, io)
-    } catch (error) {
+      runSocketEvents(socket, io);
+    }
+    catch (error) {
       console.error("Socket connection error:", error);
       socket.emit(
         SocketEventEnum.SOCKET_ERROR,
         error instanceof Error
           ? error.message
-          : "Something went wrong while connecting to the socket"
+          : "Something went wrong while connecting to the socket",
       );
     }
   });
-};
+}
 
-const emitSocketEvent = <T>({
+function emitSocketEvent<T>({
   req,
   roomId,
   event,
   payload,
-}: EmitSocketEventParams<T>): void => {
+}: EmitSocketEventParams<T>): void {
   try {
     const io: Server = req.app.get("io");
     io.to(roomId).emit(event, payload);
     console.log(`Event sent roomId ${roomId} and event name is ${event}`);
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Failed to emit socket event:", error);
   }
-};
+}
 
-export { initializeSocketIO, emitSocketEvent, SocketEventEnum };
+export { emitSocketEvent, initializeSocketIO, SocketEventEnum };

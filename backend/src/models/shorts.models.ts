@@ -1,20 +1,22 @@
 import { DataTypes, Model } from "sequelize";
+
+import type BookmarkPost from "@/models/bookmark.models";
+import type Reaction from "@/models/react.models";
+
 import sequelize from "@/config/db";
-import Reaction from "@/models/react.models";
-import BookmarkPost from "@/models/bookmark.models";
 
 class Short extends Model {
   public id!: number;
   public userId!: number;
-  public video_id!: string;
+  public videoId!: string;
   public description!: string;
-  public thumbnail_url!: string;
-  public is_public!: boolean;
-  public share!: number
+  public thumbnailUrl!: string;
+  public isPublic!: boolean;
+  public share!: number;
   public createdAt!: Date;
   public updatedAt!: Date;
-  public reactions!: Reaction[]
-  public bookmarks!: BookmarkPost[]
+  public reactions!: Reaction[];
+  public bookmarks!: BookmarkPost[];
 }
 
 Short.init(
@@ -28,11 +30,11 @@ Short.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    video_id: {
+    videoId: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    thumbnail_url: {
+    thumbnailUrl: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -40,21 +42,21 @@ Short.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    is_public: {
+    isPublic: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-     share: {
+    share: {
       type: DataTypes.INTEGER,
-      defaultValue: 0
-     },
+      defaultValue: 0,
+    },
   },
   {
     sequelize,
     tableName: "shorts",
     modelName: "Short",
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 export default Short;

@@ -4,7 +4,6 @@ class ApiResponse {
   public message: string;
   public success: boolean;
 
-
   constructor(statusCode: number, data: unknown, message: string = "Success") {
     this.statusCode = statusCode;
     this.data = data;
@@ -13,4 +12,4 @@ class ApiResponse {
   }
 }
 
-export default ApiResponse
+export default ApiResponse;

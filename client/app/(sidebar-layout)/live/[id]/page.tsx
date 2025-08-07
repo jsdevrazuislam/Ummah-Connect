@@ -1,22 +1,26 @@
-import React from 'react'
-import LiveStreamPage from '@/app/(sidebar-layout)/live/[id]/stream-details'
-import { cookies } from 'next/headers'
-import { ACCESS_TOKEN } from '@/constants'
-import { notFound } from 'next/navigation'
-import { ErrorPage } from '@/components/error-page'
+import type { Metadata } from "next";
+
+import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
+import React from "react";
+
+import LiveStreamPage from "@/app/(sidebar-layout)/live/[id]/stream-details";
+import { ErrorPage } from "@/components/error-page";
+import { ACCESS_TOKEN } from "@/constants";
 
 export async function fetchStream(streamId: string) {
   try {
     const cookie = await cookies();
     const token = cookie.get(ACCESS_TOKEN)?.value;
 
-    if (!token) return null;
+    if (!token)
+      return null;
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/stream/details?streamId=${streamId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -24,19 +28,20 @@ export async function fetchStream(streamId: string) {
       return {
         error: {
           status: res.status,
-          message: errorData.message || 'Failed to fetch stream data',
-        }
+          message: errorData.message || "Failed to fetch stream data",
+        },
       };
     }
 
     return await res.json();
-  } catch (error) {
-    console.error('Error fetching stream:', error);
+  }
+  catch (error) {
+    console.error("Error fetching stream:", error);
     return {
       error: {
         status: 500,
-        message: 'An unexpected error occurred',
-      }
+        message: "An unexpected error occurred",
+      },
     };
   }
 }
@@ -46,56 +51,58 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     const { id } = await params;
     const stream = await fetchStream(id);
 
-    if ('error' in stream) {
+    if ("error" in stream) {
       return {
-        title: 'Stream Not Found | Ummah Connect',
-        description: 'The requested stream could not be found',
+        title: "Stream Not Found | Ummah Connect",
+        description: "The requested stream could not be found",
       };
     }
 
-    if (!stream?.data?.stream) notFound();
+    if (!stream?.data?.stream)
+      notFound();
 
     const data = stream.data.stream;
 
     return {
-      title: `${data?.title} | Live Stream by ${data?.user?.full_name}`,
-      description: data?.description || 'Watch live on Ummah Connect',
+      title: `${data?.title} | Live Stream by ${data?.user?.fullName}`,
+      description: data?.description || "Watch live on Ummah Connect",
       openGraph: {
         title: `${data?.title} | Live Stream`,
-        description: data?.description || '',
+        description: data?.description || "",
         images: [
           {
-            url: data?.thumbnail || '/live.webp',
+            url: data?.thumbnail || "/live.webp",
             width: 1280,
             height: 720,
             alt: `${data?.title}`,
           },
         ],
-        locale: 'en_US',
-        type: 'video.other',
+        locale: "en_US",
+        type: "video.other",
       },
       twitter: {
-        card: 'summary_large_image',
+        card: "summary_large_image",
         title: data?.title,
-        description: data?.description || '',
-        images: [data?.thumbnail || '/live.webp'],
+        description: data?.description || "",
+        images: [data?.thumbnail || "/live.webp"],
       },
     };
-  } catch {
+  }
+  catch {
     return {
-      title: 'Error | Ummah Connect',
-      description: 'An error occurred while loading stream information',
+      title: "Error | Ummah Connect",
+      description: "An error occurred while loading stream information",
     };
   }
 }
 
-const Page = async ({ params }: { params: { id: string } }) => {
+async function Page({ params }: { params: { id: string } }) {
   const { id } = await params;
   const result = await fetchStream(id);
 
-  if ('error' in result) {
+  if ("error" in result) {
     return (
-      <ErrorPage 
+      <ErrorPage
         statusCode={result.error.status}
         title="Stream Loading Error"
         message={result.error.message}
@@ -118,14 +125,13 @@ const Page = async ({ params }: { params: { id: string } }) => {
   }
 
   return (
-    <LiveStreamPage 
-      id={id} 
-      stream={result.data.stream} 
-      livekitUrl={result.data.livekitUrl} 
-      token={result.data.token} 
+    <LiveStreamPage
+      id={id}
+      stream={result.data.stream}
+      livekitUrl={result.data.livekitUrl}
+      token={result.data.token}
     />
   );
-};
+}
 
-
-export default Page
+export default Page;

@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
-import { cn } from "@/lib/utils"
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import * as React from "react";
 
-interface SliderProps
-  extends React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> {
-  orientation?: "horizontal" | "vertical"
-  trackClassName?: string
-  rangeClassName?: string
-  thumbClassName?: string
-}
+import { cn } from "@/lib/utils";
+
+type SliderProps = {
+  orientation?: "horizontal" | "vertical";
+  trackClassName?: string;
+  rangeClassName?: string;
+  thumbClassName?: string;
+} & React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>;
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
@@ -25,9 +25,9 @@ const Slider = React.forwardRef<
       orientation = "horizontal",
       ...props
     },
-    ref
+    ref,
   ) => {
-    const isVertical = orientation === "vertical"
+    const isVertical = orientation === "vertical";
 
     return (
       <SliderPrimitive.Root
@@ -36,7 +36,7 @@ const Slider = React.forwardRef<
         className={cn(
           "relative flex touch-none select-none",
           isVertical ? "h-full flex-col items-center" : "w-full items-center",
-          className
+          className,
         )}
         {...props}
       >
@@ -44,28 +44,28 @@ const Slider = React.forwardRef<
           className={cn(
             "relative cursor-pointer overflow-hidden bg-secondary rounded-full",
             isVertical ? "w-2 h-full" : "h-2 w-full",
-            trackClassName
+            trackClassName,
           )}
         >
           <SliderPrimitive.Range
             className={cn(
               "absolute bg-black dark:bg-white",
               isVertical ? "w-full" : "h-full",
-              rangeClassName
+              rangeClassName,
             )}
           />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
           className={cn(
             "block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-            thumbClassName
+            thumbClassName,
           )}
         />
       </SliderPrimitive.Root>
-    )
-  }
-)
+    );
+  },
+);
 
-Slider.displayName = SliderPrimitive.Root.displayName
+Slider.displayName = SliderPrimitive.Root.displayName;
 
-export { Slider }
+export { Slider };

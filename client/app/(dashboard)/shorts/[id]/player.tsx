@@ -1,29 +1,37 @@
 "use client";
 
-import { useEffect, useImperativeHandle, useRef, forwardRef, useState } from 'react';
-import Hls from 'hls.js';
+import Hls from "hls.js";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-
-export interface VideoPlayerHandle {
-    play: () => void;
-    pause: () => void;
-    seekTo: (seconds: number) => void;
-    toggleMute: () => void;
-    isPlaying: () => boolean;
-}
-interface VideoPlayerProps {
-    videoUrl: string;
-    autoPlay?: boolean;
-    muted?: boolean;
-    loop?: boolean;
-    onReady?: () => void;
-    onLoadedMetadata?: (duration: number) => void;
-    onTimeUpdate?: (currentTime: number) => void;
-}
-
+export type VideoPlayerHandle = {
+  play: () => void;
+  pause: () => void;
+  seekTo: (seconds: number) => void;
+  toggleMute: () => void;
+  isPlaying: () => boolean;
+};
+type VideoPlayerProps = {
+  videoUrl: string;
+  thumbnailUrl?: string;
+  autoPlay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+  onReady?: () => void;
+  onLoadedMetadata?: (duration: number) => void;
+  onTimeUpdate?: (currentTime: number) => void;
+};
 
 const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
-  ({ videoUrl, autoPlay = false, muted = false, loop = true, onReady, onLoadedMetadata, onTimeUpdate }, ref) => {
+  ({
+    videoUrl,
+    autoPlay = false,
+    muted = false,
+    loop = true,
+    onReady,
+    onLoadedMetadata,
+    onTimeUpdate,
+    thumbnailUrl,
+  }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -31,37 +39,40 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
       play: () => videoRef.current?.play(),
       pause: () => videoRef.current?.pause(),
       seekTo: (s: number) => {
-        if (videoRef.current) videoRef.current.currentTime = s;
+        if (videoRef.current)
+          videoRef.current.currentTime = s;
       },
       toggleMute: () => {
-        if (videoRef.current) videoRef.current.muted = !videoRef.current.muted;
+        if (videoRef.current)
+          videoRef.current.muted = !videoRef.current.muted;
       },
       isPlaying: () => !!(videoRef.current && !videoRef.current.paused),
     }));
 
     useEffect(() => {
-      if (!videoUrl || !videoRef.current) return;
+      if (!videoUrl || !videoRef.current)
+        return;
 
       const video = videoRef.current;
       setIsLoading(true);
 
       if (Hls.isSupported()) {
         const hls = new Hls({
-          maxBufferLength: 60, 
-          maxMaxBufferLength: 90, 
-          startFragPrefetch: true, 
+          maxBufferLength: 60,
+          maxMaxBufferLength: 90,
+          startFragPrefetch: true,
         });
         hls.loadSource(videoUrl);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
-        const duration = data.details?.totalduration || 0;
-        onLoadedMetadata?.(duration);
-        setIsLoading(false);
-        if (autoPlay) video.play().catch(() => {});
-        onReady?.();
-      });
-
+          const duration = data.details?.totalduration || 0;
+          onLoadedMetadata?.(duration);
+          setIsLoading(false);
+          if (autoPlay)
+            video.play().catch(() => {});
+          onReady?.();
+        });
 
         hls.on(Hls.Events.FRAG_LOADED, () => {
           setIsLoading(false);
@@ -72,22 +83,27 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
         });
 
         return () => hls.destroy();
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      }
+      else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = videoUrl;
         video.addEventListener("loadedmetadata", () => {
           const duration = video.duration || 0;
           onLoadedMetadata?.(duration);
-          if (autoPlay) video.play().catch(() => {});
+          if (autoPlay)
+            video.play().catch(() => {});
           onReady?.();
         });
 
-        video.addEventListener("canplay", () => setIsLoading(false));
+        video.addEventListener("canplay", () => {
+          setIsLoading(false);
+        });
       }
     }, [videoUrl]);
 
     useEffect(() => {
       const video = videoRef.current;
-      if (!video) return;
+      if (!video)
+        return;
 
       const handleMetadata = () => {
         const duration = video.duration || 0;
@@ -112,13 +128,15 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
 
     return (
       <div className="relative w-full h-full">
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+        {isLoading && autoPlay && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-white border-t-transparent animate-spin rounded-full" />
           </div>
         )}
+
         <video
-          preload={autoPlay ? "auto" : "none"}
+          poster={thumbnailUrl}
+          preload={autoPlay ? "auto" : "metadata"}
           ref={videoRef}
           className="w-full h-full object-cover"
           autoPlay={autoPlay}
@@ -126,11 +144,11 @@ const ControlledVideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           loop={loop}
           playsInline
           controls={false}
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={e => e.preventDefault()}
         />
       </div>
     );
-  }
+  },
 );
 
-export default  ControlledVideoPlayer
+export default ControlledVideoPlayer;

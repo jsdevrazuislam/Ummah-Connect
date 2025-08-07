@@ -1,29 +1,34 @@
-"use client"
+"use client";
+import React, { useEffect, useState } from "react";
+
 import { useStore } from "@/store/store";
-import { motion } from "framer-motion";
-import React from 'react'
 
-const WrapperLoader = ({ children }: { children: React.ReactNode }) => {
+function WrapperLoader({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useStore();
+  const [showLoader, setShowLoader] = useState(false);
 
-    const { isLoading } = useStore()
-
-
+  useEffect(() => {
     if (isLoading) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background pointer-events-none">
-                <motion.h1
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="text-2xl md:text-4xl font-semibold text-primary"
-                >
-                    Ummah Connect
-                </motion.h1>
-            </div>
-        )
+      const timeout = setTimeout(() => setShowLoader(true), 300);
+      return () => clearTimeout(timeout);
     }
+    else {
+      setShowLoader(false);
+    }
+  }, [isLoading]);
 
-    return children
+  if (showLoader) {
+    return (
+      <div className="absolute inset-0 z-10 flex items-center justify-center gap-y-2 flex-col bg-background pointer-events-none">
+        <div className="w-10 h-10 bg-primary flex justify-center items-center rounded-full text-2xl">
+          U
+        </div>
+        Ummah Connect
+      </div>
+    );
+  }
+
+  return children;
 }
 
-export default WrapperLoader
+export default WrapperLoader;

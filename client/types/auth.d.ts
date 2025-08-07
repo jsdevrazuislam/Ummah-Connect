@@ -1,91 +1,134 @@
-interface UserResponse {
+type UserResponse = {
   statusCode: number;
   data: Data;
   message: string;
   success: boolean;
-}
-interface ProfileUser{
+};
+type ProfileUser = {
   data: {
-    user: User
-  }
-}
-interface UpdateUserResponse {
+    user: User;
+  };
+};
+type UpdateUserResponse = {
   statusCode: number;
   data: User;
   message: string;
   success: boolean;
-}
+};
 
-
-interface Data {
+type Data = {
   user: User;
-  access_token: string;
-  refresh_token: string;
-}
-interface User {
+  accessToken: string;
+  refreshToken: string;
+};
+type User = {
   id: number;
   username: string;
-  full_name: string;
+  fullName: string;
   email: string;
   avatar?: null;
   location?: null;
   website?: null;
   role: string;
   title?: null;
-  refresh_token: string;
-  is_verified: boolean;
+  refreshToken: string;
+  isVerified: boolean;
+  isDeleteAccount: boolean;
+  verifiedIdentity: boolean;
   createdAt: string;
   updatedAt: string;
-  bio:string
-  gender:string
-  cover:string
-  followers_count:number
-  following_count:number
-  is_two_factor_enabled:boolean
-  privacy_settings: PrivacySettings
-  notification_preferences: NotificationPreference
-  is_saved_backup_codes:boolean
-  isFollowing: boolean
-  status?: string
+  lastSeenAt: string;
+  bio: string;
+  gender: string;
+  cover: string;
+  followingCount: number;
+  followersCount: number;
+  isTwoFactorEnabled: boolean;
+  privacySettings: PrivacySettings;
+  notificationPreferences: NotificationPreference;
+  isSavedBackupCodes: boolean;
+  isFollowing: boolean;
+  status?: string;
   totalPosts: number;
   totalLikes: number;
   totalBookmarks: number;
-  public_key?:string
-}
+  publicKey?: string;
+  latitude: number;
+  longitude: number;
+};
 
-interface JwtResponsePayload {
+type JwtResponsePayload = {
   id: number;
   email: string;
   iat: number;
   exp: number;
-  role: 'user' | 'admin' | 'super-admin';
-}
+  role: "user" | "admin" | "super-admin";
+};
 
-interface NotificationPreference{
-    push_notification: boolean;
-    email_notification: boolean;
-    prayer_time_notification: boolean;
-    like_post: boolean;
-    comment_post: boolean;
-    mention: boolean;
-    new_follower: boolean;
-    dm: boolean;
-    islamic_event: boolean;
-}
+type NotificationPreference = {
+  pushNotification: boolean;
+  emailNotification: boolean;
+  prayerTimeNotification: boolean;
+  likePost: boolean;
+  commentPost: boolean;
+  mention: boolean;
+  newFollower: boolean;
+  dm: boolean;
+  islamicEvent: boolean;
+};
 
-interface PrivacySettings {
+type PrivacySettings = {
   message: string;
-  post_see: string;
-  active_status: boolean;
-  read_receipts: boolean;
-  location_share: boolean;
-  private_account: boolean;
-}
+  postSee: string;
+  activeStatus: boolean;
+  readReceipts: boolean;
+  locationShare: boolean;
+  privateAccount: boolean;
+};
 
- interface UserStats {
+type UserStats = {
   totalPosts: number;
-  followers_count:number
-  following_count:number
+  followers_count: number;
+  following_count: number;
   totalLikes: number;
   totalBookmarks: number;
-}
+};
+
+type DiscoverPeopleResponse = {
+  statusCode: number;
+  data: DiscoverPeopleData;
+  message: string;
+  success: boolean;
+};
+type DiscoverPeopleData = {
+  page: number;
+  totalPages: number;
+  total: number;
+  users?: (PeopleEntry)[] | null;
+};
+type PeopleEntry = {
+  id: number;
+  username: string;
+  fullName: string;
+  avatar?: string | null;
+  location: string;
+  title?: null;
+  interests: string[];
+  cover?: string | null;
+  bio?: string | null;
+  followersCount: string;
+  followingCount: string;
+  postsCount: string;
+  isFollowing: boolean;
+  verifiedIdentity: boolean;
+  dob: string;
+};
+
+type DiscoverParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  location?: string;
+  title?: string;
+  interests?: string[];
+};

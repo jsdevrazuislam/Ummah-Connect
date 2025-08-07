@@ -1,33 +1,35 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { ImageIcon } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import type React from "react";
 
-interface ImageUploadProps {
-  onImageSelect: (imageUrl: File) => void
-  accept?:string
-  disabled?:boolean
-}
+import { ImageIcon } from "lucide-react";
+import { useRef } from "react";
 
-export function ImageUpload({ onImageSelect, accept='image/*', disabled}: ImageUploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+type ImageUploadProps = {
+  onImageSelect: (imageUrl: File) => void;
+  accept?: string;
+  disabled?: boolean;
+};
+
+export function ImageUpload({ onImageSelect, accept = "image/*", disabled }: ImageUploadProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleButtonClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      onImageSelect(file)
+      onImageSelect(file);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        fileInputRef.current.value = "";
       }
     }
-  }
+  };
 
   return (
     <div>
@@ -45,5 +47,5 @@ export function ImageUpload({ onImageSelect, accept='image/*', disabled}: ImageU
         <span className="sr-only">Add image</span>
       </Button>
     </div>
-  )
+  );
 }

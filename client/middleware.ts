@@ -1,19 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
 import { jwtDecode } from "jwt-decode";
+import { NextResponse } from "next/server";
 
 const publicRoutes = [
   "/login",
   "/register",
   "/verify-email",
   "/forgot-password",
+  "/terms",
+  "/privacy",
 ];
-
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("access_token")?.value;
 
-  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublic = publicRoutes.some(route => pathname.startsWith(route));
 
   if (!isPublic && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
@@ -26,9 +29,11 @@ export async function middleware(req: NextRequest) {
       if (pathname === "/login") {
         if (user.role === "admin") {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
-        } else if (user.role === 'super-admin') {
+        }
+        else if (user.role === "super-admin") {
           return NextResponse.redirect(new URL("/super-admin/dashboard", req.url));
-        } else if (user.role === 'user') {
+        }
+        else if (user.role === "user") {
           return NextResponse.redirect(new URL("/", req.url));
         }
       }
@@ -42,7 +47,8 @@ export async function middleware(req: NextRequest) {
           headers: requestHeaders,
         },
       });
-    } catch (err) {
+    }
+    catch (err) {
       console.error("Failed to decode token:", err);
       return NextResponse.redirect(new URL("/login", req.url));
     }

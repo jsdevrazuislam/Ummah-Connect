@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfileLoading() {
   return (
@@ -19,8 +19,8 @@ export default function ProfileLoading() {
             <Skeleton className="h-7 w-48" />
             <Skeleton className="h-5 w-32" />
             <div className="space-y-2">
-              <Skeleton className="h-4 w-full max-w-md" /> 
-              <Skeleton className="h-4 w-3/4 max-w-sm" /> 
+              <Skeleton className="h-4 w-full max-w-md" />
+              <Skeleton className="h-4 w-3/4 max-w-sm" />
             </div>
             <div className="flex gap-6 pt-2">
               <div className="flex gap-1">
@@ -39,7 +39,7 @@ export default function ProfileLoading() {
           </div>
 
           <div className="flex gap-2">
-            <Skeleton className="h-9 w-20" /> 
+            <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-9" />
           </div>
@@ -49,10 +49,10 @@ export default function ProfileLoading() {
       <div className="border-t">
         <div className="px-6 py-4">
           <div className="flex justify-between items-center mb-6">
-            <Skeleton className="h-6 w-16" /> 
+            <Skeleton className="h-6 w-16" />
             <div className="flex gap-2">
               <Skeleton className="h-8 w-8" />
-              <Skeleton className="h-8 w-8" /> 
+              <Skeleton className="h-8 w-8" />
             </div>
           </div>
 
@@ -90,5 +90,5 @@ export default function ProfileLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

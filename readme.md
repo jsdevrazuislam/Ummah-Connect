@@ -1,5 +1,21 @@
 # 📱 Ummah Connect – Full Stack Social Media Application
 
+![Home Feed Preview](https://i.ibb.co/SwShtBTW/home-feed.png)
+![Discover People Preview](https://i.ibb.co/BHV5Kh8k/discover-feed.png)
+![Live Start Preview](https://i.ibb.co/cKZdmHYr/stream-start.png)
+![Live Start Preview](https://i.ibb.co/vCLhK77D/live-start.png)
+![Bookmark](https://i.ibb.co/bgRtb4BK/bookmark-post.png)
+![Message Preview](https://i.ibb.co/jkWDVMRH/message-2.png)
+![Message Preview](https://i.ibb.co/5XNwRqNN/message.png)
+![Notification Preview](https://i.ibb.co/TD5VHYVX/notification.png)
+![Prayer Time](https://i.ibb.co/G4xv8J2D/prayer-time.png)
+![Profile View](https://i.ibb.co/XZZX5S2f/profile-view.png)
+![Settings Profile View](https://i.ibb.co/pv65QmzC/settings-page.png)
+![Shared Post View](https://i.ibb.co/RT6bq8XD/share-post.png)
+![Shorts View](https://i.ibb.co/9kyfmVFK/shorts.png)
+![Story View](https://i.ibb.co/d0KWbJTN/story-view.png)
+![Create Story View](https://i.ibb.co/Rkf1mCYm/story.png)
+
 Ummah Connect is a modern, scalable, and secure full-stack social media platform built with a monorepo architecture using **Next.js (Frontend)** and **Express.js (Backend)**. It integrates powerful features such as **adaptive HLS video streaming**, **real-time messaging**, **live streams**, **2FA**, and **prayer-time reminders** for a truly global and inclusive user experience.
 
 ---

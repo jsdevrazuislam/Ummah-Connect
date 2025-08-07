@@ -1,30 +1,34 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import {
-  ThemeProvider as NextThemesProvider,
-  type ThemeProviderProps,
-} from 'next-themes'
-import { useStore } from '@/store/store'
-import { useSocketStore } from '@/hooks/use-socket';
+import type { ThemeProviderProps } from "next-themes";
 
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { useEffect, useState } from "react";
+
+import { useSocketStore } from "@/hooks/use-socket";
+import { useStore } from "@/store/store";
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-
   const { initializeSocket, disconnectSocket } = useSocketStore();
-  const { initialLoading } = useStore()
+  const { initialLoading } = useStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
-  React.useEffect(() => {
-    initializeSocket();
-    return () => {
-      disconnectSocket();
-    };
-  }, []);;
+  useEffect(() => {
+    if (isHydrated) {
+      initializeSocket();
+      return () => {
+        disconnectSocket();
+      };
+    }
+  }, [isHydrated]);
 
-  React.useEffect(() => {
-    initialLoading()
-  }, [])
+  useEffect(() => {
+    initialLoading();
+  }, []);
 
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
 }

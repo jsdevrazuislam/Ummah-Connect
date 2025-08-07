@@ -1,23 +1,25 @@
-import { cn } from "@/lib/utils"
-import HlsVideoPlayer from "@/components/hsl-video-player"
-import Image from "next/image"
+import Image from "next/image";
 
-export const PostMedia = ({ 
-  media, 
+import HlsVideoPlayer from "@/components/hsl-video-player";
+import { cn } from "@/lib/utils";
+
+export function PostMedia({
+  media,
   contentType,
   altText = "Post media",
   className = "",
-  poster
+  poster,
 }: {
-  media: string | undefined
-  contentType: 'picture' | 'video' | 'text' | 'audio' | undefined
-  altText?: string
-  className?: string
-  poster?: string
-}) => {
-  if (!media) return null
+  media: string | undefined;
+  contentType: "picture" | "video" | "text" | "audio" | undefined;
+  altText?: string;
+  className?: string;
+  poster?: string;
+}) {
+  if (!media)
+    return null;
 
-  if (contentType === 'picture') {
+  if (contentType === "picture") {
     return (
       <div className={cn("rounded-lg overflow-hidden border border-border", className)}>
         <Image
@@ -29,20 +31,20 @@ export const PostMedia = ({
           priority={false}
         />
       </div>
-    )
+    );
   }
 
-  if (contentType === 'video') {
+  if (contentType === "video") {
     return (
       <div className={cn("rounded-lg overflow-hidden", className)}>
-        <HlsVideoPlayer 
+        <HlsVideoPlayer
           src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUD_NAME}/video/upload/sp_auto/v1751778607/${media}.m3u8`}
           poster={poster}
           className="w-full max-w-full"
         />
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }

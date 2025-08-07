@@ -1,10 +1,11 @@
-import React from 'react'
-import PrayerTimesPage from '@/app/(dashboard)/prayer-times/prayer-notification-alert'
+import React from "react";
 
-const Page = () => {
+import PrayerTimesPage from "@/app/(dashboard)/prayer-times/prayer-notification-alert";
+
+function Page() {
   return (
     <PrayerTimesPage />
-  )
+  );
 }
 
-export default Page
+export default Page;

@@ -1,5 +1,6 @@
-import redis from '@/config/redis';
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
+
+import redis from "@/config/redis";
 
 /**
  * Generates a random 6-digit numeric code.
@@ -18,8 +19,8 @@ const HASH_SALT_ROUNDS = 10;
  * Generates a random alphanumeric string for a recovery code.
  */
 function generateRandomCode(length: number): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
   const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
@@ -64,25 +65,21 @@ export async function compareRecoveryCode(plainCode: string, hashedCode: string)
  * @param {function(): Promise<T>} cb - An asynchronous callback function that will be executed
  * to fetch or compute the data if it's not found in the cache. This function must return a Promise
  * that resolves to the data of type `T`.
- * @param {number} [ttl=60] - The time-to-live (TTL) for the cached data in seconds.
+ * @param {number} [ttl] - The time-to-live (TTL) for the cached data in seconds.
  * After this duration, the cached item will expire and be re-computed on the next request.
  * Defaults to 60 seconds.
  * @returns {Promise<T>} A Promise that resolves to the cached or newly computed data of type `T`.
  */
-export const getOrSetCache = async <T>(
-  key: string,
-  cb: () => Promise<T>,
-  ttl: number = 60 
-): Promise<T> => {
+export async function getOrSetCache<T>(key: string, cb: () => Promise<T>, ttl: number = 60): Promise<T> {
   const cached = await redis.get(key);
   if (cached) {
     return JSON.parse(cached) as T;
   }
 
   const result = await cb();
-  await redis.set(key, JSON.stringify(result), 'EX', ttl);
+  await redis.set(key, JSON.stringify(result), "EX", ttl);
   return result;
-};
+}
 
 /**
  * Determines the general file type based on its MIME type.
@@ -102,10 +99,14 @@ export const getOrSetCache = async <T>(
  * getFileType('text/plain');    // Returns: 'other'
  * getFileType('application/json'); // Returns: 'other'
  */
-export function getFileType(mimetype: string): 'image' | 'video' | 'audio' | 'pdf' | 'other' {
-  if (mimetype.startsWith('image/')) return 'image';
-  if (mimetype.startsWith('video/')) return 'video';
-  if (mimetype.startsWith('audio/')) return 'audio';
-  if (mimetype === 'application/pdf') return 'pdf';
-  return 'other';
+export function getFileType(mimetype: string): "image" | "video" | "audio" | "pdf" | "other" {
+  if (mimetype.startsWith("image/"))
+    return "image";
+  if (mimetype.startsWith("video/"))
+    return "video";
+  if (mimetype.startsWith("audio/"))
+    return "audio";
+  if (mimetype === "application/pdf")
+    return "pdf";
+  return "other";
 }

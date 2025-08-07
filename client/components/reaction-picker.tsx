@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ThumbsUp } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { react_post } from "@/lib/apis/posts"
-import { toast } from "sonner"
-import updatePostInQueryData from "@/lib/update-post-data"
-import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { ThumbsUp } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
-export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null
+import { Button } from "@/components/ui/button";
+import { reactPost } from "@/lib/apis/posts";
+import { showError } from "@/lib/toast";
+import updatePostInQueryData from "@/lib/update-post-data";
+import { cn } from "@/lib/utils";
 
-interface ReactionPickerProps {
-  onReactionSelect: (reaction: ReactionType) => void
-  currentReaction: ReactionType
-  id: number
-}
+export type ReactionType = "like" | "love" | "haha" | "care" | "sad" | "wow" | "angry" | null;
+
+type ReactionPickerProps = {
+  onReactionSelect: (reaction: ReactionType) => void;
+  currentReaction: ReactionType;
+  id: number;
+};
 
 export function ReactionPicker({ onReactionSelect, currentReaction, id }: ReactionPickerProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const pickerRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const { mutate } = useMutation({
-    mutationFn: react_post,
+    mutationFn: reactPost,
     onSuccess: (updateData, variable) => {
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) =>
-        updatePostInQueryData(oldData, variable.id, updateData?.data)
-      )
+      queryClient.setQueryData(["get_all_posts"], (oldData: QueryOldDataPayload) =>
+        updatePostInQueryData(oldData, variable.id, updateData?.data));
     },
-    onError: (error) => toast.error(error.message)
-  })
+    onError: error => showError(error.message),
+  });
 
   const reactions = [
     { type: "like", emoji: "/emoji/like.png", label: "Like" },
@@ -42,58 +42,60 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
     { type: "sad", emoji: "/emoji/sad.png", label: "Sad" },
     { type: "wow", emoji: "/emoji/wow.png", label: "Wow" },
     { type: "angry", emoji: "/emoji/angry.png", label: "Angry" },
-  ] as const
+  ] as const;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+        setIsOpen(false);
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleReactionClick = (reaction: ReactionType) => {
-    const newReaction = reaction === currentReaction ? null : reaction
-    onReactionSelect(newReaction)
+    const newReaction = reaction === currentReaction ? null : reaction;
+    onReactionSelect(newReaction);
 
     const payload = {
-      react_type: newReaction ?? '',
-      icon: reactions.find(r => r.type === newReaction)?.emoji ?? '',
-      id
-    }
+      reactType: newReaction ?? "",
+      icon: reactions.find(r => r.type === newReaction)?.emoji ?? "",
+      id,
+    };
 
-    mutate(payload)
-    setIsOpen(false)
-  }
+    mutate(payload);
+    setIsOpen(false);
+  };
 
   const handleMainButtonClick = () => {
     if (currentReaction) {
-      handleReactionClick(currentReaction)
-    } else {
-      handleReactionClick("like")
+      handleReactionClick(currentReaction);
     }
-  }
+    else {
+      handleReactionClick("like");
+    }
+  };
 
   const getCurrentReactionEmoji = () => {
-    if (!currentReaction) return null
-    const reaction = reactions.find(r => r.type === currentReaction)
-    return reaction?.emoji
-  }
+    if (!currentReaction)
+      return null;
+    const reaction = reactions.find(r => r.type === currentReaction);
+    return reaction?.emoji;
+  };
 
   const getCurrentReactionColor = () => {
     switch (currentReaction) {
-      case "like": return "text-blue-500"
-      case "love": return "text-red-500"
-      case "haha": return "text-yellow-500"
-      case "care": return "text-orange-500"
-      case "sad": return "text-purple-500"
-      case "wow": return "text-yellow-500"
-      case "angry": return "text-red-600"
-      default: return "text-muted-foreground"
+      case "like": return "text-blue-500";
+      case "love": return "text-red-500";
+      case "haha": return "text-yellow-500";
+      case "care": return "text-orange-500";
+      case "sad": return "text-purple-500";
+      case "wow": return "text-yellow-500";
+      case "angry": return "text-red-600";
+      default: return "text-muted-foreground";
     }
-  }
+  };
 
   return (
     <div
@@ -108,11 +110,13 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
         className={cn("text-muted-foreground gap-1 px-2", getCurrentReactionColor())}
         onClick={handleMainButtonClick}
       >
-        {currentReaction ? (
-          <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4" />
-        ) : (
-          <ThumbsUp className="h-4 w-4" />
-        )}
+        {currentReaction
+          ? (
+              <Image width={16} height={16} src={getCurrentReactionEmoji()!} alt="emoji" className="h-4 w-4" />
+            )
+          : (
+              <ThumbsUp className="h-4 w-4" />
+            )}
         <span className="ml-1">
           {currentReaction ? currentReaction.charAt(0).toUpperCase() + currentReaction.slice(1) : "Like"}
         </span>
@@ -128,12 +132,12 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
           >
             <div className="flex">
-              {reactions.map((reaction) => (
+              {reactions.map(reaction => (
                 <motion.button
                   key={reaction.type}
                   className={cn(
                     "h-10 w-10 flex items-center justify-center hover:bg-muted rounded-full",
-                    currentReaction === reaction.type && "bg-muted scale-110"
+                    currentReaction === reaction.type && "bg-muted scale-110",
                   )}
                   onClick={() => handleReactionClick(reaction.type)}
                   title={reaction.label}
@@ -148,5 +152,5 @@ export function ReactionPicker({ onReactionSelect, currentReaction, id }: Reacti
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

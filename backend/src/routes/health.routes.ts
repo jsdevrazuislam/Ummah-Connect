@@ -1,4 +1,6 @@
-import { Response, Router, Request } from "express";
+import type { Request, Response } from "express";
+
+import { Router } from "express";
 
 const router = Router();
 
@@ -7,7 +9,5 @@ router.get("/", (req: Request, res: Response) => {
     message: "Server is working fine...",
   });
 });
-
-export const basePath = '/health-check';
 
 export default router;

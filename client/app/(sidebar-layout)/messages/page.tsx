@@ -1,10 +1,11 @@
-import React from 'react'
-import ConversationPage from '@/app/(sidebar-layout)/messages/message-details';
+import React from "react";
 
-const ConversationList = async () => {
-    return (
-        <ConversationPage />
-    )
+import ConversationPage from "@/app/(sidebar-layout)/messages/message-details";
+
+async function ConversationList() {
+  return (
+    <ConversationPage />
+  );
 }
 
-export default ConversationList
+export default ConversationList;

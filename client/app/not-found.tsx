@@ -1,11 +1,10 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Home, Search, ArrowLeft, Users, MessageCircle } from "lucide-react"
+import { ArrowLeft, Home, MessageCircle, Search, Users } from "lucide-react";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function NotFound() {
-
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
@@ -47,13 +46,13 @@ export default function NotFound() {
             <p className="text-sm text-muted-foreground mb-4">Or try one of these popular sections:</p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/feed" className="flex items-center gap-2">
+                <Link href="/" className="flex items-center gap-2">
                   <MessageCircle className="w-3 h-3" />
                   Feed
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/discover" className="flex items-center gap-2">
+                <Link href="/discover-people" className="flex items-center gap-2">
                   <Search className="w-3 h-3" />
                   Discover
                 </Link>
@@ -68,7 +67,7 @@ export default function NotFound() {
           </div>
 
           <div className="pt-4">
-            <Link href='/'>
+            <Link href="/">
               <Button
                 variant="link"
                 className="text-muted-foreground hover:text-foreground"
@@ -81,5 +80,5 @@ export default function NotFound() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

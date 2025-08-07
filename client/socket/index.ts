@@ -1,15 +1,17 @@
+import type { Socket } from "socket.io-client";
+
+import { io } from "socket.io-client";
+
 import { SERVER_URL } from "@/lib/apis/api";
 import { useStore } from "@/store/store";
-import { io, Socket } from "socket.io-client";
 
-
-export const createSocketConnection = (): Socket => {
+export function createSocketConnection(): Socket {
   const token = useStore.getState().accessToken;
   const socket = io(SERVER_URL, {
     withCredentials: true,
     transports: ["websocket"],
     auth: {
-      token
+      token,
     },
   });
 
@@ -22,4 +24,4 @@ export const createSocketConnection = (): Socket => {
   });
 
   return socket;
-};
+}

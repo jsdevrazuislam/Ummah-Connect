@@ -1,8 +1,9 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-import { useStore } from "@/store/store";
 import { jwtDecode } from "jwt-decode";
+
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
+import { useStore } from "@/store/store";
 
 export const SERVER_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const baseURL = `${SERVER_URL}/api/v1`;
@@ -20,9 +21,10 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-const isTokenExpiringSoon = () => {
+function isTokenExpiringSoon() {
   const accessToken = Cookies.get(ACCESS_TOKEN);
-  if (!accessToken) return true;
+  if (!accessToken)
+    return true;
 
   try {
     const decodedToken = jwtDecode(accessToken);
@@ -32,13 +34,14 @@ const isTokenExpiringSoon = () => {
     return decodedToken.exp
       ? decodedToken.exp - currentTime < bufferTime
       : false;
-  } catch (e) {
+  }
+  catch (e) {
     console.log(e);
     return true;
   }
-};
+}
 
-const refreshAuthToken = async () => {
+async function refreshAuthToken() {
   const refreshToken = Cookies.get(REFRESH_TOKEN);
   if (!refreshToken) {
     useStore.getState().logout();
@@ -66,19 +69,20 @@ const refreshAuthToken = async () => {
 
     api.defaults.headers.Authorization = `Bearer ${data.accessToken}`;
     return data.accessToken;
-  } catch (error) {
-    console.log(error)
+  }
+  catch {
     useStore.getState().logout();
     throw new Error("Token refresh failed");
   }
-};
+}
 
 api.interceptors.request.use(async (config) => {
   if (await isTokenExpiringSoon()) {
     try {
       const newToken = await refreshAuthToken();
       config.headers.Authorization = `Bearer ${newToken}`;
-    } catch (error) {
+    }
+    catch (error) {
       console.error("Failed to refresh token before request", error);
     }
   }
@@ -86,10 +90,10 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  response => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.data?.message === "jwt expired" || error.response?.data?.message === 'jwt malformed') {
+    if (error.response?.data?.message === "jwt expired" || error.response?.data?.message === "jwt malformed") {
       try {
         const refreshToken = Cookies.get(REFRESH_TOKEN);
         if (!refreshToken) {
@@ -108,16 +112,17 @@ api.interceptors.response.use(
 
         api.defaults.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
-      } catch (refreshError) {
+      }
+      catch (refreshError) {
         useStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 api.interceptors.response.use(
-  (response) => response,
+  response => response,
   (error) => {
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message;
@@ -125,17 +130,21 @@ api.interceptors.response.use(
     let customMessage = "An error occurred";
     if (status === 401) {
       customMessage = message;
-    } else if (status === 403) {
+    }
+    else if (status === 403) {
       customMessage = message;
-    } else if (status === 404) {
+    }
+    else if (status === 404) {
       customMessage = message;
-    } else if (status >= 500) {
+    }
+    else if (status >= 500) {
       customMessage = message;
-    } else {
+    }
+    else {
       customMessage = message;
     }
 
     return Promise.reject(new Error(customMessage));
-  }
+  },
 );
 export default api;

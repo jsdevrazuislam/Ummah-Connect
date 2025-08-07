@@ -1,44 +1,45 @@
-interface ReactPayload{
-    react_type:string, 
-    icon:string,
-    id:number
-    postId?: number
-    message?:string
-}
+type ReactPayload = {
+  reactType: string;
+  icon: string;
+  id: number;
+  postId?: number;
+  message?: string;
+};
 
-interface SharePayload{
-    postId: number
-    message?:string
-    visibility?:string
-}
+type SharePayload = {
+  postId: number;
+  message?: string;
+  visibility?: string;
+};
 
-interface CommentPayload{
-    content: string
-    postId: number
-    type?:string
-}
-interface EditCommentPayload{
-    content: string
-    commentId: number
-    postId: number
-    isReply?:boolean
-}
+type CommentPayload = {
+  content: string;
+  postId: number;
+  type?: string;
+};
+type EditCommentPayload = {
+  content: string;
+  commentId: number;
+  postId: number;
+  isReply?: boolean;
+  type?: string;
+};
 
-interface DeletePostCommentPayload{
-    commentId: number,
-    parentId: number
-}
+type DeletePostCommentPayload = {
+  commentId: number;
+  parentId: number;
+};
 
-interface SendMessagePayload{
-    conversationId:number,
-    content:string
-    type:string
-    id:number
-    key_for_recipient: string
-    key_for_sender: string
-}
-interface ReplyCommentPayload{
-    content:string, 
-    postId:number,
-    id:number
-}
+type SendMessagePayload = {
+  conversationId: number;
+  content: string;
+  id: number;
+  keyForRecipient: string;
+  keyForSender: string;
+};
+type ReplyCommentPayload = {
+  content: string;
+  postId: number;
+  id: number;
+  type?: string;
+};

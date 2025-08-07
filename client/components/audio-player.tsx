@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Play, Pause, Gauge } from "lucide-react";
+import { Gauge, Pause, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +12,14 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { formatTime, parseFormattedTime } from "@/lib/utils";
 
-
 export function AudioPlayer({
   audioUrl,
   duration,
-  isOwnMessage
+  isOwnMessage,
 }: {
   audioUrl: string;
   duration: string;
-  isOwnMessage?: boolean
+  isOwnMessage?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -27,16 +27,17 @@ export function AudioPlayer({
   const [seekTime, setSeekTime] = useState<number | null>(null);
   const [playbackRate, setPlaybackRate] = useState(1);
   const maxDuration = parseFormattedTime(duration);
-  const displayedTime = !isNaN(seekTime ?? currentTime) ? (seekTime ?? currentTime) : 0;
-
+  const displayedTime = !Number.isNaN(seekTime ?? currentTime) ? (seekTime ?? currentTime) : 0;
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio)
+      return;
 
     if (isPlaying) {
       audio.pause();
-    } else {
+    }
+    else {
       audio.play();
     }
 
@@ -73,7 +74,8 @@ export function AudioPlayer({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio)
+      return;
 
     const handleEnded = () => {
       setIsPlaying(false);
@@ -111,29 +113,33 @@ export function AudioPlayer({
           step={0.1}
           onValueChange={handleSeek}
           onValueCommit={handleSeekCommit}
-          thumbClassName='hidden'
-          trackClassName={isOwnMessage ? '' : `bg-primary`}
+          thumbClassName="hidden"
+          trackClassName={isOwnMessage ? "" : `bg-primary`}
         />
       </div>
 
       <div>
         {isPlaying && <span className="text-xs text-gray-600">{formatTime(displayedTime)}</span>}
         {!isPlaying && <span className="text-xs text-gray-600">{formatTime(Number(duration))}</span>}
-        {isPlaying && <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800">
-              <Gauge className="h-4 w-4" />
-              {playbackRate}x
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-20 text-xs">
-            {[1, 1.5, 2, 2.5].map((rate) => (
-              <DropdownMenuItem key={rate} onClick={() => changeSpeed(rate)}>
-                {rate}x
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>}
+        {isPlaying && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800">
+                <Gauge className="h-4 w-4" />
+                {playbackRate}
+                x
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-20 text-xs">
+              {[1, 1.5, 2, 2.5].map(rate => (
+                <DropdownMenuItem key={rate} onClick={() => changeSpeed(rate)}>
+                  {rate}
+                  x
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );

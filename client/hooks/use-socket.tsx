@@ -1,14 +1,16 @@
+import type { Socket } from "socket.io-client";
+
 import { create } from "zustand";
-import { Socket } from "socket.io-client";
+
 import { createSocketConnection } from "@/socket";
 
-interface SocketState {
+type SocketState = {
   socket: Socket | null;
   initializeSocket: () => void;
   disconnectSocket: () => void;
-}
+};
 
-export const useSocketStore = create<SocketState>((set) => ({
+export const useSocketStore = create<SocketState>(set => ({
   socket: null,
 
   initializeSocket: () => {
@@ -22,6 +24,7 @@ export const useSocketStore = create<SocketState>((set) => ({
     const { socket } = useSocketStore.getState();
     if (socket) {
       socket.disconnect();
+      socket.close();
       set({ socket: null });
     }
   },

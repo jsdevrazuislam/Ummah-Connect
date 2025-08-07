@@ -1,7 +1,7 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CreatePostForm } from "@/components/create-post-form";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useStore } from "@/store/store";
 
 export function GlobalModal() {

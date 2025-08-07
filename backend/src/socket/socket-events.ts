@@ -1,22 +1,41 @@
-import { Socket, Server } from "socket.io";
-import { LiveStream, MessageStatus, User, StreamChatConversation } from "@/models";
-import { SocketEventEnum, GRACE_PERIOD_MS } from "@/constants";
+import type { Server, Socket } from "socket.io";
+
 import { Op } from "sequelize";
+
 import redis from "@/config/redis";
+import { GRACE_PERIOD_MS, SocketEventEnum } from "@/constants";
+import { LiveStream, MessageStatus, StreamChatConversation, User } from "@/models";
 import { getConversationUserIds } from "@/utils/query";
 
-export const runSocketEvents = (socket: Socket, io: Server) => {
-  socket.on(SocketEventEnum.MESSAGE_RECEIVED, async (messageId) => {
-    await MessageStatus.update(
-      { status: "delivered" },
+export function runSocketEvents(socket: Socket, io: Server) {
+  socket.on(SocketEventEnum.MESSAGE_RECEIVED, async ({ id, conversationId, tempId }) => {
+    const messageStatus = await MessageStatus.findOne(
       {
         where: {
-          message_id: messageId,
-          user_id: socket?.user?.id,
+          messageId: id,
+          userId: socket?.user?.id,
           status: { [Op.ne]: "seen" },
         },
-      }
+      },
     );
+
+    if (!messageStatus)
+      return;
+
+    messageStatus.status = "delivered";
+    await messageStatus.save();
+
+    socket
+      .to(`conversation_${conversationId?.toString()}`)
+      .emit(SocketEventEnum.READ_MESSAGE, {
+        conversationId,
+        messageId: id,
+        tempId,
+        status: {
+          status: "delivered",
+          id: messageStatus.id,
+        },
+      });
   });
 
   socket.on(SocketEventEnum.TYPING, ({ conversationId, userId }) => {
@@ -33,19 +52,19 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
       callerUserId,
       callerName,
       callerAvatar,
-      authToken
+      authToken,
     }) => {
       socket.to(`user:${callerUserId}`).emit(SocketEventEnum.CALL_REJECTED, {
         roomName,
         rejectedByName: rejectedByUserId,
         message: "The user is currently busy or declined your call.",
-        callerName: callerName,
-        callerAvatar: callerAvatar,
+        callerName,
+        callerAvatar,
       });
 
       await redis.del(`call:${roomName}`);
       await redis.del(`call-token:${roomName}:${authToken}`);
-    }
+    },
   );
 
   socket.on(
@@ -68,7 +87,7 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
               callerAvatar,
               callerName,
             });
-            socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
+          socket.to(`user:${call.callerId}`).emit(SocketEventEnum.CALLER_LEFT, {
             message: "User left from room",
             callerAvatar,
             callerName,
@@ -78,7 +97,7 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
           await redis.del(`call-token:${roomName}:${authToken}`);
         }
       }
-    }
+    },
   );
 
   socket.on(
@@ -89,10 +108,10 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
         receiverId,
         message: "Your call has been accepted.",
         callType,
-        authToken
+        authToken,
       });
 
-       await redis.set(
+      await redis.set(
         `call:${roomName}`,
         JSON.stringify({
           callerId: callerUserId,
@@ -101,9 +120,9 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
           status: "accept",
         }),
         "EX",
-        60
+        60,
       );
-    }
+    },
   );
 
   socket.on(
@@ -120,22 +139,21 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
           await redis.del(key);
 
           await LiveStream.update(
-            { ended_at: new Date(), is_active: false },
-            { where: { id: streamId } }
+            { endedAt: new Date(), isActive: false },
+            { where: { id: streamId } },
           );
 
           await StreamChatConversation.destroy({
-            where: { stream_id: streamId },
+            where: { streamId },
           });
 
           io.to(`live_stream_${streamId}`).emit(
             SocketEventEnum.HOST_END_LIVE_STREAM,
-            { username }
+            { username },
           );
-          console.log(`[Grace Timer Expired] Stream ${streamId} ended`);
         }
       }, GRACE_PERIOD_MS);
-    }
+    },
   );
 
   socket.on(SocketEventEnum.HOST_JOIN_LIVE_STREAM, async ({ streamId }) => {
@@ -144,7 +162,6 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
 
     if (stillWaiting === "waiting") {
       await redis.del(key);
-      console.log(`[Grace Cancelled] Host rejoined Stream ${streamId}`);
     }
   });
 
@@ -154,13 +171,13 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
 
   socket.on(SocketEventEnum.SOCKET_DISCONNECTED, async () => {
     console.log(
-      `User has disconnected userId: ${socket.user?.id || "unknown"}`
+      `User has disconnected userId: ${socket.user?.id || "unknown"}`,
     );
     const userId = socket.user?.id;
     if (userId) {
       await User.update(
-        { last_seen_at: new Date() },
-        { where: { id: socket?.user?.id } }
+        { lastSeenAt: new Date() },
+        { where: { id: socket?.user?.id } },
       );
       await redis.set(`last_seen:${userId}`, Date.now());
       const peerIds = await getConversationUserIds(userId);
@@ -180,4 +197,4 @@ export const runSocketEvents = (socket: Socket, io: Server) => {
   socket.on(SocketEventEnum.UNFOLLOW_USER, ({ toUserId, fromUser }) => {
     io.to(`user:${toUserId}`).emit(SocketEventEnum.UNFOLLOW_USER, fromUser);
   });
-};
+}

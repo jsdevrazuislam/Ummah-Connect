@@ -1,8 +1,9 @@
-"use client" 
+"use client";
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Quote } from "lucide-react"
+import { Quote } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const quotes = [
   {
@@ -25,7 +26,7 @@ const quotes = [
     text: "Be in this world as if you were a stranger or a traveler",
     source: "Prophet Muhammad ﷺ (Bukhari)",
   },
-]
+];
 
 export function IslamicQuote() {
   const [currentQuote, setCurrentQuote] = useState({
@@ -36,7 +37,7 @@ export function IslamicQuote() {
   useEffect(() => {
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     setCurrentQuote(randomQuote);
-  }, []); 
+  }, []);
 
   if (!currentQuote) {
     return (
@@ -66,7 +67,8 @@ export function IslamicQuote() {
       </CardHeader>
       <CardContent>
         <p className="border-l-2 pl-4 italic text-sm">
-          {currentQuote.text}{" "}
+          {currentQuote.text}
+          {" "}
           <span className="text-xs text-muted-foreground mt-1 block">
             {currentQuote.source}
           </span>

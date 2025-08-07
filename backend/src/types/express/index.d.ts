@@ -1,24 +1,23 @@
-import { User } from "@/types/auth";
+import type { User } from "@/types/auth";
 
-interface UploadedFiles {
+type UploadedFiles = {
   cover?: Express.Multer.File[];
   avatar?: Express.Multer.File[];
-}
+};
 
 declare global {
   namespace Express {
+    // eslint-disable-next-line ts/consistent-type-definitions
     interface Request {
       user: User;
     }
   }
 
-  namespace Multer{
-    interface FieldStorage {
+  namespace Multer {
+    type FieldStorage = {
       files?: UploadedFiles;
-    }
+    };
   }
 }
 
-
-
-export {}
+export {};

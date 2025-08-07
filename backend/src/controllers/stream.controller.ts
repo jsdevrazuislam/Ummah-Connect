@@ -1,3 +1,7 @@
+import type { Request, Response } from "express";
+
+import fs from "node:fs";
+
 import sequelize from "@/config/db";
 import {
   generateLiveKitToken,
@@ -6,23 +10,26 @@ import {
 } from "@/config/livekit";
 import redis from "@/config/redis";
 import { SocketEventEnum } from "@/constants";
-import { LiveStream, LiveStreamBan, Shorts, User } from "@/models";
+import { NOTIFICATION_CACHE } from "@/controllers/notification.controller";
+import { LiveStream, LiveStreamBan, Notification, Reaction, Shorts, User } from "@/models";
+import Short from "@/models/shorts.models";
 import StreamChatConversation from "@/models/stream-chat.models";
 import { emitSocketEvent } from "@/socket";
-import ApiError from "@/utils/ApiError";
-import ApiResponse from "@/utils/ApiResponse";
+import ApiError from "@/utils/api-error";
+import ApiResponse from "@/utils/api-response";
 import asyncHandler from "@/utils/async-handler";
 import cloudinary, { getThumbnailFromVideo } from "@/utils/cloudinary";
+import { getOrSetCache } from "@/utils/helper";
 import { getIsBookmarkedLiteral, getIsFollowingLiteral, getTotalCommentsCountLiteral, getTotalReactionsCountLiteral, getUserReactionLiteral } from "@/utils/sequelize-sub-query";
 import { isSpam } from "@/utils/spam-detection-algorithm";
-import { Request, Response } from "express";
-import fs from "fs";
 
+export async function DELETE_SHORT_CACHE() {
+  const keys = await redis.keys(`shorts:*`);
+  if (keys.length > 0)
+    await redis.del(...keys);
+}
 
-const REDIS_KEY = (userId: number | string) => `user:${userId}`;
-
-
-export const generate_livekit_token = asyncHandler(
+export const getStreamToken = asyncHandler(
   async (req: Request, res: Response) => {
     const { roomName, identity } = req.query;
     if (typeof roomName !== "string" || typeof identity !== "string")
@@ -31,14 +38,14 @@ export const generate_livekit_token = asyncHandler(
       identity,
       roomName,
       req.user.avatar,
-      req.user.full_name
+      req.user.fullName,
     );
 
     return res.json(new ApiResponse(200, { token, livekitUrl }, "Success"));
-  }
+  },
 );
 
-export const initiate_call = asyncHandler(
+export const initiateCall = asyncHandler(
   async (req: Request, res: Response) => {
     const { roomName, callType, authToken, receiverId } = req.body;
     const callerId = req.user.id;
@@ -58,17 +65,17 @@ export const initiate_call = asyncHandler(
         status: "pending",
       }),
       "EX",
-      60
+      60,
     );
 
     const socket = req.app.get("io");
 
     socket.to(`user:${receiverId}`).emit(SocketEventEnum.INCOMING_CALL, {
       from: user?.id,
-      authToken: authToken,
-      callType: callType,
-      roomName: roomName,
-      callerName: user?.full_name,
+      authToken,
+      callType,
+      roomName,
+      callerName: user?.fullName,
       callerAvatar: user?.avatar,
     });
 
@@ -82,15 +89,15 @@ export const initiate_call = asyncHandler(
           socket.to(`user:${callerId}`).emit(SocketEventEnum.CALL_TIMEOUT, {
             roomName,
             reason: "NO_ANSWER",
-            message: `${receiverUser?.full_name} didn't answer your call.`,
-            callerName: receiverUser?.full_name,
+            message: `${receiverUser?.fullName} didn't answer your call.`,
+            callerName: receiverUser?.fullName,
             callerAvatar: receiverUser?.avatar,
           });
           socket.to(`user:${receiverId}`).emit(SocketEventEnum.CALL_TIMEOUT, {
             roomName,
             reason: "NO_ANSWER",
             message: "You missed a call.",
-            callerName: user?.full_name,
+            callerName: user?.fullName,
             callerAvatar: user?.avatar,
           });
           await redis.del(`call:${roomName}`);
@@ -100,10 +107,10 @@ export const initiate_call = asyncHandler(
     }, 50000);
 
     res.status(200).json(new ApiResponse(200, null, "Call initialized"));
-  }
+  },
 );
 
-export const validate_call_token = asyncHandler(
+export const validateCallToken = asyncHandler(
   async (req: Request, res: Response) => {
     const { roomName, authToken } = req.query;
     const userId = req.user.id;
@@ -125,8 +132,8 @@ export const validate_call_token = asyncHandler(
     const { callerId, receiverId } = JSON.parse(callMetadata);
 
     if (
-      String(userId) !== String(callerId) &&
-      String(userId) !== String(receiverId)
+      String(userId) !== String(callerId)
+      && String(userId) !== String(receiverId)
     ) {
       throw new ApiError(403, "You are not authorized to join this call");
     }
@@ -134,69 +141,70 @@ export const validate_call_token = asyncHandler(
     return res
       .status(200)
       .json(new ApiResponse(200, null, "Token and user validated"));
-  }
+  },
 );
 
-export const start_live_stream = asyncHandler(
+export const startLiveStream = asyncHandler(
   async (req: Request, res: Response) => {
     const {
       title,
       description,
       category,
       tags,
-      enable_chat,
-      save_recording,
-      notify_followers,
+      enableChat,
+      saveRecording,
+      notifyFollowers,
     } = req.body;
 
     const userId = req.user.id;
     const roomName = `live_${req.user.username}_${Date.now()}`;
 
     const stream = await LiveStream.create({
-      user_id: userId,
+      userId,
       title,
       description,
       category,
       tags,
-      enable_chat,
-      save_recording,
-      notify_followers,
-      room_name: roomName,
-      is_active: true,
-      started_at: new Date(),
+      enableChat,
+      saveRecording,
+      notifyFollowers,
+      roomName,
+      isActive: true,
+      startedAt: new Date(),
     });
 
     const token = generateLiveToken({
       roomName,
       userId: String(userId),
-      userName: req.user.full_name,
+      userName: req.user.fullName,
       isPublisher: true,
     });
 
     return res
       .status(201)
       .json(
-        new ApiResponse(201, { roomName, token, stream }, "Stream started")
+        new ApiResponse(201, { roomName, token, stream }, "Stream started"),
       );
-  }
+  },
 );
 
-export const start_chat_live_stream = asyncHandler(
+export const startChatLiveStream = asyncHandler(
   async (req: Request, res: Response) => {
-    const { stream_id, sender_id, content } = req.body;
+    const { streamId, senderId, content } = req.body;
 
-    if (isSpam(sender_id, content)) {
-      throw new ApiError(400, 'Please avoid spamming. Otherwise er ban you from our platform')
+    if (isSpam(senderId, content)) {
+      throw new ApiError(400, "Please avoid spamming. Otherwise er ban you from our platform");
     }
 
-    const stream = await LiveStream.findOne({ where: { id: stream_id } });
-    if (!stream) throw new ApiError(404, "Live Stream Not Found");
-    if (!stream?.enable_chat)
+    const stream = await LiveStream.findOne({ where: { id: streamId } });
+    if (!stream)
+      throw new ApiError(404, "Live Stream Not Found");
+    if (!stream?.enableChat)
       throw new ApiError(400, "For this live stream chat is disabled");
 
     const message = await StreamChatConversation.create({
-      stream_id,
-      sender_id,
+      streamId,
+      senderId,
       content,
     });
 
@@ -205,7 +213,7 @@ export const start_chat_live_stream = asyncHandler(
         {
           model: User,
           as: "sender",
-          attributes: ["id", "username", "avatar", "full_name"],
+          attributes: ["id", "username", "avatar", "fullName"],
         },
       ],
     });
@@ -213,20 +221,24 @@ export const start_chat_live_stream = asyncHandler(
     if (!fullMessage)
       throw new ApiError(404, "Live Stream Conversation Not Found");
 
+    const responseData = {
+      ...fullMessage.toJSON(),
+    };
+
     emitSocketEvent({
       req,
-      roomId: `live_stream_${stream_id}`,
+      roomId: `live_stream_${streamId}`,
       event: SocketEventEnum.LIVE_CHAT_SEND,
-      payload: fullMessage,
+      payload: responseData,
     });
 
     return res.json(
-      new ApiResponse(200, fullMessage, "Stream details fetched successfully")
+      new ApiResponse(200, responseData, "Stream details fetched successfully"),
     );
-  }
+  },
 );
 
-export const stream_details = asyncHandler(
+export const streamDetails = asyncHandler(
   async (req: Request, res: Response) => {
     const { streamId } = req.query;
 
@@ -235,7 +247,7 @@ export const stream_details = asyncHandler(
     }
 
     const stream = await LiveStream.findOne({
-      where: { id: streamId, is_active: true },
+      where: { id: streamId, isActive: true },
       include: [
         {
           model: User,
@@ -243,7 +255,7 @@ export const stream_details = asyncHandler(
           attributes: [
             "id",
             "username",
-            "full_name",
+            "fullName",
             "avatar",
             [
               sequelize.literal(`(
@@ -253,7 +265,7 @@ export const stream_details = asyncHandler(
                         )`),
               "followerCount",
             ],
-            getIsFollowingLiteral(req.user.id, '"user"."id"'),
+            getIsFollowingLiteral(req.user.id, "\"user\".\"id\""),
           ],
         },
       ],
@@ -265,9 +277,9 @@ export const stream_details = asyncHandler(
 
     const banned = await LiveStreamBan.findOne({
       where: {
-        stream_id: streamId,
-        banned_user_id: req.user.id,
-        banned_by_id: stream?.user_id,
+        streamId,
+        bannedUserId: req.user.id,
+        bannedById: stream?.userId,
       },
     });
 
@@ -275,61 +287,63 @@ export const stream_details = asyncHandler(
       const now = new Date();
       const banTime = new Date(banned.createdAt);
 
-      if (banned.ban_duration === null) {
+      if (banned.banDuration === null) {
         throw new ApiError(
           429,
-          "You are permanently banned from this live stream."
+          "You are permanently banned from this live stream.",
         );
-      } else if (banned.ban_duration === 0) {
-        const isActive = stream?.is_active;
+      }
+      else if (banned.banDuration === 0) {
+        const isActive = stream?.isActive;
         if (isActive) {
           throw new ApiError(
             429,
-            "You are banned from this ongoing live stream."
+            "You are banned from this ongoing live stream.",
           );
         }
-      } else {
-        const expiry = new Date(banTime.getTime() + banned.ban_duration * 1000);
+      }
+      else {
+        const expiry = new Date(banTime.getTime() + banned.banDuration * 1000);
         if (now < expiry) {
           throw new ApiError(
             429,
-            `You are banned from this stream until ${expiry.toLocaleString()}`
+            `You are banned from this stream until ${expiry.toLocaleString()}`,
           );
         }
       }
     }
 
     const count = await redis.get(`report:stream:${streamId}:user:${req.user.id}`);
-    if (parseInt(count ?? "0") >= 5) {
+    if (Number.parseInt(count ?? "0") >= 5) {
       throw new ApiError(429, "You have been removed due to violation");
     }
 
     const token = await generateLiveToken({
-      roomName: stream.room_name,
+      roomName: stream.roomName,
       userId: String(req.user.id),
-      userName: req.user?.full_name,
-      isPublisher: stream.user_id === req.user.id,
+      userName: req.user?.fullName,
+      isPublisher: stream.userId === req.user.id,
     });
 
     return res.json(
       new ApiResponse(
         200,
         { stream, token, livekitUrl: process.env.LIVEKIT_URL },
-        "Stream details fetched successfully"
-      )
+        "Stream details fetched successfully",
+      ),
     );
-  }
+  },
 );
 
-export const get_stream_chats = asyncHandler(
+export const getStreamChats = asyncHandler(
   async (req: Request, res: Response) => {
-    const page = parseInt(req.query.page as string) ?? 1;
-    const limit = parseInt(req.query.limit as string) ?? 50;
+    const page = Number.parseInt(req.query.page as string) ?? 1;
+    const limit = Number.parseInt(req.query.limit as string) ?? 50;
     const skip = (page - 1) * limit;
     const streamId = req.query?.streamId;
 
     const { count, rows } = await StreamChatConversation.findAndCountAll({
-      where: { stream_id: streamId },
+      where: { streamId },
       limit,
       offset: skip,
       order: [["createdAt", "ASC"]],
@@ -337,7 +351,7 @@ export const get_stream_chats = asyncHandler(
         {
           model: User,
           as: "sender",
-          attributes: ["id", "username", "full_name", "avatar"],
+          attributes: ["id", "username", "fullName", "avatar"],
         },
       ],
     });
@@ -350,33 +364,33 @@ export const get_stream_chats = asyncHandler(
           totalPages: Math.ceil(count / limit),
           currentPage: page,
         },
-        "Stream message fetched successfully"
-      )
+        "Stream message fetched successfully",
+      ),
     );
-  }
+  },
 );
 
-export const get_active_lives = asyncHandler(
+export const getActiveLives = asyncHandler(
   async (req: Request, res: Response) => {
     const streams = await LiveStream.findAll({
-      where: { is_active: true },
+      where: { isActive: true },
       include: [
         {
           model: User,
           as: "user",
-          attributes: ["id", "username", "full_name", "avatar"],
+          attributes: ["id", "username", "fullName", "avatar"],
         },
       ],
-      order: [["started_at", "DESC"]],
+      order: [["startedAt", "DESC"]],
     });
 
     return res
       .status(200)
       .json(new ApiResponse(200, streams, "Active live streams"));
-  }
+  },
 );
 
-export const end_live_stream = asyncHandler(
+export const endLiveStream = asyncHandler(
   async (req: Request, res: Response) => {
     const { streamId } = req.body;
     const hostId = req.user.id;
@@ -391,25 +405,20 @@ export const end_live_stream = asyncHandler(
       throw new ApiError(404, "Stream not found");
     }
 
-    if (stream.user_id !== hostId) {
+    if (stream.userId !== hostId) {
       throw new ApiError(403, "You are not authorized to end this stream");
     }
 
     await stream.update({
-      is_active: false,
-      ended_at: new Date(),
+      isActive: false,
+      endedAt: new Date(),
     });
 
     await StreamChatConversation.destroy({
-      where: { stream_id: streamId },
+      where: { streamId },
     });
 
-    await roomServiceClient
-      .deleteRoom(stream.room_name)
-      .then(() =>
-        console.log(`LiveKit room '${stream.room_name}' deleted successfully.`)
-      )
-      .catch((error) => console.log("Room delete error", error));
+    await roomServiceClient.deleteRoom(stream.roomName);
 
     emitSocketEvent({
       req,
@@ -424,23 +433,27 @@ export const end_live_stream = asyncHandler(
     return res
       .status(200)
       .json(
-        new ApiResponse(200, null, "Stream ended and room deleted successfully")
+        new ApiResponse(200, null, "Stream ended and room deleted successfully"),
       );
-  }
+  },
 );
 
-export const upload_short = asyncHandler(async (req: Request, res: Response) => {
+export const uploadShort = asyncHandler(async (req: Request, res: Response) => {
   const { description } = req.body;
   const videoPath = req?.file?.path;
 
-  if (!videoPath) throw new ApiError(400, 'Video file is required');
+  if (!videoPath)
+    throw new ApiError(400, "Video file is required");
 
   const publicId = `${Date.now()}`;
 
   const uploadRes = await cloudinary.uploader.upload(videoPath, {
+    // eslint-disable-next-line camelcase
     resource_type: "video",
+    // eslint-disable-next-line camelcase
     public_id: publicId,
     folder: "ummah_connect/shorts",
+    // eslint-disable-next-line camelcase
     use_filename: true,
     overwrite: true,
   });
@@ -449,105 +462,191 @@ export const upload_short = asyncHandler(async (req: Request, res: Response) => 
 
   const short = await Shorts.create({
     userId: req.user.id,
-    video_id: uploadRes.public_id,
+    videoId: uploadRes.public_id,
     description,
-    is_public: true,
-    thumbnail_url: getThumbnailFromVideo(uploadRes?.url, req?.file?.mimetype ?? '')
+    isPublic: true,
+    thumbnailUrl: getThumbnailFromVideo(uploadRes?.url, req?.file?.mimetype ?? ""),
   });
 
-  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
-  if (keys.length > 0) await redis.del(...keys);
+  const responseData = {
+    ...short.toJSON(),
+    user: {
+      id: req.user.id,
+      fullName: req.user.fullName,
+      avatar: req.user.avatar,
+      username: req.user.username,
+    },
+    totalCommentsCount: 0,
+    totalReactionsCount: 0,
+    isFollowing: false,
+    isBookmarked: false,
+    currentUserReaction: null,
+  };
 
-  res.json(new ApiResponse(200, short, "Short uploaded successfully"));
+  await DELETE_SHORT_CACHE();
+  res.json(new ApiResponse(200, responseData, "Short uploaded successfully"));
 });
 
-
-export const get_shorts = asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+export const getShorts = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
-  const cacheKey = `${REDIS_KEY(req.user.id)}:shorts:page:${page}:limit:${limit}`;
+  const cacheKey = `shorts:page:${page}:limit:${limit}:user=${req.user.id}`;
 
   const cached = await redis.get(cacheKey);
   if (cached) {
     return res.json(new ApiResponse(200, JSON.parse(cached), "Shorts fetched (cached)"));
   }
 
-
-  const { rows: shorts, count } = await Shorts.findAndCountAll({
-    where: { is_public: true },
-    include: [
-      { model: User, as: 'user', attributes: ['id', 'username', 'avatar', 'full_name'] },
-    ],
-    attributes: {
+  const result = await getOrSetCache(cacheKey, async () => {
+    const { rows: shorts, count } = await Shorts.findAndCountAll({
+      where: { isPublic: true },
       include: [
-        getTotalCommentsCountLiteral('"Short"'),
-        getTotalReactionsCountLiteral('"Short"'),
-        getIsBookmarkedLiteral(req.user.id, '"Short"'),
-        getUserReactionLiteral(req.user.id, '"Short"'),
+        { model: User, as: "user", attributes: ["id", "username", "avatar", "fullName"] },
       ],
-    },
-    order: [['createdAt', 'DESC']],
-    limit,
-    offset
-  });
+      attributes: {
+        include: [
+          getTotalCommentsCountLiteral("\"Short\"", "shortId"),
+          getTotalReactionsCountLiteral("\"Short\"", "shortId"),
+          getIsBookmarkedLiteral(req.user.id, "\"Short\""),
+          getUserReactionLiteral(req.user.id, "\"Short\"", "shortId"),
+          getIsFollowingLiteral(req.user.id, "\"Short\".\"userId\""),
+        ],
+      },
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
+    });
 
-  const result = {
-    shorts,
-    totalPages: Math.ceil(count / limit),
-    currentPage: page,
-    totalItems: count,
-  };
+    const result = {
+      shorts,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalItems: count,
+    };
 
-  await redis.set(cacheKey, JSON.stringify(result), "EX", 60 * 5);
+    return result;
+  }, 60 * 60 * 24);
 
   return res.json(
     new ApiResponse(
       200,
       result,
-      'Shorts fetched'
-    )
+      "Shorts fetched",
+    ),
   );
 });
 
-export const get_single_short = asyncHandler(async (req: Request, res: Response) => {
+export const deleteShort = asyncHandler(async (req: Request, res: Response) => {
+  const short = await Shorts.findOne({ where: { id: req.params.shortId } });
 
-  const short = await Shorts.findOne({
-    where: { is_public: true, id: req.params.id },
-    include: [
-      { model: User, as: 'user', attributes: ['id', 'username', 'avatar', 'full_name'] },
-    ],
+  if (!short)
+    throw new ApiError(404, "Short not found");
+  if (short.userId !== req.user.id)
+    throw new ApiError(403, "Unauthorized");
+
+  await short.destroy();
+
+  await cloudinary.uploader.destroy(short.videoId, {
+    // eslint-disable-next-line camelcase
+    resource_type: "auto",
+  });
+
+  await DELETE_SHORT_CACHE();
+
+  return res.json(new ApiResponse(200, {}, "Short deleted"));
+});
+
+export const videoReact = asyncHandler(async (req: Request, res: Response) => {
+  const { reactType, icon } = req.body;
+  const shortId = req.params?.videoId;
+  const userId = req.user?.id;
+
+  const existingReaction = await Reaction.findOne({
+    where: { userId, shortId },
+  });
+
+  if (existingReaction) {
+    if (!reactType && !icon) {
+      await existingReaction.destroy();
+    }
+    else {
+      await existingReaction.update({
+        reactType: reactType || null,
+        icon: icon || null,
+      });
+    }
+  }
+  else {
+    await Reaction.create({ userId, shortId, reactType, icon });
+  }
+
+  const postWithStats = await Short.findOne({
+    where: { id: shortId },
     attributes: {
       include: [
-        getTotalCommentsCountLiteral('"Short"'),
-        getTotalReactionsCountLiteral('"Short"'),
-        getIsBookmarkedLiteral(req.user.id, '"Short"'),
-        getUserReactionLiteral(req.user.id, '"Short"'),
+        getTotalReactionsCountLiteral("\"Short\"", "shortId"),
+        getUserReactionLiteral(userId, "\"Short\"", "shortId"),
       ],
     },
   });
 
-  if (!short) throw new ApiError(404, 'Short Not Found')
+  if (!postWithStats)
+    throw new ApiError(404, "Post not found");
+  const receiverId = Number(postWithStats.userId);
 
-  return res.json(
-    new ApiResponse(
-      200,
-      short,
-      'Short fetched'
-    )
-  );
-});
+  if (userId !== receiverId) {
+    let notification = await Notification.findOne({
+      where: {
+        senderId: userId,
+        receiverId,
+        shortId,
+        type: "like",
+      },
+    });
 
-export const delete_short = asyncHandler(async (req: Request, res: Response) => {
-  const short = await Shorts.findOne({ where: { id: req.params.shortId } });
+    if (notification) {
+      await notification.update({
+        icon,
+        isRead: false,
+        updatedAt: new Date(),
+      });
+    }
+    else {
+      notification = await Notification.create({
+        senderId: userId,
+        receiverId,
+        type: "shortLike",
+        icon,
+        shortId,
+      });
+    }
 
-  if (!short) throw new ApiError(404, "Short not found");
-  if (short.userId !== req.user.id) throw new ApiError(403, "Unauthorized");
+    emitSocketEvent({
+      req,
+      roomId: `user:${receiverId}`,
+      event: SocketEventEnum.NOTIFY_USER,
+      payload: {
+        ...notification.toJSON(),
+        sender: {
+          avatar: req.user?.avatar,
+          fullName: req.user.fullName,
+        },
+      },
+    });
+  }
 
-  await short.destroy();
+  const postData = postWithStats.toJSON();
 
-  const keys = await redis.keys(`${REDIS_KEY(req.user.id)}:shorts:*`);
-  if (keys.length > 0) await redis.del(...keys);
+  emitSocketEvent({
+    req,
+    roomId: `short_${shortId}`,
+    event: SocketEventEnum.SHORT_REACT,
+    payload: { postData, postId: Number(shortId) },
+  });
 
-  return res.json(new ApiResponse(200, {}, "Short deleted"));
+  await DELETE_SHORT_CACHE();
+  await NOTIFICATION_CACHE(userId);
+
+  return res.json(new ApiResponse(200, postData, "React Successfully"));
 });

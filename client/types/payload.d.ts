@@ -1,42 +1,42 @@
-interface LoginPayload {
+type LoginPayload = {
   emailOrUsername: string;
   password: string;
   token?: string;
-}
-interface RecoverLoginPayload {
+};
+type RecoverLoginPayload = {
   emailOrUsername?: string;
   recoveryCode?: string;
-}
+};
 
-interface CallInitialPayload {
+type CallInitialPayload = {
   roomName: string;
   callType: string;
   authToken: string;
   receiverId: string;
-}
+};
 
-interface EmailVerifyPayload {
+type EmailVerifyPayload = {
   email?: string;
   otpCode?: string;
-}
-interface UserOnlineStatusPayload {
+};
+type UserOnlineStatusPayload = {
   userId?: number;
   status?: string;
-}
-interface ChangePasswordPayload {
+};
+type ChangePasswordPayload = {
   oldPassword: string;
   newPassword: string;
-}
+};
 
-interface RegisterPayload {
+type RegisterPayload = {
   email: string;
-  full_name: string;
+  fullName: string;
   password: string;
   username: string;
-  public_key: string
-}
+  publicKey: string;
+};
 
-interface UpdatedCommentPayload {
+type UpdatedCommentPayload = {
   content: string;
   id: number;
   isEdited: boolean;
@@ -44,37 +44,38 @@ interface UpdatedCommentPayload {
   parentId: number;
   user: {
     id: number;
-    full_name: string;
+    fullName: string;
     avatar: string;
     username: string;
   };
   isReply: boolean;
-}
+};
 
-interface PostReactPayload {
-  postData: PostsEntity
+type PostReactPayload = {
+  postData: PostsEntity;
   postId: number;
-}
+};
 
-interface CreateCommentPayload {
+type CreateCommentPayload = {
   data: CommentPreview;
-}
-interface CreateCommentReplyPayload {
+};
+type CreateCommentReplyPayload = {
   data: RepliesEntity;
-}
+};
 
-interface CommentReactPayload {
+type CommentReactPayload = {
   postId: number;
   commentId: number;
   parentId: number;
   isReply: boolean;
-  data: CommentPreview
-}
+  data: CommentPreview;
+};
 
-interface DeleteCommentPayload {
+type DeleteCommentPayload = {
   id: number;
   userId: number;
   postId: number;
+  shortId: number;
   isEdited: boolean;
   parentId: number;
   content: string;
@@ -82,64 +83,81 @@ interface DeleteCommentPayload {
   updatedAt: string;
   isReply: boolean;
   totalComments?: number;
-}
+};
 
-interface QueryOldDataPayload {
+type QueryOldDataPayload = {
   pageParams: number[];
   pages: PostsResponse[];
-}
-interface QueryOldNotificationDataPayload {
+};
+type QueryOldNotificationDataPayload = {
   pageParams: number[];
   pages: NotificationResponse[];
-}
-interface QueryOldDataPayloadConversation {
+};
+type QueryOldDataPayloadConversation = {
   pageParams: number[];
   pages: ConversationMessagesResponse[];
-}
-interface QueryOldDataPayloadLiveStreamChats {
+};
+type QueryOldDataPayloadLiveStreamChats = {
   pageParams: number[];
   pages: LiveStreamChatsResponse[];
-}
-interface QueryOldDataPayloadConversations {
+};
+type QueryOldDataPayloadConversations = {
   pageParams: number[];
   pages: ConversationResponse[];
-}
+};
 
-interface CreateConversationPayload {
+type CreateConversationPayload = {
   receiverId: string;
   content: string;
   messageType: string;
   type: string;
-  key_for_recipient: string,
-  key_for_sender: string
-}
+  keyForRecipient: string;
+  keyForSender: string;
+};
 
-interface ReadMessagePayload {
+type ReadMessagePayload = {
   conversationId: number;
   messageId: number;
-}
-interface QueryOldDataCommentsPayload {
+};
+type QueryOldDataCommentsPayload = {
   pageParams: number[];
   pages: CommentsResponse[];
-}
-interface StreamPayload {
+};
+type StreamPayload = {
   title: string;
   description: string;
   category: string;
-  enable_chat: boolean;
-  save_recording: boolean;
-  notify_followers: boolean;
+  enableChat: boolean;
+  saveRecording: boolean;
+  notifyFollowers: boolean;
   tags?: string[] | undefined;
-}
+};
 
-interface LiveStreamChatPayload{
-  id:number
-  stream_id:number, sender_id:number, content:string,
-}
+type LiveStreamChatPayload = {
+  id: number;
+  streamId: number;
+  senderId: number;
+  content: string;
+};
 
-interface BanLivePayload{
-  banned_user_id: number
-  reason:string
-  duration_type: string
-  stream_id: number
-}
+type BanLivePayload = {
+  bannedUserId: number;
+  reason: string;
+  durationType: string;
+  streamId: number;
+};
+
+type ReactionToMessagePayload = {
+  id: number;
+  emoji: string;
+};
+
+type ReplyToMessagePayload = {
+  content: string;
+  keyForSender: string;
+  keyForRecipient: string;
+  id: number;
+  receiverId?: number;
+  conversationId?: number;
+  tempId?: number;
+};

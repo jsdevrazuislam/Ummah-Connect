@@ -5,7 +5,8 @@ export async function enableMedia() {
       video: true,
     });
     return stream;
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Media permissions denied:", error);
     throw error;
   }

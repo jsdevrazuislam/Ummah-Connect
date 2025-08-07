@@ -1,42 +1,40 @@
 import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
 
-export const initialize_call = async (payload: CallInitialPayload) => {
+export async function initializeCall(payload: CallInitialPayload) {
   const response = await api.post(ApiStrings.INITIAL_CALL, payload);
   return response.data;
-};
+}
 
-export const start_live = async (
-  payload: StreamPayload
-): Promise<StartLiveStreamResponse> => {
+export async function startLive(payload: StreamPayload): Promise<StartLiveStreamResponse> {
   const response = await api.post<StartLiveStreamResponse>(
     ApiStrings.START_LIVE,
-    payload
+    payload,
   );
   return response.data;
-};
+}
 
-export const end_live = async (streamId: number) => {
+export async function endLive(streamId: number) {
   const response = await api.post(ApiStrings.END_LIVE, { streamId });
   return response.data;
-};
+}
 
-export const get_streams = async (): Promise<LiveStreamResponse> => {
+export async function getStreams(): Promise<LiveStreamResponse> {
   const response = await api.get<LiveStreamResponse>(ApiStrings.GET_LIVES);
   return response.data;
-};
+}
 
-export const send_stream_message = async (payload: LiveStreamChatPayload) => {
+export async function sendStreamMessage(payload: LiveStreamChatPayload) {
   const response = await api.post(ApiStrings.SEND_CHAT, payload);
   return response.data;
-};
+}
 
-export const ban_user = async (payload: BanLivePayload) => {
-  const response = await api.post(ApiStrings.BAN_USER(payload.stream_id), payload);
+export async function banUser(payload: BanLivePayload) {
+  const response = await api.post(ApiStrings.BAN_USER(payload.streamId), payload);
   return response.data;
-};
+}
 
-export const report_user = async (payload: FormData) => {
+export async function reportUser(payload: FormData) {
   const response = await api.post(ApiStrings.REPORT, payload, {
     headers: {
       ...(payload instanceof FormData
@@ -45,10 +43,10 @@ export const report_user = async (payload: FormData) => {
     },
   });
   return response.data;
-};
+}
 
-export const upload_shorts = async (payload: FormData) => {
-  const response = await api.post(ApiStrings.UPLOAD_SHORT, payload, {
+export async function uploadShorts(payload: FormData): Promise<UploadShortsResponse> {
+  const response = await api.post<UploadShortsResponse>(ApiStrings.UPLOAD_SHORT, payload, {
     headers: {
       ...(payload instanceof FormData
         ? { "Content-Type": "multipart/form-data" }
@@ -56,36 +54,41 @@ export const upload_shorts = async (payload: FormData) => {
     },
   });
   return response.data;
-};
+}
 
-export const get_stream_messages = async ({
+export async function getStreamMessages({
   page = 1,
   limit = 50,
   streamId = 0,
-}): Promise<LiveStreamChatsResponse> => {
+}): Promise<LiveStreamChatsResponse> {
   const response = await api.get<LiveStreamChatsResponse>(
     ApiStrings.GET_CHATS,
     {
       params: { page, limit, streamId },
-    }
+    },
   );
   return response.data;
-};
+}
 
-export const get_shorts = async ({
+export async function getShorts({
   page = 1,
   limit = 50,
-}): Promise<ShortsResponse> => {
+}): Promise<ShortsResponse> {
   const response = await api.get<ShortsResponse>(
     ApiStrings.GET_SHORTS,
     {
       params: { page, limit },
-    }
+    },
   );
   return response.data;
-};
+}
 
-export const delete_story = async (id:number) =>{
+export async function postReactShort(payload: ReactPayload): Promise<ShortReactResponse> {
+  const response = await api.post<ShortReactResponse>(`${ApiStrings.REACT_SHORT}/${payload.id}`, { reactType: payload.reactType, icon: payload.icon });
+  return response.data;
+}
+
+export async function deleteStory(id: number) {
   const response = await api.delete(`${ApiStrings.DELETE_STORY}/${id}`);
   return response.data;
 }

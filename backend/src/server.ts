@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
-
+import "dotenv/config";
 
 import httpServer from "@/app";
 import db from "@/config/db";

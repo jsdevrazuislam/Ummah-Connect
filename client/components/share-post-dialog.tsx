@@ -1,30 +1,31 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Link2, Share } from "lucide-react"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Globe, Link2, Lock, Share, User, Users } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Globe, Lock, Users, User } from "lucide-react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { share_post } from "@/lib/apis/posts"
-import { toast } from "sonner"
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { sharePost } from "@/lib/apis/posts";
+import { showError, showSuccess } from "@/lib/toast";
+import { useStore } from "@/store/store";
 
-interface SharePostDialogProps {
-  post: PostsEntity
-  postUsername: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+type SharePostDialogProps = {
+  post: PostsEntity;
+  postUsername: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
 
 export function SharePostDialog({
   post,
@@ -32,80 +33,125 @@ export function SharePostDialog({
   open,
   onOpenChange,
 }: SharePostDialogProps) {
-  const [additionalText, setAdditionalText] = useState("")
-  const queryClient = useQueryClient()
-  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
+  const [additionalText, setAdditionalText] = useState("");
+  const queryClient = useQueryClient();
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public");
+  const { user, setUser } = useStore();
+
   const { mutate, isPending } = useMutation({
-    mutationFn: share_post,
-    onSuccess: (data, variable) => {
-      if (data?.data?.postData?.privacy === 'public') {
-        queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+    mutationFn: sharePost,
+    onMutate: async (newPost) => {
+      await queryClient.cancelQueries({ queryKey: ["get_all_posts"] });
 
-          const updatedPages = oldData?.pages?.map?.((page, index) => {
+      const previousPosts = queryClient.getQueryData(["get_all_posts"]);
 
+      if (previousPosts) {
+        queryClient.setQueryData(["get_all_posts"], (oldData: QueryOldDataPayload) => {
+          if (!oldData?.pages)
+            return oldData;
+
+          const updatedPages = oldData.pages.map((page, index) => {
             if (index === 0) {
-              const updatedPosts = page?.data?.posts?.map((post) => {
-                if (data?.data?.postData?.originalPost?.id === variable.postId) {
-                  return {
-                    ...post,
-                    share: post.share + 1
-                  }
+              const updatedPosts = page?.data?.posts?.map((p) => {
+                if (newPost.postId === p.id
+                  || (p.originalPost && newPost.postId === p.originalPost.id)) {
+                  return { ...p, share: p.share + 1 };
                 }
-                return post
-              })
+                return p;
+              });
 
               return {
                 ...page,
                 data: {
                   ...page.data,
-                  posts: [data.data.postData, ...(updatedPosts ?? [])]
-                }
+                  posts: [
+                    ...(updatedPosts ?? []),
+                  ],
+                },
               };
-
-
             }
+            return page;
+          });
 
-            return page
-          })
-
-          return {
-            ...oldData,
-            pages: updatedPages
-          };
-        })
+          return { ...oldData, pages: updatedPages };
+        });
       }
-      setAdditionalText("")
-      onOpenChange(false)
+
+      return { previousPosts };
+    },
+    onSuccess: (data, variables) => {
+      if (data?.data?.postData && data.data.postData.privacy === "public") {
+        queryClient.setQueryData(["get_all_posts"], (oldData: QueryOldDataPayload) => {
+          if (!oldData?.pages)
+            return oldData;
+          const updatedPages = oldData.pages.map((page, index) => {
+            if (index === 0) {
+              const updatedPosts = page?.data?.posts?.map((p) => {
+                if (variables.postId === p.id
+                  || (p.originalPost && variables.postId === p.originalPost.id)) {
+                  return { ...p, share: data?.data?.postData?.share ?? p.share + 1 };
+                }
+                return p;
+              });
+
+              return {
+                ...page,
+                data: {
+                  ...page.data,
+                  posts: [
+                    data?.data?.postData,
+                    ...(updatedPosts ?? []),
+                  ],
+                },
+              };
+            }
+            return page;
+          });
+
+          return { ...oldData, pages: updatedPages };
+        });
+      }
+
+      queryClient.setQueryData(
+        ["get_post", variables.postId],
+        (oldPost: PostsEntity) => oldPost ? { ...oldPost, share: oldPost.share + 1 } : oldPost,
+      );
+
+      if (user)
+        setUser({ ...user, totalPosts: user.totalPosts + 1 });
+      setAdditionalText("");
+      onOpenChange(false);
+
+      queryClient.invalidateQueries({ queryKey: ["get_all_posts"] });
+      queryClient.invalidateQueries({ queryKey: ["get_post", variables.postId] });
     },
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
+      showError(error.message);
+    },
+  });
 
   const handleCopyLink = () => {
-    const postUrl = `${window.location.href}share/${post.id}`
+    const postUrl = `${process.env.NEXT_PUBLIC_SITE_URL}share/${post.id}`;
     navigator.clipboard
       .writeText(postUrl)
       .then(() => {
-        toast.success("Link copied to clipboard", {
-          description: "You can now share this post with others",
-        })
+        showSuccess("Link copied to clipboard. You can now share this post with others");
       })
       .catch(() => {
-        toast.error("Failed to copy link", {
+        showError("Failed to copy link", {
           description: "Please try again",
-        })
-      })
-  }
+        });
+      });
+  };
 
   const handleShareToFeed = () => {
     const payload = {
       postId: post?.originalPost?.id ? post?.originalPost?.id : post.id,
       message: additionalText,
-      visibility
-    }
-    mutate(payload)
-  }
+      visibility,
+    };
+    mutate(payload);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,7 +163,7 @@ export function SharePostDialog({
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex items-center gap-2">
-            <Input value={`${window.location.href}share/${post.id}`} readOnly className="flex-1" />
+            <Input value={`${process.env.NEXT_PUBLIC_SITE_URL}share/${post.id}`} readOnly className="flex-1" />
             <Button onClick={handleCopyLink}>
               <Link2 className="h-4 w-4 mr-2" />
               Copy
@@ -129,7 +175,7 @@ export function SharePostDialog({
             <Textarea
               placeholder="What's on your mind?"
               value={additionalText}
-              onChange={(e) => setAdditionalText(e.target.value)}
+              onChange={e => setAdditionalText(e.target.value)}
               className="resize-none"
               rows={2}
             />
@@ -183,7 +229,11 @@ export function SharePostDialog({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <p className="text-xs text-muted-foreground">Sharing @{postUsername}'s post</p>
+              <p className="text-xs text-muted-foreground">
+                Sharing @
+                {postUsername}
+                's post
+              </p>
             </div>
           </div>
 
@@ -200,5 +250,5 @@ export function SharePostDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

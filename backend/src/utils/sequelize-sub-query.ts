@@ -1,37 +1,38 @@
-import sequelize from '@/config/db'; 
-import { Literal } from 'sequelize/types/utils';
+import type { Literal } from "sequelize/types/utils";
+
+import sequelize from "@/config/db";
 
 /**
  * Returns a Sequelize literal for counting followers of a user.
  * @param targetUserIdSqlColumn The SQL reference to the user's ID column (e.g., '"user"."id"' or '"Post"."authorId"').
  * @returns [sequelize.literal, string]
  */
-export const getFollowerCountLiteral = (targetUserIdSqlColumn: string): [Literal, string] => {
+export function getFollowerCountLiteral(targetUserIdSqlColumn: string): [Literal, string] {
   return [
     sequelize.literal(`(
       SELECT COUNT(*)
       FROM "follows" AS "Follow"
       WHERE "Follow"."followingId" = ${targetUserIdSqlColumn}
     )`),
-    'followers_count'
+    "followersCount",
   ];
-};
+}
 
 /**
  * Returns a Sequelize literal for counting users followed by a user.
  * @param targetUserIdSqlColumn The SQL reference to the user's ID column (e.g., '"user"."id"' or '"Post"."authorId"').
  * @returns [sequelize.literal, string]
  */
-export const getFollowingCountLiteral = (targetUserIdSqlColumn: string): [Literal, string] => {
+export function getFollowingCountLiteral(targetUserIdSqlColumn: string): [Literal, string] {
   return [
     sequelize.literal(`(
       SELECT COUNT(*)
       FROM "follows" AS "Follow"
       WHERE "Follow"."followerId" = ${targetUserIdSqlColumn}
     )`),
-    'following_count'
+    "followingCount",
   ];
-};
+}
 
 /**
  * Returns a Sequelize literal to check if the current user is following another user.
@@ -39,8 +40,8 @@ export const getFollowingCountLiteral = (targetUserIdSqlColumn: string): [Litera
  * @param targetUserIdSqlColumn The SQL reference to the user's ID column being checked (e.g., '"user"."id"' or '"Post"."authorId"').
  * @returns [sequelize.literal, string]
  */
-export const getIsFollowingLiteral = (currentUserId: number | undefined, targetUserIdSqlColumn: string): [Literal, string] => {
-  const followerIdValue = currentUserId !== undefined && currentUserId !== null ? currentUserId : 'NULL';
+export function getIsFollowingLiteral(currentUserId: number | undefined, targetUserIdSqlColumn: string): [Literal, string] {
+  const followerIdValue = currentUserId !== undefined && currentUserId !== null ? currentUserId : "NULL";
 
   return [
     sequelize.literal(`(
@@ -48,9 +49,9 @@ export const getIsFollowingLiteral = (currentUserId: number | undefined, targetU
       FROM "follows" AS "Follow"
       WHERE "Follow"."followerId" = ${followerIdValue} AND "Follow"."followingId" = ${targetUserIdSqlColumn}
     )`),
-    'isFollowing'
+    "isFollowing",
   ];
-};
+}
 
 /**
  * Generates a Sequelize literal to count the total number of comments for a given post.
@@ -71,15 +72,15 @@ export const getIsFollowingLiteral = (currentUserId: number | undefined, targetU
  * ]
  * });
  */
-export const getTotalCommentsCountLiteral = (postAlias: string): [Literal, string] => {
+export function getTotalCommentsCountLiteral(postAlias: string, whereAlias = "postId"): [Literal, string] {
   return [
     sequelize.literal(`(
       SELECT COUNT(*) FROM "comments" AS c
-      WHERE c."postId" = ${postAlias}.id
+      WHERE c."${whereAlias}" = ${postAlias}.id
     )`),
-    'totalCommentsCount'
+    "totalCommentsCount",
   ];
-};
+}
 
 /**
  * Generates a Sequelize literal to count the total number of reactions for a given post.
@@ -100,64 +101,56 @@ export const getTotalCommentsCountLiteral = (postAlias: string): [Literal, strin
  * ]
  * });
  */
-export const getTotalReactionsCountLiteral = (postAlias: string): [Literal, string] => {
+export function getTotalReactionsCountLiteral(postAlias: string, whereAlias = "postId"): [Literal, string] {
   return [
     sequelize.literal(`(
       SELECT COUNT(*) FROM "reactions" AS r
-      WHERE r."postId" = ${postAlias}.id
+      WHERE r."${whereAlias}" = ${postAlias}.id
     )`),
-    'totalReactionsCount'
+    "totalReactionsCount",
   ];
-};
+}
 
-
-export const getIsBookmarkedLiteral = (currentUserId: number, alias: string): [Literal, string] => {
+export function getIsBookmarkedLiteral(currentUserId: number, alias: string): [Literal, string] {
   return [
     sequelize.literal(`EXISTS (
       SELECT 1 FROM "bookmarks_posts" AS b
       WHERE b."postId" = ${alias}.id AND b."userId" = ${currentUserId}
     )`),
-    'isBookmarked'
+    "isBookmarked",
   ];
-};
+}
 
-export const getUserReactionLiteral = (
-  currentUserId: number,
-  alias: string
-): [Literal, string] => {
+export function getUserReactionLiteral(currentUserId: number, alias: string, whereAlias = "postId"): [Literal, string] {
   return [
     sequelize.literal(`(
-      SELECT r."react_type"
+      SELECT r."reactType"
       FROM "reactions" AS r
-      WHERE r."postId" = ${alias}.id AND r."userId" = ${currentUserId}
+      WHERE r."${whereAlias}" = ${alias}.id AND r."userId" = ${currentUserId}
       LIMIT 1
     )`),
-    'currentUserReaction'
+    "currentUserReaction",
   ];
-};
+}
 
-
-export const getCommentUserReactionLiteral = (
-  userId: number,
-  alias: string
-): [Literal, string] => {
+export function getCommentUserReactionLiteral(userId: number, alias: string): [Literal, string] {
   return [
     sequelize.literal(`(
-      SELECT r."react_type"
+      SELECT r."reactType"
       FROM "reactions" AS r
       WHERE r."commentId" = ${alias}.id AND r."userId" = ${userId}
       LIMIT 1
     )`),
-    'currentUserReaction'
+    "currentUserReaction",
   ];
-};
+}
 
-export const getCommentTotalReactionsCountLiteral = (alias: string): [Literal, string] => {
+export function getCommentTotalReactionsCountLiteral(alias: string): [Literal, string] {
   return [
     sequelize.literal(`(
       SELECT COUNT(*) FROM "reactions" AS r
       WHERE r."commentId" = ${alias}.id
     )`),
-    'totalReactionsCount'
+    "totalReactionsCount",
   ];
-};
+}

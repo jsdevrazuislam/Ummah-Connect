@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PostSkeleton() {
   return (
@@ -22,9 +22,9 @@ export function PostSkeleton() {
             <Skeleton className="h-4 w-[75%]" />
           </div>
 
-            <div className="mt-3">
-              <Skeleton className="h-48 w-full rounded-md" />
-            </div>
+          <div className="mt-3">
+            <Skeleton className="h-48 w-full rounded-md" />
+          </div>
 
           <div className="mt-4 flex justify-between">
             <Skeleton className="h-8 w-20" />
@@ -35,5 +35,5 @@ export function PostSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,7 @@
-import { Request, Response, NextFunction } from "express";
-import { z, ZodError, ZodIssue } from "zod";
+import type { NextFunction, Request, Response } from "express";
+import type { z, ZodIssue } from "zod";
+
+import { ZodError } from "zod";
 
 /**
  * Middleware to validate request body against a Zod schema.
@@ -12,13 +14,15 @@ export function validateData<T>(schema: z.ZodSchema<T>) {
     try {
       schema.parse(req.body);
       next();
-    } catch (error) {
+    }
+    catch (error) {
       if (error instanceof ZodError) {
         const errorMessages = error.errors.map((issue: ZodIssue) => ({
           message: `${issue.path.join(".")} is ${issue.message}`,
         }));
         res.status(400).json({ error: "Invalid data", details: errorMessages });
-      } else {
+      }
+      else {
         res.status(500).json({ error: "Internal Server Error" });
       }
     }

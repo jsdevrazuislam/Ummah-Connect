@@ -1,37 +1,37 @@
+import type { Request, Response } from "express";
+
+import fs from "node:fs";
+import { Op } from "sequelize";
+
 import redis from "@/config/redis";
 import { Follow, Story, User } from "@/models";
-import ApiResponse from "@/utils/ApiResponse";
+import ApiError from "@/utils/api-error";
+import ApiResponse from "@/utils/api-response";
 import asyncHandler from "@/utils/async-handler";
 import cloudinary from "@/utils/cloudinary";
-import { Request, Response } from "express";
-import { Op } from "sequelize";
-import fs from "fs";
-import ApiError from "@/utils/ApiError";
 
-
-const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
-
+export const STORY_CACHE_KEY = (userId: string | number) => `stories:user:${userId}`;
 
 export const uploadStory = asyncHandler(async (req: Request, res: Response) => {
-    const { caption, background, type, textColor } = req.body;
-    const userId = req.user.id;
-    const file = req.file;
-    let mediaUrl: string | null = null
+  const { caption, background, type, textColor } = req.body;
+  const userId = req.user.id;
+  const file = req.file;
+  let mediaUrl: string | null = null;
 
-    if (file) {
-        const uploaded = await cloudinary.uploader.upload(file.path, {
-            resource_type: 'image',
-            folder: 'ummah_connect/stories',
-        });
+  if (file) {
+    const uploaded = await cloudinary.uploader.upload(file.path, {
+      // eslint-disable-next-line camelcase
+      resource_type: "image",
+      folder: "ummah_connect/stories",
+    });
 
-        mediaUrl = uploaded.url
-        fs.unlinkSync(file.path);
-    }
+    mediaUrl = uploaded.url;
+    fs.unlinkSync(file.path);
+  }
 
-
-    const story = await Story.create({ userId, mediaUrl, caption, background, type, textColor, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
-    await redis.del(STORY_CACHE_KEY(userId));
-    res.json(new ApiResponse(200, story, "Story uploaded"));
+  const story = await Story.create({ userId, mediaUrl, caption, background, type, textColor, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
+  await redis.del(STORY_CACHE_KEY(userId));
+  res.json(new ApiResponse(200, story, "Story uploaded"));
 });
 
 export const getActiveStories = asyncHandler(async (req: Request, res: Response) => {
@@ -48,12 +48,12 @@ export const getActiveStories = asyncHandler(async (req: Request, res: Response)
     attributes: ["followingId"],
   });
 
-  const followingIds = following.map((f) => f.followingId);
+  const followingIds = following.map(f => f.followingId);
   const userAndFollowingIds = [...new Set([...followingIds, userId])];
 
   const stories = await User.findAll({
     where: { id: { [Op.in]: userAndFollowingIds } },
-    attributes: ["id", "username", "avatar", "full_name"],
+    attributes: ["id", "username", "avatar", "fullName"],
     include: [
       {
         model: Story,
@@ -74,7 +74,7 @@ export const getActiveStories = asyncHandler(async (req: Request, res: Response)
 });
 
 export const deleteStory = asyncHandler(async (req: Request, res: Response) => {
-  const storyId = parseInt(req.params.id);
+  const storyId = Number.parseInt(req.params.id);
   const userId = req.user.id;
 
   const story = await Story.findByPk(storyId);
@@ -93,4 +93,3 @@ export const deleteStory = asyncHandler(async (req: Request, res: Response) => {
 
   return res.json(new ApiResponse(200, null, "Story deleted successfully"));
 });
-

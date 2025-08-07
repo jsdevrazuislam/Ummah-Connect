@@ -1,47 +1,45 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Play, Smile, X } from "lucide-react"
-import { LocationPicker } from "@/components/location-picker"
-import { ImageUpload } from "@/components/image-upload"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { create_post } from "@/lib/apis/posts"
-import { toast } from "sonner"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Globe, Lock, Users, User } from "lucide-react"
-import LoadingUi from "@/components/ui-loading"
-import { useStore } from "@/store/store"
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import { useTheme } from "next-themes"
-import Image from "next/image"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Globe, Lock, Play, Smile, User, Users, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
-
+import { ImageUpload } from "@/components/image-upload";
+import { LocationPicker } from "@/components/location-picker";
+import LoadingUi from "@/components/ui-loading";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
+import { createPost } from "@/lib/apis/posts";
+import { showError } from "@/lib/toast";
+import { useStore } from "@/store/store";
 
 export function CreatePostForm() {
-  const [content, setContent] = useState("")
-  const [selectedFile, setSelectedFile] = useState<File | undefined>()
-  const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const queryClient = useQueryClient()
-  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public")
-  const { user, setIsOpen, setUser } = useStore()
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [content, setContent] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | undefined>();
+  const [selectedLocation, setSelectedLocation] = useState<{ name: string; city: string } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const queryClient = useQueryClient();
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private" | "only me">("public");
+  const { user, setIsOpen, setUser } = useStore();
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme()
-  const [background, setBackground] = useState('')
+  const { theme } = useTheme();
+  const [background, setBackground] = useState("");
 
   const { mutate, isPending } = useMutation({
-    mutationFn: create_post,
+    mutationFn: createPost,
     onSuccess: (newPost) => {
-      setIsOpen(false)
-      queryClient.setQueryData(['get_all_posts'], (oldData: QueryOldDataPayload) => {
+      setIsOpen(false);
+      queryClient.setQueryData(["get_all_posts"], (oldData: QueryOldDataPayload) => {
         const updatedPages = oldData?.pages?.map((page) => {
           if (page?.data?.posts?.length === 0) {
             return {
@@ -49,7 +47,7 @@ export function CreatePostForm() {
               data: {
                 posts: [newPost.data],
                 totalPages: 1,
-                currentPage: 1
+                currentPage: 1,
               },
             };
           }
@@ -57,69 +55,69 @@ export function CreatePostForm() {
             ...page,
             data: {
               ...page.data,
-              posts: [newPost.data, ...(page?.data?.posts ?? [])]
-            }
-          }
-        })
+              posts: [newPost.data, ...(page?.data?.posts ?? [])],
+            },
+          };
+        });
 
         return {
           ...oldData,
-          pages: updatedPages
-        }
-      })
-      setContent("")
-      setSelectedFile(undefined)
-      setSelectedLocation(null)
-      if(user) setUser({...user, totalPosts: user?.totalPosts + 1})
+          pages: updatedPages,
+        };
+      });
+      setContent("");
+      setSelectedFile(undefined);
+      setSelectedLocation(null);
+      if (user)
+        setUser({ ...user, totalPosts: user?.totalPosts + 1 });
     },
     onError: (error) => {
-      toast.error(error.message)
-    }
-  })
-
+      showError(error.message);
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!content.trim() && !selectedFile) {
       return;
     }
-    const formData = new FormData()
+    const formData = new FormData();
     if (selectedFile) {
-      formData.append("media", selectedFile)
+      formData.append("media", selectedFile);
     }
-    formData.append("background", background)
-    formData.append("content", content)
+    formData.append("background", background);
+    formData.append("content", content);
     if (selectedLocation) {
-      formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`)
+      formData.append("location", `${selectedLocation?.name}, ${selectedLocation?.city}`);
     }
-    formData.append("privacy", visibility)
-    mutate(formData)
-
-  }
+    formData.append("privacy", visibility);
+    mutate(formData);
+  };
 
   const handleLocationSelect = (location: { name: string; city: string }) => {
-    setSelectedLocation(location)
-  }
+    setSelectedLocation(location);
+  };
 
   const handleLocationRemove = () => {
-    setSelectedLocation(null)
-  }
+    setSelectedLocation(null);
+  };
 
   const handleImageSelect = (imageUrl: File) => {
-    if(background) return
-    setSelectedFile(imageUrl)
-  }
+    if (background)
+      return;
+    setSelectedFile(imageUrl);
+  };
 
   const handleFileRemove = () => {
-    setSelectedFile(undefined)
-  }
+    setSelectedFile(undefined);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target as Node) &&
-        !(event.target as Element).closest('button[aria-label="emoji-picker"]')
+        emojiPickerRef.current
+        && !emojiPickerRef.current.contains(event.target as Node)
+        && !(event.target as Element).closest("button[aria-label=\"emoji-picker\"]")
       ) {
         setShowEmojiPicker(false);
       }
@@ -142,52 +140,70 @@ export function CreatePostForm() {
 
         <div className="flex gap-3">
           <Avatar>
-              {user?.avatar ? <AvatarImage src={user?.avatar} alt={user?.full_name} /> : 
-              <AvatarFallback>{user?.full_name?.charAt(0)}</AvatarFallback> }
-            </Avatar>
-           <div>
-             <p>{user?.full_name}</p>
-             <span className="text-gray-400">@{user?.username}</span>
-           </div>
+            {user?.avatar
+              ? <AvatarImage src={user?.avatar} alt={user?.fullName} />
+              : <AvatarFallback>{user?.fullName?.charAt(0)}</AvatarFallback> }
+          </Avatar>
+          <div>
+            <p>{user?.fullName}</p>
+            <span className="text-gray-400">
+              @
+              {user?.username}
+            </span>
+          </div>
         </div>
         <div className={`rounded-lg ${background} transition-colors duration-200`}>
-            <Textarea
-              ref={textareaRef}
-              placeholder="What's on your mind?"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className={`flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px] ${background.startsWith('bg-gradient') ? 'text-white placeholder:text-white/70' : ''
-                }`}
-              style={{
-                backgroundColor: 'transparent',
-                color: background.startsWith('bg-gradient') ? 'white' : 'inherit'
-              }}
-            />
+          <Textarea
+            ref={textareaRef}
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            className={`flex-1 resize-none border-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px] ${background.startsWith("bg-gradient") ? "text-white placeholder:text-white/70" : ""
+            }`}
+            style={{
+              backgroundColor: "transparent",
+              color: background.startsWith("bg-gradient") ? "white" : "inherit",
+            }}
+          />
         </div>
 
         {
-          !selectedFile &&  <div className="flex gap-2 overflow-x-auto pb-2">
-          {[
-            'bg-white', 'bg-gray-100', 'bg-blue-50', 'bg-green-50',
-            'bg-yellow-50', 'bg-pink-50', 'bg-purple-50', 'bg-gradient-to-r from-blue-400 to-purple-500',
-            'bg-gradient-to-r from-pink-400 to-red-500', 'bg-gradient-to-r from-green-400 to-blue-500'
-          ].map((bgClass) => (
-            <button
-              key={bgClass}
-              type="button"
-              onClick={() => setBackground(bgClass)}
-              className={`w-8 h-8 rounded-full ${bgClass} border-2 ${background === bgClass ? 'border-primary' : 'border-transparent'}`}
-              aria-label={`Select ${bgClass} background`}
-            />
-          ))}
-        </div>
+          !selectedFile && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {[
+                "bg-white",
+                "bg-gray-100",
+                "bg-blue-50",
+                "bg-green-50",
+                "bg-yellow-50",
+                "bg-pink-50",
+                "bg-purple-50",
+                "bg-gradient-to-r from-blue-400 to-purple-500",
+                "bg-gradient-to-r from-pink-400 to-red-500",
+                "bg-gradient-to-r from-green-400 to-blue-500",
+              ].map(bgClass => (
+                <button
+                  key={bgClass}
+                  type="button"
+                  onClick={() => setBackground(bgClass)}
+                  className={`w-8 h-8 rounded-full ${bgClass} border-2 ${background === bgClass ? "border-primary" : "border-transparent"}`}
+                  aria-label={`Select ${bgClass} background`}
+                />
+              ))}
+            </div>
+          )
         }
 
         {selectedLocation && (
           <div className="flex items-center">
             <Badge variant="outline" className="flex gap-1 ml-12">
               <span>
-                📍 {selectedLocation.name}, {selectedLocation.city}
+                📍
+                {" "}
+                {selectedLocation.name}
+                ,
+                {" "}
+                {selectedLocation.city}
               </span>
               <button type="button" onClick={handleLocationRemove} className="ml-1">
                 <X className="h-3 w-3" />
@@ -199,25 +215,27 @@ export function CreatePostForm() {
         {selectedFile && (
           <div className="relative">
             <div className="rounded-lg overflow-hidden border border-border">
-              {selectedFile.type.startsWith('image/') ? (
-                <Image
-                  src={URL.createObjectURL(selectedFile) || "/placeholder.svg"}
-                  alt="Selected"
-                  className="w-full h-full object-cover"
-                  width={200}
-                  height={200}
-                />
-              ) : (
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                    <Play className="h-12 w-12 text-white/80" />
-                  </div>
-                  <video
-                    src={URL.createObjectURL(selectedFile)}
-                    className="w-full h-full object-cover pointer-events-none"
-                  />
-                </div>
-              )}
+              {selectedFile.type.startsWith("image/")
+                ? (
+                    <Image
+                      src={URL.createObjectURL(selectedFile) || "/placeholder.svg"}
+                      alt={user?.fullName ?? ""}
+                      className="w-full h-full object-cover"
+                      width={200}
+                      height={200}
+                    />
+                  )
+                : (
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <Play className="h-12 w-12 text-white/80" />
+                      </div>
+                      <video
+                        src={URL.createObjectURL(selectedFile)}
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+                    </div>
+                  )}
 
               <Button
                 type="button"
@@ -250,7 +268,7 @@ export function CreatePostForm() {
             <ImageUpload
               onImageSelect={handleImageSelect}
               accept="image/*, video/*"
-              disabled={background ? true : false}
+              disabled={!!background}
             />
             <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)} type="button" variant="ghost" size="icon" className="shrink-0">
               <Smile className="h-5 w-5" />
@@ -314,5 +332,5 @@ export function CreatePostForm() {
         </div>
       </div>
     </form>
-  )
+  );
 }

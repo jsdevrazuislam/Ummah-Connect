@@ -1,27 +1,39 @@
-import express, {
+import type {
   Application,
-  urlencoded,
-  json,
-  Request,
   Response,
 } from "express";
-import morgan from "morgan";
-import cors from "cors";
-import { createServer } from "http";
-import { Server } from "socket.io";
-import rateLimit from "express-rate-limit";
-import ApiError from "@/utils/ApiError";
-import { DATA_LIMIT } from "@/constants";
-import cookieParser from "cookie-parser";
-import swagger from "@/config/swagger";
-import { initializeSocketIO } from "@/socket";
-import { connectRedis } from "@/config/redis";
-import { load_routes } from "@/utils/load-routes";
 
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, {
+  json,
+  urlencoded,
+} from "express";
+import rateLimit from "express-rate-limit";
+import morgan from "morgan";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
+
+import { connectRedis } from "@/config/redis";
+import swagger from "@/config/swagger";
+import { API_VERSION, DATA_LIMIT } from "@/constants";
+import { errorHandler } from "@/middleware/error.middleware";
+import authRoutes from "@/routes/auth.routes";
+import commentRoutes from "@/routes/comments.routes";
+import conversationRoutes from "@/routes/conversation.routes";
+import followsRoutes from "@/routes/follows.routes";
+import healthRoute from "@/routes/health.routes";
+import notificationRoutes from "@/routes/notification.routes";
+import postRoutes from "@/routes/posts.routes";
+import reportRoutes from "@/routes/report.routes";
+import streamRoutes from "@/routes/stream.routes";
+import { initializeSocketIO } from "@/socket";
+import ApiError from "@/utils/api-error";
+import "@/cron/scheduler";
 
 const app: Application = express();
 const httpServer = createServer(app);
-const origin = ["http://localhost:5173", "http://localhost:3000", "https://ummah-connect-client.vercel.app"]
+const origin = ["http://localhost:5173", "http://localhost:3000", "https://ummah-connect-client.vercel.app"];
 
 const io = new Server(httpServer, {
   pingTimeout: 60000,
@@ -32,7 +44,7 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io);
-connectRedis()
+connectRedis();
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -43,7 +55,7 @@ const limiter = rateLimit({
     throw new ApiError(
       options.statusCode || 500,
       `There are too many requests. You are only allowed ${options.max
-      } requests per ${options.windowMs / 60000} minutes`
+      } requests per ${options.windowMs / 60000} minutes`,
     );
   },
 });
@@ -51,13 +63,13 @@ const limiter = rateLimit({
 app.use(
   json({
     limit: DATA_LIMIT,
-  })
+  }),
 );
 app.use(
   urlencoded({
     extended: true,
     limit: DATA_LIMIT,
-  })
+  }),
 );
 
 app.use(limiter);
@@ -67,40 +79,29 @@ app.use(
   cors({
     origin,
     credentials: true,
-  })
+  }),
 );
 
-const startApp = async () => {
+app.use(`${API_VERSION}/health-check`, healthRoute);
+app.use(`${API_VERSION}/auth`, authRoutes);
+app.use(`${API_VERSION}/post`, postRoutes);
+app.use(`${API_VERSION}/comment`, commentRoutes);
+app.use(`${API_VERSION}/conversation`, conversationRoutes);
+app.use(`${API_VERSION}/stream`, streamRoutes);
+app.use(`${API_VERSION}/follow`, followsRoutes);
+app.use(`${API_VERSION}/notification`, notificationRoutes);
+app.use(`${API_VERSION}/report`, reportRoutes);
 
-  await load_routes(app);
+swagger(app);
+initializeSocketIO({ io });
 
-  swagger(app)
-  initializeSocketIO({ io });
-
-  app.get("/", (_, res: Response) => {
-    res.status(404).json({
-      message: "Oops! The page you are looking for does not exist.",
-      documentation: "You can find the API documentation at /api-docs.",
-    });
+app.get("/", (_, res: Response) => {
+  res.status(404).json({
+    message: "Oops! The page you are looking for does not exist.",
+    documentation: "You can find the API documentation at /api-docs.",
   });
+});
 
-  app.use((err: Error, _req: Request, res: Response) => {
-    if (err instanceof ApiError) {
-      res.status(err.statusCode).json(err.toJSON());
-    } else {
-      res.status(500).json({
-        statusCode: 500,
-        message: "Internal Server Error",
-        success: false,
-        errors: [],
-        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-      });
-    }
-  });
-};
+app.use(errorHandler);
 
-startApp();
-
-
-
-export default httpServer
+export default httpServer;

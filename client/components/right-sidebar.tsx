@@ -1,17 +1,18 @@
-import type React from "react"
-import { PrayerTimesWidget } from "@/components/prayer-times-widget"
-import { IslamicQuote } from "@/components/islamic-quote"
+import type React from "react";
 
-interface RightSidebarProps {
-  children?: React.ReactNode
-}
+import { IslamicQuote } from "@/components/islamic-quote";
+import { PrayerTimesWidget } from "@/components/prayer-times-widget";
 
-export function RightSidebar({ children }: RightSidebarProps) {
+type RightSidebarProps = {
+  children?: React.ReactNode;
+};
+
+export default function RightSidebar({ children }: RightSidebarProps) {
   return (
     <div className="hidden lg:block space-y-6 sticky top-0 h-screen overflow-y-auto">
       {children}
       <PrayerTimesWidget />
       <IslamicQuote />
     </div>
-  )
+  );
 }

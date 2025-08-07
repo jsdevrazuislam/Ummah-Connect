@@ -1,22 +1,22 @@
 import api from "@/lib/apis/api";
 import ApiStrings from "@/lib/apis/api-strings";
 
-export const loginUser = async (payload: LoginPayload): Promise<UserResponse> => {
+export async function loginUser(payload: LoginPayload): Promise<UserResponse> {
   const response = await api.post<UserResponse>(ApiStrings.LOGIN, payload);
   return response.data;
-};
+}
 
-export const fetchUserProfile = async (): Promise<UserResponse> => {
+export async function fetchUserProfile(): Promise<UserResponse> {
   const response = await api.get<UserResponse>(ApiStrings.ME);
   return response.data;
-};
+}
 
-export const registerUser = async (payload: RegisterPayload) => {
+export async function registerUser(payload: RegisterPayload) {
   const response = await api.post(ApiStrings.REGISTER, payload);
   return response.data;
 }
 
-export const updateCurrentUser = async (payload: FormData): Promise<UpdateUserResponse> => {
+export async function updateCurrentUser(payload: FormData): Promise<UpdateUserResponse> {
   const response = await api.put<Promise<UpdateUserResponse>>(ApiStrings.ME, payload, {
     headers: {
       ...(payload instanceof FormData
@@ -25,47 +25,70 @@ export const updateCurrentUser = async (payload: FormData): Promise<UpdateUserRe
     },
   });
   return response.data;
-};
+}
 
-export const getUserProfileDetails = async ({ page = 1, limit = 10, username = '' }): Promise<PostsResponse> => {
-  const response = await api.get<PostsResponse>(ApiStrings.USER_DETAILS(username), { params: { page, limit}});
+export async function getUserProfileDetails({ page = 1, limit = 10, username = "" }): Promise<PostsResponse> {
+  const response = await api.get<PostsResponse>(ApiStrings.USER_DETAILS(username), { params: { page, limit } });
   return response.data;
 }
 
-export const updatePrivacySetting = async (payload:object) => {
+export async function updatePrivacySetting(payload: object) {
   const response = await api.post(ApiStrings.PRIVACY_SETTING, payload);
   return response.data;
 }
 
-export const changePassword = async (payload:ChangePasswordPayload) => {
+export async function changePassword(payload: ChangePasswordPayload) {
   const response = await api.post(ApiStrings.CHANGE_PASSWORD, payload);
   return response.data;
 }
-export const notificationPreferences = async (payload:object) => {
+export async function notificationPreferences(payload: object) {
   const response = await api.post(ApiStrings.NOTIFICATION_PREFERENCE, payload);
   return response.data;
 }
-export const enable2FA = async () => {
+export async function enable2FA() {
   const response = await api.post(ApiStrings.ENABLE_2FA);
   return response.data;
 }
-export const disable2FA = async () => {
+export async function disable2FA() {
   const response = await api.post(ApiStrings.DISABLE_2FA);
   return response.data;
 }
-export const verify2FA = async (token:string) => {
+export async function verify2FA(token: string) {
   const response = await api.post(ApiStrings.VERIFY_2FA, { token });
   return response.data;
 }
-export const recoverLogin = async (payload:RecoverLoginPayload) => {
+export async function recoverLogin(payload: RecoverLoginPayload) {
   const response = await api.post(ApiStrings.RECOVER_LOGIN, payload);
   return response.data;
 }
-export const recoverLoginWithEmail = async (payload:EmailVerifyPayload) => {
+export async function recoverLoginWithEmail(payload: EmailVerifyPayload) {
   const response = await api.post(ApiStrings.EMAIL_VERIFY_2FA, payload);
   return response.data;
 }
-export const requestOtp = async (email:string) => {
+export async function requestOtp(email: string) {
   const response = await api.post(ApiStrings.REQUEST_OTP, { email });
+  return response.data;
+}
+export async function explorePeoples({ page = 1, limit = 10, search, location, title, interests }: DiscoverParams): Promise<DiscoverPeopleResponse> {
+  const params: Record<string, any> = {
+    page,
+    limit,
+  };
+
+  if (search)
+    params.search = search;
+  if (location)
+    params.location = location;
+  if (title)
+    params.title = title;
+  if (interests && interests.length > 0)
+    params.interests = interests;
+
+  const response = await api.get<DiscoverPeopleResponse>(ApiStrings.DISCOVER_PEOPLE, { params });
+  return response.data;
+}
+
+export async function deleteAccount() {
+  const response = await api.delete(ApiStrings.DELETE_ACCOUNT);
   return response.data;
 }

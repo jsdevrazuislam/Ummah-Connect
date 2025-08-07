@@ -1,4 +1,5 @@
-import { Model, DataTypes } from "sequelize";
+import { DataTypes, Model } from "sequelize";
+
 import sequelize from "@/config/db";
 
 export enum NotificationType {
@@ -8,17 +9,19 @@ export enum NotificationType {
   REPLY = "reply",
   BOOKMARK = "bookmark",
   MENTION = "mention",
+  SHORT_LIKE = "shortLike",
 }
 
 export class Notification extends Model {
   public id!: number;
-  public sender_id!: number;
-  public receiver_id!: number;
-  public post_id?: number;
+  public senderId!: number;
+  public receiverId!: number;
+  public postId?: number;
+  public shortId?: number;
   public type!: NotificationType;
   public message!: string;
   public icon!: string;
-  public is_read!: boolean;
+  public isRead!: boolean;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -31,15 +34,19 @@ Notification.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    sender_id: {
+    senderId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    receiver_id: {
+    receiverId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    post_id: {
+    postId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    shortId: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
@@ -55,7 +62,7 @@ Notification.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    is_read: {
+    isRead: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
@@ -64,8 +71,8 @@ Notification.init(
     sequelize,
     tableName: "notifications",
     modelName: "Notification",
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-export default Notification
+export default Notification;

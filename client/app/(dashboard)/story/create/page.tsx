@@ -1,8 +1,9 @@
-import React from 'react'
-import StoryCreator from '@/app/(dashboard)/story/story-client'
+import React from "react";
 
-const Page = () => {
-    return <StoryCreator />
+import StoryCreator from "@/app/(dashboard)/story/story-client";
+
+function Page() {
+  return <StoryCreator />;
 }
 
-export default Page
+export default Page;
