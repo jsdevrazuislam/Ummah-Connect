@@ -13,6 +13,8 @@ export default antfu({
 }, {
   ignores: ["**/node_modules", "**/.next"],
   rules: {
+    "style/indent": "off",
+    "next/no-html-link-for-pages": "off",
     "camelcase": ["error", { properties: "always" }],
     "ts/no-redeclare": "off",
     "ts/consistent-type-definitions": ["error", "type"],

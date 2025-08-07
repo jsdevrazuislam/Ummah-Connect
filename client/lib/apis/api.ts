@@ -13,30 +13,19 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-api.interceptors.request.use(async (config) => {
-  const token = Cookies.get(ACCESS_TOKEN);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-function isTokenExpiringSoon() {
+function isTokenExpiringSoon(): boolean {
   const accessToken = Cookies.get(ACCESS_TOKEN);
   if (!accessToken)
     return true;
 
   try {
-    const decodedToken = jwtDecode(accessToken);
+    const decodedToken = jwtDecode<{ exp: number }>(accessToken);
     const currentTime = Math.floor(Date.now() / 1000);
-    const bufferTime = 30;
+    const bufferTime = 300;
 
-    return decodedToken.exp
-      ? decodedToken.exp - currentTime < bufferTime
-      : false;
+    return decodedToken.exp - currentTime < bufferTime;
   }
-  catch (e) {
-    console.log(e);
+  catch {
     return true;
   }
 }
@@ -49,7 +38,7 @@ async function refreshAuthToken() {
   }
 
   try {
-    const response = await axios.post(`${baseURL}/users/refreshToken`, {
+    const response = await axios.post(`${baseURL}/auth/refresh-token`, {
       refreshToken,
     });
     const data = response?.data?.data;
@@ -77,15 +66,24 @@ async function refreshAuthToken() {
 }
 
 api.interceptors.request.use(async (config) => {
-  if (await isTokenExpiringSoon()) {
+  let token = Cookies.get(ACCESS_TOKEN);
+
+  console.log(token && isTokenExpiringSoon());
+
+  if (token && isTokenExpiringSoon()) {
     try {
       const newToken = await refreshAuthToken();
-      config.headers.Authorization = `Bearer ${newToken}`;
+      token = newToken;
     }
-    catch (error) {
-      console.error("Failed to refresh token before request", error);
+    catch (e) {
+      console.error("Failed to refresh token", e);
     }
   }
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
@@ -101,7 +99,7 @@ api.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        const { data } = await axios.post(`${baseURL}/users/refreshToken`, {
+        const { data } = await axios.post(`${baseURL}/auth/refresh-token`, {
           refreshToken,
         });
 
@@ -121,6 +119,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
 api.interceptors.response.use(
   response => response,
   (error) => {

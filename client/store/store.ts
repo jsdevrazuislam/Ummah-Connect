@@ -1,4 +1,5 @@
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 import { create } from "zustand";
 
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
@@ -84,7 +85,7 @@ export const useStore = create<AuthState>((set, get) => ({
   deleteNotificationFromStore: (id) => {
     const { notifications, unreadCount } = get();
     const filtered = notifications.filter(n => n.id !== id);
-    const isUnread = notifications.find(n => n.id === id)?.is_read === false;
+    const isUnread = notifications.find(n => n.id === id)?.isRead === false;
 
     set({
       notifications: filtered,
@@ -140,7 +141,8 @@ export const useStore = create<AuthState>((set, get) => ({
     Cookies.remove(ACCESS_TOKEN);
   },
   initialLoading: async () => {
-    if (get().accessToken) {
+    const user = get().accessToken ? jwtDecode(get().accessToken ?? "") as JwtResponsePayload : null;
+    if (get().accessToken && user?.status !== "deleted") {
       try {
         const [
           userRes,

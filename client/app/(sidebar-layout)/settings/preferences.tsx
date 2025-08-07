@@ -2,6 +2,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -23,10 +24,15 @@ function Preferences() {
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState("en");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, setUser } = useStore();
+  const { user, setUser, logout } = useStore();
+  const router = useRouter();
 
   const { isPending, mutate } = useMutation({
     mutationFn: deleteAccount,
+    onSuccess: () => {
+      logout();
+      router.push("/account-deleted");
+    },
     onError: (error) => {
       showError(error.message);
     },

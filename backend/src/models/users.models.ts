@@ -32,7 +32,7 @@ class User extends Model {
   public twoFactorSecret!: string;
   public recoveryCodes!: RecoveryCodes[];
   public lastSeenAt!: Date;
-  public deletedAt!: Date;
+  public deletedAt!: Date | null;
   public isDeleteAccount!: boolean;
   public interests!: string[];
   public dob!: string;

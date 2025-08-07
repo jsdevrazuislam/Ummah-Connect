@@ -26,6 +26,15 @@ export const verifyAuth = asyncHandler(
     if (!user)
       throw new ApiError(404, "User not found in jwt");
 
+    const allowedRoutesForDeleted = ["/account-deleted", "/cancel-deletion"];
+
+    if (user.isDeleteAccount && !allowedRoutesForDeleted.includes(req.path)) {
+      throw new ApiError(
+        403,
+        "Your account is scheduled for deletion. Only limited access is allowed.",
+      );
+    }
+
     req.user = user?.toJSON();
     next();
   },

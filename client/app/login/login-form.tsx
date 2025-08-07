@@ -37,6 +37,10 @@ export default function LoginPage() {
   const { mutate, isPending } = useMutation({
     mutationFn: loginUser,
     onSuccess: ({ data }) => {
+      if (data.user.isDeleteAccount) {
+        setLogin(data.accessToken, data.refreshToken, data.user);
+        return router.replace("/account-deleted");
+      }
       if (!data?.user) {
         setShow2FAModal(true);
       }

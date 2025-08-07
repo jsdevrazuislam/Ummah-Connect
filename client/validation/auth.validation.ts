@@ -1,4 +1,4 @@
-import * as z from "zod";
+import { z } from "zod";
 
 const passwordComplexityRegex
   = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};:'",.<>/?`~])[\w!@#$%^&*()+\-=[\]{};:'",.<>/?`~]{8,}$/;

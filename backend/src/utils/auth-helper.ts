@@ -29,7 +29,7 @@ export function comparePassword(hashedPassword: string, password: string) {
  * Generates a JSON Web Token (JWT) access token.
  * The token's secret and expiry are configured via environment variables.
  *
- * @param {object} data The payload data (e.g., user ID, roles) to be included in the token.
+ * @param {object} data The payload data (e.g., user ID, roles, status) to be included in the token.
  * @returns {string} The generated JWT access token string.
  * @throws {Error} If `process.env.ACCESS_TOKEN_SECRET` is not provided.
  */

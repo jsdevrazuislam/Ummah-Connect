@@ -158,8 +158,8 @@ export const loginWith2FA = asyncHandler(async (req: Request, res: Response) => 
       throw new ApiError(401, "Invalid 2FA token");
   }
 
-  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role });
-  const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role });
+  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
+  const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
 
   await User.update(
     { refreshToken },
@@ -629,12 +629,14 @@ export const recover2FA = asyncHandler(async (req: Request, res: Response) => {
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user?.isDeleteAccount ? "deleted" : "actived",
   });
 
   const refreshToken = generateRefreshToken({
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user?.isDeleteAccount ? "deleted" : "actived",
   });
 
   const updatedUser = await User.update(
@@ -737,12 +739,14 @@ export const verify2FAOtp = asyncHandler(async (req: Request, res: Response) => 
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user?.isDeleteAccount ? "deleted" : "actived",
   });
 
   const refreshToken = generateRefreshToken({
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user?.isDeleteAccount ? "deleted" : "actived",
   });
 
   const updatedUser = await User.update(
@@ -828,6 +832,8 @@ export const discoverPeople = asyncHandler(async (req: Request, res: Response) =
     };
   }
 
+  where.isDeleteAccount = false;
+
   const { rows: users, count: total } = await User.findAndCountAll({
     where,
     limit,
@@ -884,7 +890,7 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response) =>
     req.user.email,
     req.user.fullName,
     { name: req.user.fullName, year: new Date().getFullYear(), url: process.env.CLIENT_URL },
-    9,
+    13,
   );
 
   await DELETE_USER_CACHE();
@@ -893,4 +899,130 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response) =>
   return res.status(200).json(
     new ApiResponse(200, null, "Account deletion scheduled successfully"),
   );
+});
+
+export const cancelAccountDeletion = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const user = await User.findOne({ where: { id: userId } });
+
+  if (!user)
+    throw new ApiError(404, "User not found");
+
+  if (!user.isDeleteAccount)
+    throw new ApiError(400, "Your account is not scheduled for deletion");
+
+  user.isDeleteAccount = false;
+  user.deletedAt = null;
+  await user.save();
+
+  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
+  const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
+
+  user.refreshToken = refreshToken;
+
+  await user.save();
+
+  const [followerCount, followingCount, totalPosts, totalLikes, totalBookmarks] = await Promise.all([
+    Follow.count({ where: { followerId: userId } }),
+    Follow.count({ where: { followingId: userId } }),
+    Post.count({ where: { authorId: userId } }),
+    Reaction.count({
+      include: [{
+        model: Post,
+        as: "post",
+        where: { authorId: userId },
+        attributes: [],
+      }],
+    }),
+    BookmarkPost.count({ where: { userId } }),
+  ]);
+
+  await DELETE_USER_SUMMARY_CACHE(userId);
+
+  return res
+    .cookie("access_token", accessToken, options)
+    .cookie("refresh_token", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: {
+            ...user.toJSON(),
+            followingCount: followerCount,
+            followersCount: followingCount,
+            totalPosts,
+            totalLikes,
+            totalBookmarks,
+          },
+          accessToken,
+          refreshToken,
+        },
+        "Login Successfully",
+      ),
+    );
+});
+
+export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
+  const incomingRefreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
+
+  if (!incomingRefreshToken)
+    throw new ApiError(401, "Refresh Token Invalid. Please try again with login");
+  const decodedToken = decodeToken(
+    incomingRefreshToken,
+    process.env.REFRESH_TOKEN_SECRET ?? "",
+  ) as JwtResponse;
+  const user = await User.findByPk(decodedToken?.id);
+  if (!user)
+    throw new ApiError(401, "User Not Found");
+
+  if (incomingRefreshToken !== user?.refreshToken)
+    throw new ApiError(401, "Invalid Refresh Token.");
+
+  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
+  const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role, status: user?.isDeleteAccount ? "deleted" : "actived" });
+
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  const userId = user.id;
+
+  const [followerCount, followingCount, totalPosts, totalLikes, totalBookmarks] = await Promise.all([
+    Follow.count({ where: { followerId: userId } }),
+    Follow.count({ where: { followingId: userId } }),
+    Post.count({ where: { authorId: userId } }),
+    Reaction.count({
+      include: [{
+        model: Post,
+        as: "post",
+        where: { authorId: userId },
+        attributes: [],
+      }],
+    }),
+    BookmarkPost.count({ where: { userId } }),
+  ]);
+
+  await DELETE_USER_SUMMARY_CACHE(userId);
+
+  return res
+    .cookie("access_token", accessToken, options)
+    .cookie("refresh_token", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: {
+            ...user.toJSON(),
+            followingCount: followerCount,
+            followersCount: followingCount,
+            totalPosts,
+            totalLikes,
+            totalBookmarks,
+          },
+          accessToken,
+          refreshToken,
+        },
+        "Login Successfully",
+      ),
+    );
 });

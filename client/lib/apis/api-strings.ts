@@ -14,6 +14,7 @@ const ApiStrings = {
   RECOVER_LOGIN: "/auth/recover-login",
   REQUEST_OTP: "/auth/request-otp",
   DELETE_ACCOUNT: "/auth/account-delete",
+  CANCEL_ACCOUNT_DELETE: "/auth/cancel-deletion",
   DISCOVER_PEOPLE: "/auth/discover-people",
   EMAIL_VERIFY_2FA: "/auth/2fa/email-verify",
   // Posts

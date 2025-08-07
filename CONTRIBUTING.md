@@ -54,17 +54,47 @@ pnpm start
 # 🐛 Reporting Bugs
 ### Use GitHub Issues template and include:
 ```bash
-1. Expected vs actual behavior
-2. Steps to reproduce
-3. Environment details
-4. Screenshots (if applicable)
+## 📋 Issue Templates
+
+### 🐞 Bug Report
+**Describe the bug**
+A clear and concise description of what's wrong
+
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '...'
+3. Scroll down to '...'
+4. See error
+
+**Expected behavior**
+What you expected to happen
+
+**Screenshots**
+If applicable, add screenshots
+
+**Environment (please complete):**
+ - OS: [e.g. Windows 11]
+ - Browser [e.g. Chrome 120]
+ - Node Version [e.g. 18.15]
+
+**Additional context**
+Add any other context
 ```
 
-# ✨ Suggesting Enhancements
+# ✨ ✨ Feature Request Enhancements
 ```bash
-1. Explain the feature/enhancement
-2. Provide use cases
-3. Suggest implementation approach (optional)
+**Is your feature request related to a problem?**
+A clear description of what problem this solves
+
+**Describe the solution**
+What you want to happen
+
+**Describe alternatives**
+Any alternative solutions
+
+**Additional context**
+Add any other context
 ```
 # 🏷️ Commit Message Convention
 ### Use semantic commit messages:

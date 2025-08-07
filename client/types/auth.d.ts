@@ -63,6 +63,7 @@ type JwtResponsePayload = {
   iat: number;
   exp: number;
   role: "user" | "admin" | "super-admin";
+  status: "deleted" | "actived";
 };
 
 type NotificationPreference = {

@@ -92,3 +92,7 @@ export async function deleteAccount() {
   const response = await api.delete(ApiStrings.DELETE_ACCOUNT);
   return response.data;
 }
+export async function cancelAccountDeletion(): Promise<UserResponse> {
+  const response = await api.post<UserResponse>(ApiStrings.CANCEL_ACCOUNT_DELETE, {});
+  return response.data;
+}

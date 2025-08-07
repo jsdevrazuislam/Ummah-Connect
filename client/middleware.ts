@@ -26,7 +26,13 @@ export async function middleware(req: NextRequest) {
     try {
       const user = jwtDecode(token) as JwtResponsePayload;
 
-      if (pathname === "/login") {
+      const isAccountDeleted = user?.status === "deleted";
+
+      if (isAccountDeleted && pathname !== "/account-deleted") {
+        return NextResponse.redirect(new URL("/account-deleted", req.url));
+      }
+
+      if (!isAccountDeleted && pathname === "/login") {
         if (user.role === "admin") {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
         }
