@@ -168,31 +168,48 @@ export function CreatePostForm() {
         </div>
 
         {
-          !selectedFile && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {[
-                "bg-white",
-                "bg-gray-100",
-                "bg-blue-50",
-                "bg-green-50",
-                "bg-yellow-50",
-                "bg-pink-50",
-                "bg-purple-50",
-                "bg-gradient-to-r from-blue-400 to-purple-500",
-                "bg-gradient-to-r from-pink-400 to-red-500",
-                "bg-gradient-to-r from-green-400 to-blue-500",
-              ].map(bgClass => (
-                <button
-                  key={bgClass}
-                  type="button"
-                  onClick={() => setBackground(bgClass)}
-                  className={`w-8 h-8 rounded-full ${bgClass} border-2 ${background === bgClass ? "border-primary" : "border-transparent"}`}
-                  aria-label={`Select ${bgClass} background`}
-                />
-              ))}
-            </div>
-          )
-        }
+  !selectedFile && (
+    <div className="flex gap-2 overflow-x-auto pb-2">
+      {[
+        "bg-gray-100",
+        "bg-blue-500",
+        "bg-green-500",
+        "bg-yellow-500",
+        "bg-pink-500",
+        "bg-purple-500",
+        "bg-gradient-to-r from-blue-400 to-purple-500",
+        "bg-gradient-to-r from-pink-400 to-red-500",
+        "bg-gradient-to-r from-green-400 to-blue-500",
+        "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
+        "bg-gradient-to-r from-orange-400 via-red-500 to-pink-500",
+        "bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-500",
+        "bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500",
+      ].map(bgClass => (
+        <button
+          key={bgClass}
+          type="button"
+          onClick={() => setBackground(bgClass)}
+          className={`w-8 h-8 rounded-full ${bgClass} border-2 ${
+            background === bgClass ? "border-primary" : "border-transparent"
+          }`}
+          aria-label={`Select ${bgClass} background`}
+        />
+      ))}
+
+      {/* Clear background option */}
+      <button
+        type="button"
+        onClick={() => setBackground("")}
+        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+          background === "" ? "border-primary" : "border-muted"
+        }`}
+        aria-label="Clear background"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
 
         {selectedLocation && (
           <div className="flex items-center">

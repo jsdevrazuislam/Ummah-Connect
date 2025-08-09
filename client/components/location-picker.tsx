@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// Mock location data
 const popularLocations = [
   { id: 1, name: "Masjid al-Haram", city: "Mecca, Saudi Arabia" },
   { id: 2, name: "Masjid an-Nabawi", city: "Medina, Saudi Arabia" },
@@ -26,7 +25,6 @@ export function LocationPicker({ onLocationSelect }: LocationPickerProps) {
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Close location picker when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -58,7 +56,7 @@ export function LocationPicker({ onLocationSelect }: LocationPickerProps) {
       </Button>
 
       {isOpen && (
-        <div className="absolute bottom-full mb-2 right-0 bg-background border border-border rounded-lg shadow-lg w-72 z-10">
+        <div className="absolute bottom-full mb-2 left-0 bg-background border border-border rounded-lg shadow-lg w-72 z-10">
           <div className="p-2 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

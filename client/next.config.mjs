@@ -16,7 +16,7 @@ const nextConfig = {
               script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://cdn.jsdelivr.net;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               media-src 'self' https://res.cloudinary.com blob:;
-              img-src 'self' data: https: http: https://res.cloudinary.com;
+              img-src 'self' data: blob: https: http: https://res.cloudinary.com http://localhost:3000 https://ummah-connect-client.vercel.app;
               font-src 'self' https://fonts.gstatic.com;
               connect-src 'self' https://fonts.googleapis.com wss://social-media-app-t8htg4xd.livekit.cloud https://api.aladhan.com https://fonts.gstatic.com https://res.cloudinary.com http://res.cloudinary.com ${
                 isDev ? "http://localhost:8000 ws://localhost:8000" : "https://ummah-connect.onrender.com wss://ummah-connect.onrender.com"

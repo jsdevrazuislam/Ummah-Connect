@@ -8,7 +8,6 @@ import {
   Bookmark,
   Calendar,
   Home,
-  Menu,
   MessageCircle,
   Users,
   Video,
@@ -33,6 +32,7 @@ const navItems = [
 ];
 
 const moreNavItems = [
+  { href: "/dashboard/my-content", icon: Home, label: "Dashboard" },
   { href: "/notifications", icon: Bell, label: "Notifications" },
   { href: "/messages", icon: MessageCircle, label: "Messages" },
   { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
@@ -148,32 +148,6 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="ghost" className="w-10 h-10 rounded-full">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {moreNavItems.map(item => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link href={item.href} aria-label={`Dropdown Menu For ${item.label}`} className="flex items-center">
-                        <item.icon className="h-4 w-4 mr-3" />
-                        <span>{item.label}</span>
-                        {(item.label === "Notifications" && unreadCount > 0)
-                          || (item.label === "Messages" && totalUnread > 0)
-                          ? (
-                              <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
-                                {item.label === "Notifications" ? unreadCount : totalUnread}
-                              </Badge>
-                            )
-                          : null}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
                       {user?.avatar && <AvatarImage src={user?.avatar} alt={user?.fullName} />}
@@ -197,9 +171,22 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                       </div>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link aria-label="Dashboard" href="/dashboard/my-content">Dashboard</Link>
-                  </DropdownMenuItem>
+                  {moreNavItems.map(item => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href} aria-label={`Dropdown Menu For ${item.label}`} className="flex items-center">
+                        <item.icon className="h-4 w-4 mr-3" />
+                        <span>{item.label}</span>
+                        {(item.label === "Notifications" && unreadCount > 0)
+                          || (item.label === "Messages" && totalUnread > 0)
+                          ? (
+                              <Badge className="ml-auto h-5 w-5 p-0 text-xs flex justify-center items-center">
+                                {item.label === "Notifications" ? unreadCount : totalUnread}
+                              </Badge>
+                            )
+                          : null}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
                   <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

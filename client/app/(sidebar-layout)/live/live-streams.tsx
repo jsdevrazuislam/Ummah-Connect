@@ -27,7 +27,7 @@ export default function LivePage() {
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4 border-b border-border">
+      <div className="sticky top-0 z-10 bg-background pt-4 pb-2 px-4">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">Live</h1>
           <Link href="/live/create">
