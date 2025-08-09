@@ -4,6 +4,12 @@ type UserResponse = {
   message: string;
   success: boolean;
 };
+type DeleteUserResponse = {
+  statusCode: number;
+  data: string;
+  message: string;
+  success: boolean;
+};
 type ProfileUser = {
   data: {
     user: User;

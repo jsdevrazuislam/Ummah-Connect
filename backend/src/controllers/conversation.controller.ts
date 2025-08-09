@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 
 import redis from "@/config/redis";
 import { MESSAGE_ATTRIBUTE, MESSAGE_USER, SocketEventEnum } from "@/constants";
+import { NOTIFICATION_CACHE } from "@/controllers/notification.controller";
 import {
   Conversation,
   ConversationParticipant,
@@ -14,6 +15,7 @@ import {
   User,
 } from "@/models";
 import MessageAttachment from "@/models/message-attachment.models";
+import { NotificationType } from "@/models/notification.models";
 import { emitSocketEvent } from "@/socket";
 import ApiError from "@/utils/api-error";
 import ApiResponse from "@/utils/api-response";
@@ -24,6 +26,7 @@ import {
 } from "@/utils/cloudinary";
 import { formatConversations } from "@/utils/format";
 import { getFileType, getOrSetCache } from "@/utils/helper";
+import { createAndInvalidateNotification } from "@/utils/notification";
 
 async function DELETE_CONVERSATION_CACHE(isConversation: boolean) {
   if (!isConversation) {
@@ -167,6 +170,31 @@ export const createConversationForDm = asyncHandler(
       event: SocketEventEnum.SEND_CONVERSATION_REQUEST,
       payload: { ...responseData, name: req.user.fullName, unreadCount: 1 },
     });
+
+    if (receiverUser?.notificationPreferences?.dm) {
+      const notification = await createAndInvalidateNotification({
+        req,
+        senderId: creatorId,
+        receiverId: receiverIdNum,
+        type: NotificationType.DM,
+        message: "Open New Conversation",
+      });
+
+      emitSocketEvent({
+        req,
+        roomId: `user:${receiverIdNum}`,
+        event: SocketEventEnum.NOTIFY_USER,
+        payload: {
+          ...notification.toJSON(),
+          sender: {
+            avatar: req.user?.avatar,
+            fullName: req.user?.fullName,
+          },
+        },
+      });
+
+      await NOTIFICATION_CACHE(receiverIdNum);
+    }
 
     await DELETE_CONVERSATION_CACHE(true);
 

@@ -92,6 +92,34 @@ type ShortReactResponse = {
   message: string;
   success: boolean;
 };
+type MyShortsResponse = {
+  statusCode: number;
+  data: {
+    shorts: ShortsEntity[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+  message: string;
+  success: boolean;
+};
+type MyLivesResponse = {
+  statusCode: number;
+  data: {
+    lives: LiveStreamData[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+  message: string;
+  success: boolean;
+};
 type ShortsData = {
   shorts: ShortsEntity[];
   totalPages: number;

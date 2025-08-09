@@ -24,14 +24,15 @@ function Preferences() {
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState("en");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, setUser, logout } = useStore();
+  const { user, setUser, setLogin, refreshToken } = useStore();
   const router = useRouter();
 
   const { isPending, mutate } = useMutation({
     mutationFn: deleteAccount,
-    onSuccess: () => {
-      logout();
-      router.push("/account-deleted");
+    onSuccess: ({ data }) => {
+      if (user && refreshToken)
+      setLogin(data, refreshToken, user);
+      router.replace("/account-deleted");
     },
     onError: (error) => {
       showError(error.message);

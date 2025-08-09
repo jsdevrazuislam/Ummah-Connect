@@ -1,6 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 
 import type RecoveryCodes from "@/models/recoverycodes.models";
+import type { NotificationPreference } from "@/types/auth";
 
 import sequelize from "@/config/db";
 
@@ -27,7 +28,7 @@ class User extends Model {
     message: string;
   };
 
-  public notificationPreferences!: object;
+  public notificationPreferences!: NotificationPreference;
   public isTwoFactorEnabled!: boolean;
   public twoFactorSecret!: string;
   public recoveryCodes!: RecoveryCodes[];

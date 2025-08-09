@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { deleteShort, endLiveStream, getActiveLives, getShorts, getStreamChats, getStreamToken, initiateCall, startChatLiveStream, startLiveStream, streamDetails, uploadShort, validateCallToken, videoReact } from "@/controllers/stream.controller";
+import { deleteShort, endLiveStream, getActiveLives, getMyLives, getMyShorts, getShorts, getStreamChats, getStreamToken, initiateCall, startChatLiveStream, startLiveStream, streamDetails, uploadShort, validateCallToken, videoReact } from "@/controllers/stream.controller";
 import { verifyAuth } from "@/middleware/auth.middleware";
 import { upload } from "@/middleware/multer.middleware";
 import { validateData } from "@/middleware/validation.middleware";
@@ -20,5 +20,7 @@ router.post("/upload-short", verifyAuth, upload.single("media"), uploadShort);
 router.get("/shorts", verifyAuth, getShorts);
 router.delete("/short/:shortId", verifyAuth, deleteShort);
 router.post("/short/:videoId", verifyAuth, videoReact);
+router.get("/my-shorts", verifyAuth, getMyShorts);
+router.get("/my-lives", verifyAuth, getMyLives);
 
 export default router;

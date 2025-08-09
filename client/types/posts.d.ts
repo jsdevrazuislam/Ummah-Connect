@@ -60,7 +60,7 @@ type PostsEntity = {
   media?: string;
   media?: string;
   location: string;
-  createdAt?: string;
+  createdAt: string;
   contentType?: "text" | "video" | "audio" | "picture";
 };
 type PostAuthor = {
@@ -214,4 +214,19 @@ type ContextEntity = {
   wikidata: string;
   text: string;
   short_code?: string | null;
+};
+
+type MyPostResponse = {
+  statusCode: number;
+  data: {
+    posts: PostsEntity[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+  message: string;
+  success: boolean;
 };

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import fs from "node:fs";
+import { literal } from "sequelize";
 
 import sequelize from "@/config/db";
 import {
@@ -27,6 +28,13 @@ export async function DELETE_SHORT_CACHE() {
   const keys = await redis.keys(`shorts:*`);
   if (keys.length > 0)
     await redis.del(...keys);
+}
+
+export async function invalidateUserShortsCache(userId: number) {
+  const keys = await redis.keys(`user:${userId}:shorts:*`);
+  if (keys.length) {
+    await redis.del(...keys);
+  }
 }
 
 export const getStreamToken = asyncHandler(
@@ -484,6 +492,8 @@ export const uploadShort = asyncHandler(async (req: Request, res: Response) => {
   };
 
   await DELETE_SHORT_CACHE();
+  await invalidateUserShortsCache(req.user.id);
+
   res.json(new ApiResponse(200, responseData, "Short uploaded successfully"));
 });
 
@@ -549,10 +559,11 @@ export const deleteShort = asyncHandler(async (req: Request, res: Response) => {
 
   await cloudinary.uploader.destroy(short.videoId, {
     // eslint-disable-next-line camelcase
-    resource_type: "auto",
+    resource_type: "video",
   });
 
   await DELETE_SHORT_CACHE();
+  await invalidateUserShortsCache(req.user.id);
 
   return res.json(new ApiResponse(200, {}, "Short deleted"));
 });
@@ -647,6 +658,98 @@ export const videoReact = asyncHandler(async (req: Request, res: Response) => {
 
   await DELETE_SHORT_CACHE();
   await NOTIFICATION_CACHE(userId);
+  await invalidateUserShortsCache(req.user.id);
 
   return res.json(new ApiResponse(200, postData, "React Successfully"));
+});
+
+export const getMyShorts = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `user:${userId}:shorts:page:${page}:limit:${limit}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return res.json(new ApiResponse(200, JSON.parse(cached), "Shorts fetched from cache"));
+  }
+
+  // Query shorts
+  const { rows: shorts, count } = await Short.findAndCountAll({
+    where: {
+      userId,
+      isPublic: true,
+    },
+    attributes: {
+      include: [
+        // [
+        //   literal(`(SELECT COUNT(*) FROM "views" WHERE "views"."shortId" = "Short"."id")`),
+        //   "viewsCount",
+        // ],
+        [
+          literal(`(SELECT COUNT(*) FROM "comments" WHERE "comments"."shortId" = "Short"."id")`),
+          "commentsCount",
+        ],
+        [
+          literal(`(SELECT COUNT(*) FROM "reactions" WHERE "reactions"."shortId" = "Short"."id")`),
+          "reactionsCount",
+        ],
+      ],
+    },
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset,
+  });
+
+  const data = {
+    shorts,
+    pagination: {
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    },
+  };
+
+  await redis.set(cacheKey, JSON.stringify(data), "EX", 60 * 10);
+
+  return res.json(new ApiResponse(200, data, "My Shorts fetched successfully"));
+});
+
+export const getMyLives = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `user:${userId}:lives:page:${page}:limit:${limit}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return res.json(new ApiResponse(200, JSON.parse(cached), "Lives fetched from cache"));
+  }
+
+  const { rows: lives, count } = await LiveStream.findAndCountAll({
+    where: { userId },
+    attributes: {
+      include: [
+        // [literal(`(SELECT COUNT(*) FROM "views" WHERE "views"."liveId" = "Live"."id")`), "viewsCount"],
+        // [literal(`(SELECT COUNT(*) FROM "comments" WHERE "comments"."liveId" = "Live"."id")`), "commentsCount"],
+        // [literal(`(SELECT COUNT(*) FROM "reactions" WHERE "reactions"."liveId" = "Live"."id")`), "reactionsCount"],
+      ],
+    },
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset,
+  });
+
+  const data = {
+    lives,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redis.set(cacheKey, JSON.stringify(data), "EX", 60 * 10);
+
+  return res.json(new ApiResponse(200, data, "My Lives fetched successfully"));
 });

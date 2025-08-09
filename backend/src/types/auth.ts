@@ -24,6 +24,7 @@ export type User = {
   isFollowing?: boolean;
   lastSeenAt?: string;
   publicKey?: string;
+  isDeleteAccount: boolean;
 };
 
 export type LocationResponse = {
@@ -59,4 +60,16 @@ type ContextEntity = {
   wikidata: string;
   text: string;
   short_code?: string | null;
+};
+
+export type NotificationPreference = {
+  pushNotification: boolean;
+  emailNotification: boolean;
+  prayerTimeNotification: boolean;
+  likePost: boolean;
+  commentPost: boolean;
+  mention: boolean;
+  newFollower: boolean;
+  dm: boolean;
+  islamicEvent: boolean;
 };

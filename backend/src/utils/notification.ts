@@ -2,8 +2,7 @@ import type { Request } from "express";
 
 import type { NotificationType } from "@/models/notification.models";
 
-import redis from "@/config/redis";
-import { NOTIFICATION_CACHE_KEY } from "@/controllers/notification.controller";
+import { NOTIFICATION_CACHE } from "@/controllers/notification.controller";
 import { Notification } from "@/models";
 import { emitSocketEvent, SocketEventEnum } from "@/socket";
 
@@ -44,10 +43,7 @@ export async function createAndInvalidateNotification({
     postId,
   });
 
-  const keys = await redis.keys(`${NOTIFICATION_CACHE_KEY(senderId)}*`);
-  if (keys.length > 0) {
-    await redis.del(...keys);
-  }
+  await NOTIFICATION_CACHE(senderId);
 
   emitSocketEvent({
     req,

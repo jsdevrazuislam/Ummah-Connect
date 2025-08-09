@@ -16,158 +16,192 @@ import asyncHandler from "@/utils/async-handler";
 import { createAndInvalidateNotification } from "@/utils/notification";
 import { getCommentTotalReactionsCountLiteral, getCommentUserReactionLiteral, getFollowerCountLiteral, getFollowingCountLiteral, getIsFollowingLiteral } from "@/utils/sequelize-sub-query";
 
-export const createComment = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { content, type } = req.body;
-    const userId = req.user.id;
-    const postId = req.params.id;
-    let receiverPostId = null;
-    const isTypeShort = type === "short";
+export const createComment = asyncHandler(async (req: Request, res: Response) => {
+  const { content, type } = req.body;
+  const userId = req.user.id;
+  const postId = req.params.id;
+  const isTypeShort = type === "short";
+  let receiverId: number;
 
-    if (isTypeShort) {
-      const short = await Short.findOne({ where: { id: postId } });
-      receiverPostId = short?.userId;
-      if (!short)
-        throw new ApiError(404, "Short not found");
-    }
-    else {
-      const post = await Post.findOne({ where: { id: postId } });
-      receiverPostId = post?.authorId;
-      if (!post)
-        throw new ApiError(404, "Post not found");
-    }
+  if (isTypeShort) {
+    const short = await Short.findOne({
+      where: { id: postId },
+      attributes: ["id", "userId"],
+    });
+    if (!short)
+      throw new ApiError(404, "Short not found");
+    receiverId = short.userId;
+  }
+  else {
+    const post = await Post.findOne({
+      where: { id: postId },
+      attributes: ["id", "authorId"],
+    });
+    if (!post)
+      throw new ApiError(404, "Post not found");
+    receiverId = post.authorId;
+  }
 
-    const comment = await Comment.create({ content, userId, ...(isTypeShort ? { shortId: postId } : { postId }) });
+  const comment = await Comment.create({
+    content,
+    userId,
+    ...(isTypeShort ? { shortId: postId } : { postId }),
+  });
 
-    const followerCount = await Follow.count({ where: { followingId: userId } });
-    const followingCount = await Follow.count({ where: { followerId: userId } });
-    const receiverId = Number(receiverPostId);
+  const [followerCount, followingCount] = await Promise.all([
+    Follow.count({ where: { followingId: userId } }),
+    Follow.count({ where: { followerId: userId } }),
+  ]);
 
-    if (userId !== receiverId) {
-      const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
+  if (userId !== receiverId) {
+    const receiver = await User.findByPk(receiverId, {
+      attributes: ["id", "notificationPreferences"],
+    });
 
-      if (mentionUsernames?.length > 0) {
-        const mentionedUsers = await User.findAll({
-          where: {
-            username: { [Op.in]: mentionUsernames },
-          },
-        });
+    const mentionUsernames
+      = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
 
-        for (const user of mentionedUsers) {
-          await createAndInvalidateNotification({
-            req,
-            senderId: userId,
-            receiverId: user.id,
-            type: NotificationType.MENTION,
-            message: comment.content,
-            postId: comment.id || null,
-          });
-        }
+    if (mentionUsernames.length > 0) {
+      const mentionedUsers = await User.findAll({
+        where: {
+          "username": { [Op.in]: mentionUsernames },
+          "notificationPreferences.mention": true,
+        },
+        attributes: ["id"],
+      });
+
+      if (mentionedUsers.length > 0) {
+        await Promise.all(
+          mentionedUsers.map(user =>
+            createAndInvalidateNotification({
+              req,
+              senderId: userId,
+              receiverId: user.id,
+              type: NotificationType.MENTION,
+              message: comment.content,
+              postId: comment.id || null,
+            }),
+          ),
+        );
       }
-      else {
-        await createAndInvalidateNotification({
-          req,
-          senderId: userId,
-          receiverId,
-          type: NotificationType.COMMENT,
-          message: comment.content,
-          postId: comment.id || null,
-        });
-      }
     }
 
-    const commentJSON = comment.toJSON();
-    delete commentJSON.userId;
-
-    const response = {
-      ...commentJSON,
-      user: {
-        id: req.user.id,
-        fullName: req.user.fullName,
-        username: req.user.username,
-        avatar: req.user.avatar,
-        location: req.user?.location,
-        bio: req.user?.bio,
-        followersCount: followerCount,
-        followingCount,
-        isFollowing: false,
-      },
-      totalCommentsCount: 0,
-      totalReactionsCount: 0,
-      currentUserReaction: null,
-    };
-
-    if (!isTypeShort)
-      emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.CREATE_COMMENT, payload: { data: response } });
-
-    if (isTypeShort) {
-      await DELETE_SHORT_CACHE();
-      emitSocketEvent({ req, roomId: `short_${postId}`, event: SocketEventEnum.CREATE_SHORT_COMMENT, payload: { data: response } });
+    if (mentionUsernames.length === 0 && receiver?.notificationPreferences?.commentPost) {
+      await createAndInvalidateNotification({
+        req,
+        senderId: userId,
+        receiverId,
+        type: NotificationType.COMMENT,
+        message: comment.content,
+        postId: comment.id || null,
+      });
     }
+  }
 
-    return res.json(
-      new ApiResponse(
-        200,
-        response,
-        "Comment Created",
-      ),
-    );
-  },
-);
+  const response = {
+    ...comment.toJSON(),
+    user: {
+      id: req.user.id,
+      fullName: req.user.fullName,
+      username: req.user.username,
+      avatar: req.user.avatar,
+      location: req.user?.location,
+      bio: req.user?.bio,
+      followersCount: followerCount,
+      followingCount,
+      isFollowing: false,
+    },
+    totalCommentsCount: 0,
+    totalReactionsCount: 0,
+    currentUserReaction: null,
+  };
+
+  if (isTypeShort) {
+    await DELETE_SHORT_CACHE();
+    emitSocketEvent({
+      req,
+      roomId: `short_${postId}`,
+      event: SocketEventEnum.CREATE_SHORT_COMMENT,
+      payload: { data: response },
+    });
+  }
+  else {
+    emitSocketEvent({
+      req,
+      roomId: `post_${postId}`,
+      event: SocketEventEnum.CREATE_COMMENT,
+      payload: { data: response },
+    });
+  }
+
+  return res.json(new ApiResponse(200, response, "Comment Created"));
+});
 
 export const createReplyComment = asyncHandler(async (req: Request, res: Response) => {
   const { content, postId, type } = req.body;
   const userId = req.user.id;
   const isTypeShort = type === "short";
   const parentId = Number(req.params.id);
-  let receiverPostId = null;
+
+  let receiverId: number;
 
   if (isTypeShort) {
-    const short = await Short.findOne({ where: { id: postId } });
-    receiverPostId = short?.userId;
+    const short = await Short.findOne({ where: { id: postId }, attributes: ["id", "userId"] });
     if (!short)
       throw new ApiError(404, "Short not found");
+    receiverId = short.userId;
   }
   else {
-    const post = await Post.findOne({ where: { id: postId } });
-    receiverPostId = post?.authorId;
+    const post = await Post.findOne({ where: { id: postId }, attributes: ["id", "authorId"] });
     if (!post)
       throw new ApiError(404, "Post not found");
+    receiverId = post.authorId;
   }
 
-  const comment = await Comment.create({ content, userId, ...(isTypeShort ? { shortId: postId } : { postId }), parentId });
-
-  const receiverId = Number(receiverPostId);
+  const comment = await Comment.create({
+    content,
+    userId,
+    ...(isTypeShort ? { shortId: postId } : { postId }),
+    parentId,
+  });
 
   if (userId !== receiverId) {
     const mentionUsernames = content?.match(/@(\w+)/g)?.map((tag: string) => tag.substring(1)) || [];
-    if (mentionUsernames?.length > 0) {
-      const mentionedUsers = await User.findAll({
-        where: {
-          username: { [Op.in]: mentionUsernames },
-        },
-      });
 
-      for (const user of mentionedUsers) {
+    const receiver = await User.findByPk(receiverId, { attributes: ["id", "notificationPreferences"] });
+
+    if (mentionUsernames.length > 0) {
+      if (receiver?.notificationPreferences?.mention) {
+        const mentionedUsers = await User.findAll({
+          where: { username: { [Op.in]: mentionUsernames } },
+          attributes: ["id", "notificationPreferences"],
+        });
+
+        for (const mentionedUser of mentionedUsers) {
+          if (mentionedUser.notificationPreferences?.mention) {
+            await createAndInvalidateNotification({
+              req,
+              senderId: userId,
+              receiverId: mentionedUser.id,
+              type: NotificationType.MENTION,
+              message: comment.content,
+              postId: comment.id || null,
+            });
+          }
+        }
+      }
+    }
+    else {
+      if (receiver?.notificationPreferences?.commentPost) {
         await createAndInvalidateNotification({
           req,
           senderId: userId,
-          receiverId: user.id,
-          type: NotificationType.MENTION,
+          receiverId,
+          type: NotificationType.REPLY,
           message: comment.content,
           postId: comment.id || null,
         });
       }
-    }
-    else {
-      await createAndInvalidateNotification({
-        req,
-        senderId: userId,
-        receiverId,
-        type: NotificationType.REPLY,
-        message: comment.content,
-        postId: comment.id || null,
-      });
     }
   }
 
@@ -186,20 +220,24 @@ export const createReplyComment = asyncHandler(async (req: Request, res: Respons
   };
 
   if (isTypeShort) {
-    emitSocketEvent({ req, roomId: `short_${postId}`, event: SocketEventEnum.SHORT_REPLY_COMMENT, payload: { data: response } });
+    emitSocketEvent({
+      req,
+      roomId: `short_${postId}`,
+      event: SocketEventEnum.SHORT_REPLY_COMMENT,
+      payload: { data: response },
+    });
     await DELETE_SHORT_CACHE();
   }
   else {
-    emitSocketEvent({ req, roomId: `post_${postId}`, event: SocketEventEnum.REPLY_COMMENT, payload: { data: response } });
+    emitSocketEvent({
+      req,
+      roomId: `post_${postId}`,
+      event: SocketEventEnum.REPLY_COMMENT,
+      payload: { data: response },
+    });
   }
 
-  return res.json(
-    new ApiResponse(
-      200,
-      response,
-      "Comment Created",
-    ),
-  );
+  return res.json(new ApiResponse(200, response, "Reply Comment Created"));
 });
 
 export const editComment = asyncHandler(async (req: Request, res: Response) => {

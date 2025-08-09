@@ -87,6 +87,10 @@ export async function getStories(): Promise<StoryResponse> {
   const response = await api.get<StoryResponse>(ApiStrings.GET_STORIES);
   return response.data;
 }
+export async function getMyPosts(): Promise<MyPostResponse> {
+  const response = await api.get<MyPostResponse>(ApiStrings.MY_POST);
+  return response.data;
+}
 
 export async function createStory(payload: FormData): Promise<CreateStoryResponse> {
   const response = await api.post<CreateStoryResponse>(ApiStrings.CREATE_STORY, payload, {

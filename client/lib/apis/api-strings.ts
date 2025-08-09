@@ -28,6 +28,7 @@ const ApiStrings = {
   SHAREPOST: (id: number) => `/post/share/${id}`,
   BOOKMARK_POST: (id: number) => `/post/bookmark/${id}`,
   USER_SUGGESTION: `/post/suggest`,
+  MY_POST: `/post/my-post`,
   // comments
   CREATE_COMMENT: (id: number) => `/comment/${id}`,
   EDIT_COMMENT: (id: number) => `/comment/edit/${id}`,
@@ -62,8 +63,11 @@ const ApiStrings = {
   SEND_CHAT: "/stream/chat",
   GET_SHORTS: "/stream/shorts",
   UPLOAD_SHORT: "/stream/upload-short",
+  DELETE_SHORT: "/stream/short",
   DELETE_STREAM: "/stream/short",
   REACT_SHORT: "/stream/short",
+  MY_SHORTS: "/stream/my-shorts",
+  MY_LIVES: "/stream/my-lives",
   // report
   REPORT: "/report/",
   BAN_USER: (id: number) => `/report/ban/${id}`,

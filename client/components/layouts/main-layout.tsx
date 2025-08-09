@@ -198,7 +198,7 @@ export function SocialMediaLayout({ children }: SocialMediaLayoutProps) {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link aria-label="Settings" href="/settings">Settings</Link>
+                    <Link aria-label="Dashboard" href="/dashboard/my-content">Dashboard</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>

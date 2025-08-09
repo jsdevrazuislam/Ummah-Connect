@@ -10,7 +10,7 @@ class Post extends Model {
   public background!: string;
   public location!: string;
   public privacy!: string;
-  public authorId!: string;
+  public authorId!: number;
   public share!: number;
   public sharedPostId!: number;
   public createdAt!: Date;

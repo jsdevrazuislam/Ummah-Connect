@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { bookmarkedPost, createPost, deletePost, deletePostImage, editPost, getBookmarkPosts, getFollowingPosts, getPosts, getSinglePost, postReact, share, userSuggestion } from "@/controllers/post.controller";
+import { bookmarkedPost, createPost, deletePost, deletePostImage, editPost, getBookmarkPosts, getFollowingPosts, getMyPosts, getPosts, getSinglePost, postReact, share, userSuggestion } from "@/controllers/post.controller";
 import { verifyAuth } from "@/middleware/auth.middleware";
 import { upload } from "@/middleware/multer.middleware";
 import { validateData } from "@/middleware/validation.middleware";
@@ -20,5 +20,6 @@ router.delete("/delete/:postId", verifyAuth, deletePost);
 router.delete("/delete/media/:postId", verifyAuth, deletePostImage);
 router.get("/following/posts", verifyAuth, getFollowingPosts);
 router.get("/suggest", verifyAuth, userSuggestion);
+router.get("/my-post", verifyAuth, getMyPosts);
 
 export default router;

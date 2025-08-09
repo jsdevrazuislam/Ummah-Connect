@@ -10,6 +10,7 @@ export enum NotificationType {
   BOOKMARK = "bookmark",
   MENTION = "mention",
   SHORT_LIKE = "shortLike",
+  DM = "dm",
 }
 
 export class Notification extends Model {

@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 
-import { Op } from "sequelize";
+import { literal, Op } from "sequelize";
 
 import sequelize from "@/config/db";
 import redis from "@/config/redis";
 import { POST_ATTRIBUTE, USER_ATTRIBUTE } from "@/constants";
 import { DELETE_USER_SUMMARY_CACHE } from "@/controllers/auth.controller";
-import { NOTIFICATION_CACHE_KEY } from "@/controllers/notification.controller";
+import { NOTIFICATION_CACHE } from "@/controllers/notification.controller";
 import { Follow, Notification, Post, Reaction, User } from "@/models";
 import BookmarkPost from "@/models/bookmark.models";
 import { NotificationType } from "@/models/notification.models";
@@ -38,6 +38,12 @@ export async function DELETE_POST_CACHE() {
       redis.del(...keys);
     }
   });
+}
+
+export async function INVALID_POST_CACHE(userId: number) {
+  const keys = await redis.keys(`user:${userId}:posts:*`);
+  if (keys.length)
+    await redis.del(...keys);
 }
 
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
@@ -103,18 +109,17 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
 
   await DELETE_USER_SUMMARY_CACHE(req.user.id);
   await DELETE_POST_CACHE();
+  await INVALID_POST_CACHE(req.user.id);
 
   return res.json(new ApiResponse(200, postData, "Post Created Successfully"));
 });
 
 export const postReact = asyncHandler(async (req: Request, res: Response) => {
   const { reactType, icon } = req.body;
-  const postId = req.params?.postId;
+  const postId = Number(req.params?.postId);
   const userId = req.user?.id;
 
-  const existingReaction = await Reaction.findOne({
-    where: { userId, postId },
-  });
+  const existingReaction = await Reaction.findOne({ where: { userId, postId } });
 
   if (existingReaction) {
     if (!reactType && !icon) {
@@ -137,6 +142,7 @@ export const postReact = asyncHandler(async (req: Request, res: Response) => {
       include: [
         getTotalReactionsCountLiteral("\"Post\""),
         getUserReactionLiteral(userId, "\"Post\""),
+        "authorId",
       ],
     },
   });
@@ -146,44 +152,45 @@ export const postReact = asyncHandler(async (req: Request, res: Response) => {
   const receiverId = Number(postWithStats.authorId);
 
   if (userId !== receiverId) {
-    let notification = await Notification.findOne({
-      where: {
-        senderId: userId,
-        receiverId,
-        postId,
-        type: "like",
-      },
+    const receiver = await User.findByPk(receiverId, {
+      attributes: ["id", "notificationPreferences"],
     });
 
-    if (notification) {
-      await notification.update({
-        icon,
-        isRead: false,
-        updatedAt: new Date(),
+    if (receiver?.notificationPreferences?.likePost) {
+      let notification = await Notification.findOne({
+        where: { senderId: userId, receiverId, postId, type: NotificationType.LIKE },
       });
-    }
-    else {
-      notification = await Notification.create({
-        senderId: userId,
-        receiverId,
-        type: "like",
-        icon,
-        postId,
-      });
-    }
 
-    emitSocketEvent({
-      req,
-      roomId: `user:${receiverId}`,
-      event: SocketEventEnum.NOTIFY_USER,
-      payload: {
-        ...notification.toJSON(),
-        sender: {
-          avatar: req.user?.avatar,
-          fullName: req.user.fullName,
+      if (notification) {
+        await notification.update({
+          icon,
+          isRead: false,
+          updatedAt: new Date(),
+        });
+      }
+      else {
+        notification = await Notification.create({
+          senderId: userId,
+          receiverId,
+          type: NotificationType.LIKE,
+          icon,
+          postId,
+        });
+      }
+
+      emitSocketEvent({
+        req,
+        roomId: `user:${receiverId}`,
+        event: SocketEventEnum.NOTIFY_USER,
+        payload: {
+          ...notification.toJSON(),
+          sender: {
+            avatar: req.user?.avatar,
+            fullName: req.user.fullName,
+          },
         },
-      },
-    });
+      });
+    }
   }
 
   const postData = postWithStats.toJSON();
@@ -192,15 +199,15 @@ export const postReact = asyncHandler(async (req: Request, res: Response) => {
     req,
     roomId: `post_${postId}`,
     event: SocketEventEnum.POST_REACT,
-    payload: { postData, postId: Number(postId) },
+    payload: { postData, postId },
   });
 
-  await DELETE_POST_CACHE();
-  await DELETE_USER_SUMMARY_CACHE(receiverId);
-
-  const keys = await redis.keys(`${NOTIFICATION_CACHE_KEY(userId)}*`);
-  if (keys.length > 0)
-    await redis.del(...keys);
+  await Promise.all([
+    DELETE_POST_CACHE(),
+    DELETE_USER_SUMMARY_CACHE(receiverId),
+    INVALID_POST_CACHE(userId),
+    NOTIFICATION_CACHE(userId),
+  ]);
 
   return res.json(new ApiResponse(200, postData, "React Successfully"));
 });
@@ -398,6 +405,7 @@ export const share = asyncHandler(async (req: Request, res: Response) => {
   };
 
   await DELETE_POST_CACHE();
+  await INVALID_POST_CACHE(req.user.id);
 
   return res.json(
     new ApiResponse(
@@ -491,6 +499,7 @@ export const editPost = asyncHandler(async (req: Request, res: Response) => {
   );
 
   await DELETE_POST_CACHE();
+  await INVALID_POST_CACHE(req.user.id);
 
   return res.json(new ApiResponse(200, updatePost[0], "Update Successfully"));
 });
@@ -533,6 +542,7 @@ export const deletePost = asyncHandler(async (req: Request, res: Response) => {
   });
 
   await DELETE_POST_CACHE();
+  await INVALID_POST_CACHE(req.user.id);
 
   res.json(new ApiResponse(200, null, "Post delete successfully"));
 });
@@ -724,4 +734,40 @@ export const userSuggestion = asyncHandler(async (req: Request, res: Response) =
   return res.json(
     new ApiResponse(200, users, "Users fetched successfully"),
   );
+});
+
+export const getMyPosts = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `user:${userId}:posts:page:${page}:limit:${limit}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return res.json(new ApiResponse(200, JSON.parse(cached), "Posts fetched from cache"));
+  }
+
+  const { rows: posts, count } = await Post.findAndCountAll({
+    where: { authorId: userId, privacy: "public" },
+    attributes: {
+      include: [
+        // [literal(`(SELECT COUNT(*) FROM "views" WHERE "views"."postId" = "Post"."id")`), "viewsCount"],
+        [literal(`(SELECT COUNT(*) FROM "comments" WHERE "comments"."postId" = "Post"."id")`), "commentsCount"],
+        [literal(`(SELECT COUNT(*) FROM "reactions" WHERE "reactions"."postId" = "Post"."id")`), "reactionsCount"],
+      ],
+    },
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset,
+  });
+
+  const data = {
+    posts,
+    pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) },
+  };
+
+  await redis.set(cacheKey, JSON.stringify(data), "EX", 60 * 10);
+
+  return res.json(new ApiResponse(200, data, "My Posts fetched successfully"));
 });

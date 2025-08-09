@@ -92,3 +92,15 @@ export async function deleteStory(id: number) {
   const response = await api.delete(`${ApiStrings.DELETE_STORY}/${id}`);
   return response.data;
 }
+export async function deleteShort(id: number) {
+  const response = await api.delete(`${ApiStrings.DELETE_SHORT}/${id}`);
+  return response.data;
+}
+export async function myShorts(): Promise<MyShortsResponse> {
+  const response = await api.get<MyShortsResponse>(ApiStrings.MY_SHORTS);
+  return response.data;
+}
+export async function myLives(): Promise<MyLivesResponse> {
+  const response = await api.get<MyLivesResponse>(ApiStrings.MY_LIVES);
+  return response.data;
+}

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { DELETE_USER_CACHE } from "@/controllers/auth.controller";
 import { DELETE_POST_CACHE } from "@/controllers/post.controller";
-import { Follow } from "@/models";
+import { Follow, User } from "@/models";
 import { NotificationType } from "@/models/notification.models";
 import ApiError from "@/utils/api-error";
 import ApiResponse from "@/utils/api-response";
@@ -35,13 +35,16 @@ export const followUnFollow = asyncHandler(async (req: Request, res: Response) =
   }
 
   if (currentUserId !== targetUserId) {
-    await createAndInvalidateNotification({
-      req,
-      senderId: currentUserId,
-      receiverId: targetUserId,
-      type: NotificationType.FOLLOW,
-      postId: targetUserId || null,
-    });
+    const receiver = await User.findByPk(targetUserId, { attributes: ["id", "notificationPreferences"] });
+    if (receiver?.notificationPreferences?.newFollower) {
+      await createAndInvalidateNotification({
+        req,
+        senderId: currentUserId,
+        receiverId: targetUserId,
+        type: NotificationType.FOLLOW,
+        postId: targetUserId || null,
+      });
+    }
   }
 
   await DELETE_POST_CACHE();

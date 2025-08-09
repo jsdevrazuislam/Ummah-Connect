@@ -68,8 +68,6 @@ async function refreshAuthToken() {
 api.interceptors.request.use(async (config) => {
   let token = Cookies.get(ACCESS_TOKEN);
 
-  console.log(token && isTokenExpiringSoon());
-
   if (token && isTokenExpiringSoon()) {
     try {
       const newToken = await refreshAuthToken();

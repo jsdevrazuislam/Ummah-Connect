@@ -88,8 +88,8 @@ export async function explorePeoples({ page = 1, limit = 10, search, location, t
   return response.data;
 }
 
-export async function deleteAccount() {
-  const response = await api.delete(ApiStrings.DELETE_ACCOUNT);
+export async function deleteAccount(): Promise<DeleteUserResponse> {
+  const response = await api.delete<DeleteUserResponse>(ApiStrings.DELETE_ACCOUNT);
   return response.data;
 }
 export async function cancelAccountDeletion(): Promise<UserResponse> {

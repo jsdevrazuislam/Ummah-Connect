@@ -896,8 +896,10 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response) =>
   await DELETE_USER_CACHE();
   await DELETE_USER_SUMMARY_CACHE(req.user.id);
 
+  const accessToken = generateAccessToken({ id: req.user.id, email: req.user.email, role: req.user.role, status: "deleted" });
+
   return res.status(200).json(
-    new ApiResponse(200, null, "Account deletion scheduled successfully"),
+    new ApiResponse(200, accessToken, "Account deletion scheduled successfully"),
   );
 });
 
